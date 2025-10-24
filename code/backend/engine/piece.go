@@ -100,13 +100,14 @@ func (p *Piece) Eliminate() {
 //
 // returns an array of two pieces: the attacking piece and the target piece
 func (p *Piece) Attack(target *Piece) [2]*Piece {
-	if target.GetRank() == models.Flag.GetRank() {
+	switch {
+	case target.GetRank() == models.Flag.GetRank():
 		p.resolveFlagCapture()
-	} else if p.GetRank() == models.Spy.GetRank() && target.GetRank() == models.Marshal.GetRank() {
+	case p.GetRank() == models.Spy.GetRank() && target.GetRank() == models.Marshal.GetRank():
 		p.resolveSpyAttackingMarshal(target)
-	} else if target.GetRank() == models.Bomb.GetRank() {
+	case target.GetRank() == models.Bomb.GetRank():
 		p.resolveBombAttack(target)
-	} else {
+	default:
 		p.resolveStandardAttack(target)
 	}
 	return [2]*Piece{p, target}
@@ -130,11 +131,12 @@ func (p *Piece) resolveBombAttack(target *Piece) {
 }
 
 func (p *Piece) resolveStandardAttack(target *Piece) {
-	if p.GetRank() > target.GetRank() {
+	switch {
+	case p.GetRank() > target.GetRank():
 		target.Eliminate()
-	} else if p.GetRank() < target.GetRank() {
+	case p.GetRank() < target.GetRank():
 		p.Eliminate()
-	} else {
+	default:
 		p.Eliminate()
 		target.Eliminate()
 	}
