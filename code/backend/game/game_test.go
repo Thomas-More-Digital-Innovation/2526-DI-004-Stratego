@@ -49,6 +49,37 @@ func TestNextTurn(t *testing.T) {
 	}
 }
 
+func TestGetRound(t *testing.T) {
+	player1 := engine.NewPlayer(1, "Alice", "red")
+	piece1 := engine.NewPiece(models.Scout, &player1)
+
+	player2 := engine.NewPlayer(2, "Bob", "blue")
+	piece2 := engine.NewPiece(models.Major, &player2)
+
+	game := game.NewGame(&player1, &player2)
+
+	game.Board.SetPieceAt(engine.NewPosition(0, 0), piece1)
+	game.Board.SetPieceAt(engine.NewPosition(1, 0), piece2)
+
+	if game.GetRound() != 1 {
+		t.Errorf("Expected round to be 1 at game start, but got %d", game.GetRound())
+	}
+
+	move1 := engine.NewMove(engine.NewPosition(0, 0), engine.NewPosition(0, 4), &player1)
+	game.MakeMove(&move1, piece1)
+
+	if game.GetRound() != 1 {
+		t.Errorf("Expected round to be 1 after one move, but got %d", game.GetRound())
+	}
+
+	move2 := engine.NewMove(engine.NewPosition(1, 0), engine.NewPosition(1, 1), &player2)
+	game.MakeMove(&move2, piece2)
+
+	if game.GetRound() != 2 {
+		t.Errorf("Expected round to be 2 after two moves, but got %d", game.GetRound())
+	}
+}
+
 func TestMakeMoveToEmptyCell(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
 	player2 := engine.NewPlayer(2, "Bob", "blue")

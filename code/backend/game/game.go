@@ -9,6 +9,7 @@ type Game struct {
 	Board         *engine.Board
 	CurrentPlayer *engine.Player
 	MoveHistory   []engine.Move
+	round         int
 }
 
 func NewGame(player1 *engine.Player, player2 *engine.Player) *Game {
@@ -18,6 +19,7 @@ func NewGame(player1 *engine.Player, player2 *engine.Player) *Game {
 		Board:         board,
 		CurrentPlayer: player1,
 		MoveHistory:   []engine.Move{},
+		round:         1,
 	}
 }
 
@@ -26,7 +28,12 @@ func (g *Game) NextTurn() {
 		g.CurrentPlayer = g.Players[1]
 	} else {
 		g.CurrentPlayer = g.Players[0]
+		g.round++
 	}
+}
+
+func (g *Game) GetRound() int {
+	return g.round
 }
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {
