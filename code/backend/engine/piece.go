@@ -38,8 +38,7 @@ func (p *Piece) GetType() *models.PieceType {
 // GetValue returns the value of the piece. The value is used by the game engine to
 // determine the strength of a piece in battle. The value is also used to calculate
 // the score of a player in the game. The score is the total value of all pieces
-// captured by the player. The player with the highest score at the end of the game
-// wins.
+// captured by the player.
 func (p *Piece) GetStrategicValue() int {
 	return p.pieceType.GetStrategicValue()
 }
@@ -102,7 +101,7 @@ func (p *Piece) Eliminate() {
 func (p *Piece) Attack(target *Piece) [2]*Piece {
 	switch {
 	case target.GetRank() == models.Flag.GetRank():
-		p.resolveFlagCapture()
+		p.resolveFlagCapture(target)
 	case p.GetRank() == models.Spy.GetRank() && target.GetRank() == models.Marshal.GetRank():
 		p.resolveSpyAttackingMarshal(target)
 	case target.GetRank() == models.Bomb.GetRank():
@@ -113,8 +112,9 @@ func (p *Piece) Attack(target *Piece) [2]*Piece {
 	return [2]*Piece{p, target}
 }
 
-func (p *Piece) resolveFlagCapture() {
-	// implement win logic
+func (p *Piece) resolveFlagCapture(target *Piece) {
+	target.Eliminate()
+	p.GetOwner().SetWinner()
 }
 
 func (p *Piece) resolveSpyAttackingMarshal(target *Piece) {

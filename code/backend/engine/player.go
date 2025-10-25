@@ -5,6 +5,7 @@ type Player struct {
 	name       string
 	pieceScore int
 	avatar     string
+	won        bool
 }
 
 func NewPlayer(id int, name string, avatar string) Player {
@@ -18,6 +19,14 @@ func NewPlayer(id int, name string, avatar string) Player {
 
 func (pl *Player) GetID() int {
 	return pl.id
+}
+
+func (p *Player) HasWon() bool {
+	return p.won
+}
+
+func (p *Player) SetWinner() {
+	p.won = true
 }
 
 func (pl *Player) GetName() string {

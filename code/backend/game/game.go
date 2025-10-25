@@ -10,6 +10,7 @@ type Game struct {
 	CurrentPlayer *engine.Player
 	MoveHistory   []engine.Move
 	round         int
+	winner        *engine.Player
 }
 
 func NewGame(player1 *engine.Player, player2 *engine.Player) *Game {
@@ -24,9 +25,14 @@ func NewGame(player1 *engine.Player, player2 *engine.Player) *Game {
 }
 
 func (g *Game) NextTurn() {
-	if g.CurrentPlayer == g.Players[0] {
+	switch {
+	case g.Players[0].HasWon():
+		g.winner = g.Players[0]
+	case g.Players[1].HasWon():
+		g.winner = g.Players[1]
+	case g.CurrentPlayer == g.Players[0]:
 		g.CurrentPlayer = g.Players[1]
-	} else {
+	default:
 		g.CurrentPlayer = g.Players[0]
 		g.round++
 	}
@@ -34,6 +40,14 @@ func (g *Game) NextTurn() {
 
 func (g *Game) GetRound() int {
 	return g.round
+}
+
+func (g *Game) GetWinner() *engine.Player {
+	return g.winner
+}
+
+func (g *Game) SetWinner(player *engine.Player) {
+	g.winner = player
 }
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {

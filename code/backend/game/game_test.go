@@ -208,3 +208,38 @@ func TestMakeMoveWithMutualAttack(t *testing.T) {
 	}
 
 }
+
+func TestMakeMoveCapturingFlag(t *testing.T) {
+	player1 := engine.NewPlayer(1, "Alice", "red")
+	player2 := engine.NewPlayer(2, "Bob", "blue")
+	game := game.NewGame(&player1, &player2)
+
+	attacker := engine.NewPiece(models.Major, &player1)
+	flag := engine.NewPiece(models.Flag, &player2)
+
+	game.Board.SetPieceAt(engine.NewPosition(0, 0), attacker)
+	game.Board.SetPieceAt(engine.NewPosition(0, 1), flag)
+	move := engine.NewMove(engine.NewPosition(0, 0), engine.NewPosition(0, 1), &player1)
+
+	game.MakeMove(&move, attacker)
+
+	if game.Board.GetPieceAt(move.GetTo()) != attacker {
+		t.Errorf("Expected attacker to be at the new position after capturing flag")
+	}
+
+	if game.Board.GetPieceAt(move.GetFrom()) != nil {
+		t.Errorf("Expected original position to be empty after move")
+	}
+
+	if !attacker.IsAlive() {
+		t.Errorf("Expected attacker to be alive after capturing flag")
+	}
+
+	if flag.IsAlive() {
+		t.Errorf("Expected flag to be dead after being captured")
+	}
+
+	if game.GetWinner() != &player1 {
+		t.Errorf("Expected player1 to be the winner after capturing the flag")
+	}
+}
