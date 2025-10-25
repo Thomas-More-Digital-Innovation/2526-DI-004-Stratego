@@ -34,13 +34,19 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 	if target != nil {
 		result := piece.Attack(target)
 		piece, target = result[0], result[1]
-		switch {
-		case !piece.IsAlive() && !target.IsAlive():
-			g.Board.RemovePieceAt(move.GetFrom())
-			g.Board.RemovePieceAt(move.GetTo())
-		case !piece.IsAlive():
-			g.Board.RemovePieceAt(move.GetFrom())
-		default:
+		if !piece.IsAlive() {
+			err := g.Board.RemovePieceAt(move.GetFrom())
+			if err != nil {
+				panic(err) // errors should not happen here if function is used correctly
+			}
+
+			if !target.IsAlive() {
+				err = g.Board.RemovePieceAt(move.GetTo())
+				if err != nil {
+					panic(err) // errors should not happen here if function is used correctly
+				}
+			}
+		} else {
 			g.Board.MovePiece(move, piece)
 		}
 	} else {
