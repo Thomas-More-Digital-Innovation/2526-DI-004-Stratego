@@ -61,7 +61,7 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 				panic(err) // errors should not happen here if function is used correctly
 			}
 
-			if !target.IsAlive() {
+			if target != nil && !target.IsAlive() {
 				err = g.Board.RemovePieceAt(move.GetTo())
 				if err != nil {
 					panic(err) // errors should not happen here if function is used correctly
@@ -69,11 +69,27 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 			}
 		} else {
 			g.Board.MovePiece(move, piece)
+			piece.GetOwner().UpdatePiecePosition(piece, move.GetTo())
 		}
 	} else {
 		g.Board.MovePiece(move, piece)
+		piece.GetOwner().UpdatePiecePosition(piece, move.GetTo())
 	}
 	g.MoveHistory = append(g.MoveHistory, *move)
 	g.NextTurn()
 	return []*engine.Piece{piece, target}
+}
+
+// InitializePieces scans board and tracks all pieces for both players (call once at game start)
+func (g *Game) InitializePieces() {
+	field := g.Board.GetField()
+	for y := 0; y < 10; y++ {
+		for x := 0; x < 10; x++ {
+			piece := field[y][x]
+			if piece != nil {
+				pos := engine.NewPosition(x, y)
+				piece.GetOwner().AddPiece(piece, pos)
+			}
+		}
+	}
 }

@@ -12,10 +12,10 @@ func TestOwner(t *testing.T) {
 	piece1 := engine.NewPiece(models.Flag, &player1)
 	piece2 := engine.NewPiece(models.Flag, &player2)
 
-	if *piece1.GetOwner() != player1 {
+	if piece1.GetOwner() != &player1 {
 		t.Errorf("P1 Expected owner to be %v, got %v", player1, *piece1.GetOwner())
 	}
-	if *piece2.GetOwner() != player2 {
+	if piece2.GetOwner() != &player2 {
 		t.Errorf("P2 Expected owner to be %v, got %v", player2, *piece2.GetOwner())
 	}
 

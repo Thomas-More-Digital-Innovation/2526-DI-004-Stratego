@@ -20,18 +20,18 @@ var pieceTypes = []models.PieceType{
 	models.Marshal,
 }
 
-func GetPieceList(player *engine.Player) []engine.Piece {
-	var pieceList = []engine.Piece{}
+func GetPieceList(player *engine.Player) []*engine.Piece {
+	pieceList := make([]*engine.Piece, 0, 40) // Pre-allocate for 40 pieces
 
 	for _, pieceType := range pieceTypes {
 		for range pieceType.GetCount() {
-			pieceList = append(pieceList, *engine.NewPiece(pieceType, player))
+			pieceList = append(pieceList, engine.NewPiece(pieceType, player))
 		}
 	}
 	return pieceList
 }
 
-func GetPieceListStrategicValue(pieceList []engine.Piece) int {
+func GetPieceListStrategicValue(pieceList []*engine.Piece) int {
 	strategicValue := 0
 
 	for _, piece := range pieceList {
