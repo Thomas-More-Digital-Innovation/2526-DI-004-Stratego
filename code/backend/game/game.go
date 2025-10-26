@@ -4,6 +4,14 @@ import (
 	"digital-innovation/stratego/engine"
 )
 
+type WinCause string
+
+const (
+	WinCauseFlagCaptured   WinCause = "flag_captured"
+	WinCauseNoMovablePieces WinCause = "no_movable_pieces"
+	WinCauseMaxTurns       WinCause = "max_turns"
+)
+
 type Game struct {
 	Players           []*engine.Player
 	PlayerControllers []engine.PlayerController // AI or Human controllers
@@ -13,6 +21,7 @@ type Game struct {
 	MoveHistory       []engine.Move
 	round             int
 	winner            *engine.Player
+	winCause          WinCause
 	gameOver          bool
 }
 
@@ -37,9 +46,11 @@ func (g *Game) NextTurn() {
 	switch {
 	case g.Players[0].HasWon():
 		g.winner = g.Players[0]
+		g.winCause = WinCauseFlagCaptured
 		g.gameOver = true
 	case g.Players[1].HasWon():
 		g.winner = g.Players[1]
+		g.winCause = WinCauseFlagCaptured
 		g.gameOver = true
 	case g.CurrentPlayer == g.Players[0]:
 		g.CurrentPlayer = g.Players[1]
@@ -67,8 +78,14 @@ func (g *Game) GetWinner() *engine.Player {
 	return g.winner
 }
 
-func (g *Game) SetWinner(player *engine.Player) {
+func (g *Game) GetWinCause() WinCause {
+	return g.winCause
+}
+
+func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 	g.winner = player
+	g.winCause = cause
+	g.gameOver = true
 }
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {

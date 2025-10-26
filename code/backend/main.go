@@ -20,41 +20,79 @@ func runAIvsAI() {
 	aliceWins := 0
 	bobWins := 0
 	draws := 0
+	
+	// Track win causes
+	flagCaptures := 0
+	noMovesWins := 0
+	maxTurnsWins := 0
+	totalRounds := 0
 
-	// Run 100 games
-	for i := 0; i < 100; i++ {
+	// Run 100 games - alternate who goes first for fairness
+	numGames := 100
+	for i := 0; i < numGames; i++ {
 		// Create FRESH players and controllers for EACH game
-		player1 := engine.NewPlayer(0, "Alice AI", "red")
-		player2 := engine.NewPlayer(1, "Bob AI", "blue")
+		playerAlice := engine.NewPlayer(0, "Alice AI", "red")
+		playerBob := engine.NewPlayer(1, "Bob AI", "blue")
 
-		controller1 := fafo.NewFafoAI(&player1)
-		controller2 := fafo.NewFafoAI(&player2)
+		controllerAlice := fafo.NewFafoAI(&playerAlice)
+		controllerBob := fafo.NewFafoAI(&playerBob)
 
-		// Setup and start game
-		g := game.QuickStart(controller1, controller2)
+		// Alternate who goes first (even games: Alice first, odd games: Bob first)
+		var g *game.Game
+		if i%2 == 0 {
+			// Alice goes first
+			g = game.QuickStart(controllerAlice, controllerBob)
+			fmt.Printf("Game %3d (Alice 1st): ", i+1)
+		} else {
+			// Bob goes first (swap player order)
+			g = game.QuickStart(controllerBob, controllerAlice)
+			fmt.Printf("Game %3d (Bob 1st):   ", i+1)
+		}
+
 		runner := game.NewGameRunner(g, 1*time.Nanosecond, 1000)
-
 		winner := runner.RunToCompletion()
 
+		// Get game statistics
+		rounds := g.GetRound()
+		winCause := g.GetWinCause()
+		totalRounds += rounds
+		
+		// Track win causes
+		if winCause == game.WinCauseFlagCaptured {
+			flagCaptures++
+		} else if winCause == game.WinCauseNoMovablePieces {
+			noMovesWins++
+		} else if winCause == game.WinCauseMaxTurns {
+			maxTurnsWins++
+		}
+		
 		if winner == nil {
-			fmt.Printf("Game %3d: Draw (max turns)\n", i+1)
+			fmt.Printf("Draw after %d rounds\n", rounds)
 			draws++
-		} else if winner.GetID() == 0 {
-			fmt.Printf("Game %3d: Alice wins\n", i+1)
+		} else if winner.GetName() == "Alice AI" {
+			fmt.Printf("Alice wins - %s (%d rounds)\n", winCause, rounds)
 			aliceWins++
 		} else {
-			fmt.Printf("Game %3d: Bob wins\n", i+1)
+			fmt.Printf("Bob wins - %s (%d rounds)\n", winCause, rounds)
 			bobWins++
 		}
 	}
 
 	// Print tournament summary
+	avgRounds := float64(totalRounds) / float64(numGames)
 	fmt.Println("\n========================================")
-	fmt.Println("📊 Tournament Results (100 games)")
+	fmt.Printf("📊 Tournament Results (%d games)\n", numGames)
 	fmt.Println("========================================")
-	fmt.Printf("Alice wins: %3d (%.1f%%)\n", aliceWins, float64(aliceWins))
-	fmt.Printf("Bob wins:   %3d (%.1f%%)\n", bobWins, float64(bobWins))
-	fmt.Printf("Draws:      %3d (%.1f%%)\n", draws, float64(draws))
+	fmt.Printf("Alice wins: %3d (%.1f%%)\n", aliceWins, float64(aliceWins*100)/float64(numGames))
+	fmt.Printf("Bob wins:   %3d (%.1f%%)\n", bobWins, float64(bobWins*100)/float64(numGames))
+	fmt.Printf("Draws:      %3d (%.1f%%)\n", draws, float64(draws*100)/float64(numGames))
+	fmt.Println("========================================")
+	fmt.Println("Win Causes:")
+	fmt.Printf("  Flag captured:     %3d (%.1f%%)\n", flagCaptures, float64(flagCaptures*100)/float64(numGames))
+	fmt.Printf("  No movable pieces: %3d (%.1f%%)\n", noMovesWins, float64(noMovesWins*100)/float64(numGames))
+	fmt.Printf("  Max turns:         %3d (%.1f%%)\n", maxTurnsWins, float64(maxTurnsWins*100)/float64(numGames))
+	fmt.Println("========================================")
+	fmt.Printf("Average game length: %.1f rounds\n", avgRounds)
 	fmt.Println("========================================")
 }
 

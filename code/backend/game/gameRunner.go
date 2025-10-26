@@ -44,7 +44,14 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 
 	if turnCount >= gr.maxTurns {
 		fmt.Println("Game ended: Maximum turns reached")
-		return nil
+		// Set winner to player with higher score, or nil for draw
+		if gr.game.Players[0].GetPieceScore() > gr.game.Players[1].GetPieceScore() {
+			gr.game.SetWinner(gr.game.Players[0], WinCauseMaxTurns)
+		} else if gr.game.Players[1].GetPieceScore() > gr.game.Players[0].GetPieceScore() {
+			gr.game.SetWinner(gr.game.Players[1], WinCauseMaxTurns)
+		}
+		// Otherwise winner remains nil (draw)
+		return gr.game.GetWinner()
 	}
 
 	return gr.game.GetWinner()
@@ -93,7 +100,7 @@ func (gr *GameRunner) ExecuteTurn() bool {
 		// Current player has no valid moves - opponent wins
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()
-		gr.game.SetWinner(opponent)
+		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
 		fmt.Printf("%s has no valid moves remaining - %s wins!\n",
 			gr.game.CurrentPlayer.GetName(), opponent.GetName())
 		return false
@@ -106,7 +113,7 @@ func (gr *GameRunner) ExecuteTurn() bool {
 		// Opponent wins due to invalid move
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()
-		gr.game.SetWinner(opponent)
+		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
 		return false
 	}
 
