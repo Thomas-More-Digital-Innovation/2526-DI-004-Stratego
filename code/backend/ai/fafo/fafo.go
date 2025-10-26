@@ -8,15 +8,24 @@ import (
 )
 
 type FafoAI struct {
-	*engine.Player
+	player         *engine.Player
 	memorizedField [10][10]*engine.Piece
 }
 
-func NewFafoAI(player *engine.Player) FafoAI {
-	return FafoAI{
+func NewFafoAI(player *engine.Player) *FafoAI {
+	return &FafoAI{
 		memorizedField: [10][10]*engine.Piece{},
-		Player:         player,
+		player:         player,
 	}
+}
+
+// Implement PlayerController interface
+func (ai *FafoAI) GetPlayer() *engine.Player {
+	return ai.player
+}
+
+func (ai *FafoAI) GetControllerType() engine.ControllerType {
+	return engine.AIController
 }
 
 func (ai *FafoAI) IsPieceMemorized(pos engine.Position) bool {
@@ -24,7 +33,7 @@ func (ai *FafoAI) IsPieceMemorized(pos engine.Position) bool {
 }
 
 func (ai *FafoAI) PickRandomPiece() *engine.Piece {
-	pieces := ai.Player.GetAlivePieces()
+	pieces := ai.player.GetAlivePieces()
 	if len(pieces) == 0 {
 		return nil
 	}
@@ -49,12 +58,12 @@ func (ai *FafoAI) MakeMove(board *engine.Board) engine.Move {
 
 // findAttackMove looks for moves that attack known/visible enemy pieces
 func (ai *FafoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
-	pieces := ai.Player.GetAlivePieces()
+	pieces := ai.player.GetAlivePieces()
 	for _, piece := range pieces {
 		if !piece.CanMove() {
 			continue
 		}
-		pos, exists := ai.Player.GetPiecePosition(piece)
+		pos, exists := ai.player.GetPiecePosition(piece)
 		if !exists {
 			continue
 		}
@@ -66,7 +75,7 @@ func (ai *FafoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 
 		for _, move := range moves {
 			target := board.GetPieceAt(move.GetTo())
-			if target != nil && target.GetOwner() != ai.Player {
+			if target != nil && target.GetOwner() != ai.player {
 				// Attack if we know the piece or it's worth trying
 				memorized := ai.RecallPiece(move.GetTo())
 				if memorized != nil || piece.GetRank() >= target.GetRank() {
@@ -81,11 +90,11 @@ func (ai *FafoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 // findExplorationMove moves toward enemy side
 func (ai *FafoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 	enemyY := 0
-	if ai.Player.GetID() == 1 {
+	if ai.player.GetID() == 1 {
 		enemyY = 9
 	}
 
-	pieces := ai.Player.GetAlivePieces()
+	pieces := ai.player.GetAlivePieces()
 	shuffled := make([]*engine.Piece, len(pieces))
 	copy(shuffled, pieces)
 	rand.Shuffle(len(shuffled), func(i, j int) {
@@ -96,7 +105,7 @@ func (ai *FafoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 		if !piece.CanMove() {
 			continue
 		}
-		pos, exists := ai.Player.GetPiecePosition(piece)
+		pos, exists := ai.player.GetPiecePosition(piece)
 		if !exists {
 			continue
 		}
@@ -126,7 +135,7 @@ func (ai *FafoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 
 // findRandomMove picks any valid move as last resort
 func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
-	pieces := ai.Player.GetAlivePieces()
+	pieces := ai.player.GetAlivePieces()
 	shuffled := make([]*engine.Piece, len(pieces))
 	copy(shuffled, pieces)
 	rand.Shuffle(len(shuffled), func(i, j int) {
@@ -137,7 +146,7 @@ func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
 		if !piece.CanMove() {
 			continue
 		}
-		pos, exists := ai.Player.GetPiecePosition(piece)
+		pos, exists := ai.player.GetPiecePosition(piece)
 		if !exists {
 			continue
 		}
@@ -149,8 +158,9 @@ func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
 		return moves[rand.IntN(len(moves))]
 	}
 
-	// Should never happen in valid game state
-	panic("FafoAI: no valid moves available")
+	// No valid moves available - player has lost (only immobile pieces left)
+	// Return empty move to signal defeat
+	return engine.Move{}
 }
 
 func (ai *FafoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player) {
@@ -171,4 +181,9 @@ func (ai *FafoAI) RecallPiece(pos engine.Position) *engine.Piece {
 // small chance to forget a piece
 func (ai *FafoAI) ForgetPiece(pos engine.Position) {
 	ai.memorizedField[pos.Y][pos.X] = nil
+}
+
+// Reset clears the AI's memory for a new game
+func (ai *FafoAI) Reset() {
+	ai.memorizedField = [10][10]*engine.Piece{}
 }

@@ -11,7 +11,7 @@ type FafoAIhandler struct {
 func NewFafoAIhandler(player *engine.Player) FafoAIhandler {
 	ai := NewFafoAI(player)
 	return FafoAIhandler{
-		ai: ai,
+		ai: *ai,
 	}
 }
 

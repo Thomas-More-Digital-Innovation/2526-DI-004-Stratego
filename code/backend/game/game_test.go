@@ -9,8 +9,10 @@ import (
 
 func TestNewGame(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	if game == nil {
 		t.Errorf("Expected a game to be created, but got nil")
@@ -31,8 +33,10 @@ func TestNewGame(t *testing.T) {
 
 func TestNextTurn(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	if game.CurrentPlayer != &player1 {
 		t.Errorf("Expected current player to be player1, but got %v", game.CurrentPlayer)
@@ -51,12 +55,14 @@ func TestNextTurn(t *testing.T) {
 
 func TestGetRound(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	piece1 := engine.NewPiece(models.Scout, &player1)
 
 	player2 := engine.NewPlayer(2, "Bob", "blue")
+	controller2 := engine.NewHumanPlayerController(&player2)
 	piece2 := engine.NewPiece(models.Major, &player2)
 
-	game := game.NewGame(&player1, &player2)
+	game := game.NewGame(controller1, controller2)
 
 	game.Board.SetPieceAt(engine.NewPosition(0, 0), piece1)
 	game.Board.SetPieceAt(engine.NewPosition(1, 0), piece2)
@@ -82,8 +88,10 @@ func TestGetRound(t *testing.T) {
 
 func TestMakeMoveToEmptyCell(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	piece := engine.NewPiece(models.Major, &player1)
 	move := engine.NewMove(engine.NewPosition(0, 0), engine.NewPosition(0, 1), &player1)
@@ -105,8 +113,10 @@ func TestMakeMoveToEmptyCell(t *testing.T) {
 
 func TestMakeMoveWithWinningAttack(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	attacker := engine.NewPiece(models.Captain, &player1)
 	defender := engine.NewPiece(models.Scout, &player2)
@@ -140,8 +150,10 @@ func TestMakeMoveWithWinningAttack(t *testing.T) {
 
 func TestMakeMoveWithLosingAttack(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	attacker := engine.NewPiece(models.Scout, &player1)
 	defender := engine.NewPiece(models.Captain, &player2)
@@ -175,8 +187,10 @@ func TestMakeMoveWithLosingAttack(t *testing.T) {
 
 func TestMakeMoveWithMutualAttack(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	attacker := engine.NewPiece(models.Scout, &player1)
 	defender := engine.NewPiece(models.Scout, &player2)
@@ -211,8 +225,10 @@ func TestMakeMoveWithMutualAttack(t *testing.T) {
 
 func TestMakeMoveCapturingFlag(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	game := game.NewGame(&player1, &player2)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	game := game.NewGame(controller1, controller2)
 
 	attacker := engine.NewPiece(models.Major, &player1)
 	flag := engine.NewPiece(models.Flag, &player2)

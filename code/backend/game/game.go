@@ -5,22 +5,31 @@ import (
 )
 
 type Game struct {
-	Players       []*engine.Player
-	Board         *engine.Board
-	CurrentPlayer *engine.Player
-	MoveHistory   []engine.Move
-	round         int
-	winner        *engine.Player
+	Players           []*engine.Player
+	PlayerControllers []engine.PlayerController // AI or Human controllers
+	Board             *engine.Board
+	CurrentPlayer     *engine.Player
+	CurrentController engine.PlayerController
+	MoveHistory       []engine.Move
+	round             int
+	winner            *engine.Player
+	gameOver          bool
 }
 
-func NewGame(player1 *engine.Player, player2 *engine.Player) *Game {
+func NewGame(controller1, controller2 engine.PlayerController) *Game {
 	board := engine.NewBoard()
+	player1 := controller1.GetPlayer()
+	player2 := controller2.GetPlayer()
+
 	return &Game{
-		Players:       []*engine.Player{player1, player2},
-		Board:         board,
-		CurrentPlayer: player1,
-		MoveHistory:   []engine.Move{},
-		round:         1,
+		Players:           []*engine.Player{player1, player2},
+		PlayerControllers: []engine.PlayerController{controller1, controller2},
+		Board:             board,
+		CurrentPlayer:     player1,
+		CurrentController: controller1,
+		MoveHistory:       []engine.Move{},
+		round:             1,
+		gameOver:          false,
 	}
 }
 
@@ -28,14 +37,26 @@ func (g *Game) NextTurn() {
 	switch {
 	case g.Players[0].HasWon():
 		g.winner = g.Players[0]
+		g.gameOver = true
 	case g.Players[1].HasWon():
 		g.winner = g.Players[1]
+		g.gameOver = true
 	case g.CurrentPlayer == g.Players[0]:
 		g.CurrentPlayer = g.Players[1]
+		g.CurrentController = g.PlayerControllers[1]
 	default:
 		g.CurrentPlayer = g.Players[0]
+		g.CurrentController = g.PlayerControllers[0]
 		g.round++
 	}
+}
+
+func (g *Game) IsGameOver() bool {
+	return g.gameOver
+}
+
+func (g *Game) GetCurrentController() engine.PlayerController {
+	return g.CurrentController
 }
 
 func (g *Game) GetRound() int {
