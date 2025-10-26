@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Stratego Backend Running ===\n")
+	fmt.Println("=== Stratego Backend Running ===")
 
 	// Example 1: AI vs AI match
 	runAIvsAI()
@@ -20,7 +20,7 @@ func runAIvsAI() {
 	aliceWins := 0
 	bobWins := 0
 	draws := 0
-	
+
 	// Track win causes
 	flagCaptures := 0
 	noMovesWins := 0
@@ -56,7 +56,7 @@ func runAIvsAI() {
 		rounds := g.GetRound()
 		winCause := g.GetWinCause()
 		totalRounds += rounds
-		
+
 		// Track win causes
 		if winCause == game.WinCauseFlagCaptured {
 			flagCaptures++
@@ -65,7 +65,7 @@ func runAIvsAI() {
 		} else if winCause == game.WinCauseMaxTurns {
 			maxTurnsWins++
 		}
-		
+
 		if winner == nil {
 			fmt.Printf("Draw after %d rounds\n", rounds)
 			draws++
