@@ -7,9 +7,9 @@ import (
 type WinCause string
 
 const (
-	WinCauseFlagCaptured   WinCause = "flag_captured"
+	WinCauseFlagCaptured    WinCause = "flag_captured"
 	WinCauseNoMovablePieces WinCause = "no_movable_pieces"
-	WinCauseMaxTurns       WinCause = "max_turns"
+	WinCauseMaxTurns        WinCause = "max_turns"
 )
 
 type Game struct {
