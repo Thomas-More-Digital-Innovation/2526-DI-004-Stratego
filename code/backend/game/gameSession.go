@@ -3,6 +3,7 @@ package game
 import (
 	"digital-innovation/stratego/engine"
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -39,8 +40,11 @@ func (gs *GameSession) Start() error {
 	gs.running = true
 	gs.mutex.Unlock()
 
+	log.Printf("GameSession %s: Starting game loop", gs.ID)
+
 	go func() {
 		winner := gs.runner.RunToCompletion()
+		log.Printf("GameSession %s: Game finished, winner=%v", gs.ID, winner)
 		gs.doneChan <- winner
 		gs.mutex.Lock()
 		gs.running = false
@@ -55,6 +59,9 @@ func (gs *GameSession) Start() error {
 func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
+
+	log.Printf("SubmitMove called: gameID=%s, playerID=%d, running=%v, currentPlayerID=%d, isGameOver=%v",
+		gs.ID, playerID, gs.running, gs.game.CurrentPlayer.GetID(), gs.game.IsGameOver())
 
 	if !gs.running {
 		return errors.New("game not running")
@@ -126,6 +133,27 @@ func (gs *GameSession) IsRunning() bool {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.running
+}
+
+// GetWinner returns the winner of the game
+func (gs *GameSession) GetWinner() *engine.Player {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.game.GetWinner()
+}
+
+// GetWinCause returns the cause of the win
+func (gs *GameSession) GetWinCause() WinCause {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.game.GetWinCause()
+}
+
+// GetGame returns the game instance (for advanced access)
+func (gs *GameSession) GetGame() *Game {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.game
 }
 
 // GameState represents the current state of a game (for API responses)

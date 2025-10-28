@@ -2,17 +2,44 @@ package main
 
 import (
 	"digital-innovation/stratego/ai/fafo"
+	"digital-innovation/stratego/api"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
+	"flag"
 	"fmt"
+	"log"
 	"time"
 )
 
 func main() {
-	fmt.Println("=== Stratego Backend Running ===")
+	// Command line flags
+	serverMode := flag.Bool("server", false, "Run in WebSocket server mode")
+	addr := flag.String("addr", ":8080", "Server address")
+	flag.Parse()
 
-	// Example 1: AI vs AI match
-	runAIvsAI()
+	fmt.Println("=== Stratego Backend Running ===\n")
+
+	if *serverMode {
+		// Run WebSocket server
+		runServer(*addr)
+	} else {
+		// Run AI vs AI matches (original behavior)
+		runAIvsAI()
+	}
+}
+
+// runServer starts the WebSocket server
+func runServer(addr string) {
+	fmt.Printf("Starting Stratego WebSocket Server on %s\n", addr)
+	fmt.Println("Endpoints:")
+	fmt.Println("  POST /api/games - Create a new game")
+	fmt.Println("  GET  /api/games - List all games")
+	fmt.Println("  WS   /ws/game/{gameID}?player={0|1|spectator} - Connect to game\n")
+
+	server := api.NewGameServer()
+	if err := server.StartServer(addr); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
 }
 
 // runAIvsAI demonstrates an AI vs AI game that runs to completion

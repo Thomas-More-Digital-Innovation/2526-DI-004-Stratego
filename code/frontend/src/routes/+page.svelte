@@ -1,307 +1,396 @@
 <script lang="ts">
-	import { createGameState, startGame } from '$lib/gameState';
-	import GameBoard from '$lib/components/GameBoard.svelte';
-	import GameInfo from '$lib/components/GameInfo.svelte';
-	import type { GameState } from '$lib/types';
+	import { GameAPI } from '$lib/api';
+	import type { GameMode } from '$lib/types';
 
-	// Use Svelte 5 rune for state
-	let gameState = $state<GameState>(createGameState());
+	let api = new GameAPI();
+	let selectedMode = $state<GameMode>('human-vs-ai');
+	let isCreating = $state<boolean>(false);
+	let errorMessage = $state<string>('');
+	let loadedGameData = $state<string | null>(null);
+	let fileInput: HTMLInputElement;
 
-	function handleStartGame() {
-		gameState = startGame(gameState);
+	async function startNewGame() {
+		isCreating = true;
+		errorMessage = '';
+
+		try {
+			const gameInfo = await api.createGame(selectedMode);
+			// Use window.location for navigation
+			window.location.href = `/game/${gameInfo.gameId}?mode=${selectedMode}`;
+		} catch (error) {
+			errorMessage = `Failed to create game: ${error}`;
+			isCreating = false;
+		}
 	}
 
-	function handleNewGame() {
-		gameState = createGameState();
-	}
-
-	function handleStateChange(newState: GameState) {
-		gameState = newState;
+	function handleFileSelect(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+		
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				try {
+					const content = e.target?.result as string;
+					loadedGameData = content;
+					alert('Game loaded! (Replay feature coming soon)');
+				} catch (error) {
+					errorMessage = 'Failed to load game file';
+				}
+			};
+			reader.readAsText(file);
+		}
 	}
 </script>
 
 <svelte:head>
-	<title>Stratego - Strategic Board Game</title>
+	<title>Stratego - Menu</title>
 </svelte:head>
 
-<div class="container">
-	<header>
-		<h1>⚔️ Stratego ⚔️</h1>
-		<p class="subtitle">Strategic Board Game of Hidden Ranks and Tactical Warfare</p>
-	</header>
+<main>
+	<div class="container">
+		<header>
+			<h1>🎮 Stratego</h1>
+			<p class="subtitle">Choose your game mode and start playing</p>
+		</header>
 
-	{#if gameState.phase === 'setup'}
-		<div class="setup-screen">
-			<div class="setup-content">
-				<h2>Welcome to Stratego!</h2>
-				<p>A classic game of strategy and deception.</p>
-				
-				<div class="rules">
-					<h3>Quick Rules:</h3>
-					<ul>
-						<li>🎯 <strong>Objective:</strong> Capture your opponent's Flag</li>
-						<li>♟️ <strong>Movement:</strong> Most pieces move one square (Scouts can move multiple)</li>
-						<li>⚔️ <strong>Combat:</strong> Higher rank wins (with special exceptions)</li>
-						<li>💣 <strong>Bombs:</strong> Destroy all attackers except Miners</li>
-						<li>🕵️ <strong>Spy:</strong> Can defeat the Marshal if attacking first</li>
-						<li>⛏️ <strong>Miners:</strong> Can defuse Bombs</li>
-					</ul>
-				</div>
-
-				<div class="setup-info">
-					<p>Pieces have been randomly placed for both players.</p>
-					<p>Red player goes first!</p>
-				</div>
-
-				<button class="start-btn" onclick={handleStartGame}>
-					Start Game
-				</button>
+		{#if errorMessage}
+			<div class="error-banner">
+				⚠️ {errorMessage}
 			</div>
-		</div>
-	{:else}
-		<div class="game-container">
-			<div class="game-area">
-				<GameBoard state={gameState} onStateChange={handleStateChange} />
-			</div>
-			
-			<aside class="sidebar">
-				<GameInfo state={gameState} />
+		{/if}
+
+		<div class="menu-content">
+			<div class="game-modes">
+				<h2>New Game</h2>
 				
-				<div class="controls">
-					<button class="btn btn-primary" onclick={handleNewGame}>
-						New Game
+				<div class="mode-cards">
+					<button 
+						class="mode-card"
+						class:selected={selectedMode === 'human-vs-ai'}
+						onclick={() => selectedMode = 'human-vs-ai'}
+						disabled={isCreating}
+					>
+						<div class="mode-icon">🧑 vs 🤖</div>
+						<h3>Human vs AI</h3>
+						<p>Play against the computer. You control the red pieces, AI controls blue.</p>
+						<div class="mode-features">
+							<span>• Strategic gameplay</span>
+							<span>• AI opponent</span>
+							<span>• Turn-based</span>
+						</div>
+					</button>
+
+					<button 
+						class="mode-card"
+						class:selected={selectedMode === 'ai-vs-ai'}
+						onclick={() => selectedMode = 'ai-vs-ai'}
+						disabled={isCreating}
+					>
+						<div class="mode-icon">🤖 vs 🤖</div>
+						<h3>AI vs AI</h3>
+						<p>Watch two AI players battle it out. All pieces visible for spectating.</p>
+						<div class="mode-features">
+							<span>• Auto-play mode</span>
+							<span>• Watch & learn</span>
+							<span>• Fast-paced</span>
+						</div>
 					</button>
 				</div>
-			</aside>
-		</div>
-	{/if}
 
-	<footer>
-		<p>Created with Svelte 5 | Digital Innovation Stratego Project</p>
-	</footer>
-</div>
+				<button 
+					class="start-btn"
+					onclick={startNewGame}
+					disabled={isCreating}
+				>
+					{#if isCreating}
+						Creating game...
+					{:else}
+						Start Game
+					{/if}
+				</button>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="saved-games">
+				<h2>Load Saved Game</h2>
+				<p class="description">Load a previously saved game to review the moves and strategy.</p>
+				
+				<button 
+					class="load-btn"
+					onclick={() => fileInput.click()}
+				>
+					📂 Load Game File
+				</button>
+				
+				<input 
+					bind:this={fileInput}
+					type="file" 
+					accept=".json"
+					onchange={handleFileSelect}
+					style="display: none;"
+				/>
+			</div>
+
+			<div class="info-section">
+				<h2>How to Play</h2>
+				<div class="instructions">
+					<div class="instruction">
+						<span class="number">1</span>
+						<div>
+							<strong>Choose Mode</strong>
+							<p>Select Human vs AI to play, or AI vs AI to watch</p>
+						</div>
+					</div>
+					<div class="instruction">
+						<span class="number">2</span>
+						<div>
+							<strong>Make Moves</strong>
+							<p>Click your piece, then click where to move (highlighted cells)</p>
+						</div>
+					</div>
+					<div class="instruction">
+						<span class="number">3</span>
+						<div>
+							<strong>Capture Flag</strong>
+							<p>Find and capture the enemy flag to win the game</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
 
 <style>
 	:global(body) {
 		margin: 0;
 		padding: 0;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #1a202c;
+		color: #e2e8f0;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	}
+
+	main {
 		min-height: 100vh;
+		padding: 40px 20px;
 	}
 
 	.container {
-		min-height: 100vh;
-		display: flex;
-		flex-direction: column;
+		max-width: 1200px;
+		margin: 0 auto;
 	}
 
 	header {
 		text-align: center;
-		padding: 2rem 1rem;
-		background: rgba(255, 255, 255, 0.95);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		margin-bottom: 50px;
 	}
 
 	header h1 {
 		margin: 0;
-		font-size: 3rem;
-		color: #333;
-		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+		font-size: 3.5rem;
+		color: #e2e8f0;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+		margin-bottom: 10px;
 	}
 
 	.subtitle {
-		margin: 0.5rem 0 0 0;
-		font-size: 1.1rem;
-		color: #666;
-		font-style: italic;
-	}
-
-	.setup-screen {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-	}
-
-	.setup-content {
-		background: white;
-		padding: 3rem;
-		border-radius: 20px;
-		max-width: 600px;
-		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-		text-align: center;
-	}
-
-	.setup-content h2 {
-		margin: 0 0 1rem 0;
-		font-size: 2.5rem;
-		color: #333;
-	}
-
-	.setup-content > p {
+		color: #a0aec0;
 		font-size: 1.2rem;
-		color: #666;
-		margin-bottom: 2rem;
-	}
-
-	.rules {
-		text-align: left;
-		background: #f8f9fa;
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.rules h3 {
-		margin: 0 0 1rem 0;
-		color: #333;
-		font-size: 1.3rem;
-	}
-
-	.rules ul {
 		margin: 0;
-		padding-left: 1.5rem;
-		list-style: none;
 	}
 
-	.rules li {
-		margin: 0.75rem 0;
-		color: #555;
-		line-height: 1.6;
-	}
-
-	.setup-info {
-		background: #e3f2fd;
-		padding: 1rem;
+	.error-banner {
+		background: #fc8181;
+		color: white;
+		padding: 15px;
 		border-radius: 8px;
-		margin-bottom: 2rem;
+		margin-bottom: 30px;
+		text-align: center;
+		font-weight: 600;
 	}
 
-	.setup-info p {
-		margin: 0.5rem 0;
-		color: #1976d2;
-		font-weight: 500;
+	.menu-content {
+		display: flex;
+		flex-direction: column;
+		gap: 40px;
+	}
+
+	.game-modes, .saved-games, .info-section {
+		background: #2d3748;
+		padding: 30px;
+		border-radius: 12px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+	}
+
+	h2 {
+		margin: 0 0 20px 0;
+		color: #e2e8f0;
+		font-size: 1.8rem;
+		border-bottom: 2px solid #4a5568;
+		padding-bottom: 10px;
+	}
+
+	.description {
+		color: #a0aec0;
+		margin: 0 0 20px 0;
+	}
+
+	.mode-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 20px;
+		margin-bottom: 30px;
+	}
+
+	.mode-card {
+		background: #4a5568;
+		border: 3px solid transparent;
+		border-radius: 12px;
+		padding: 25px;
+		cursor: pointer;
+		transition: all 0.3s;
+		text-align: left;
+	}
+
+	.mode-card:hover:not(:disabled) {
+		transform: translateY(-5px);
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+		border-color: #4299e1;
+	}
+
+	.mode-card.selected {
+		border-color: #48bb78;
+		background: #2f855a;
+	}
+
+	.mode-card:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.mode-icon {
+		font-size: 3rem;
+		margin-bottom: 15px;
+	}
+
+	.mode-card h3 {
+		margin: 0 0 10px 0;
+		color: #e2e8f0;
+		font-size: 1.4rem;
+	}
+
+	.mode-card p {
+		margin: 0 0 15px 0;
+		color: #cbd5e0;
+		line-height: 1.5;
+	}
+
+	.mode-features {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		font-size: 0.9rem;
+		color: #a0aec0;
 	}
 
 	.start-btn {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		width: 100%;
+		padding: 18px;
+		background: #48bb78;
 		color: white;
 		border: none;
-		padding: 1rem 3rem;
+		border-radius: 8px;
 		font-size: 1.3rem;
-		font-weight: bold;
-		border-radius: 12px;
+		font-weight: 700;
 		cursor: pointer;
-		transition: all 0.3s ease;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		transition: all 0.2s;
+		text-transform: uppercase;
+		letter-spacing: 1px;
 	}
 
-	.start-btn:hover {
+	.start-btn:hover:not(:disabled) {
+		background: #38a169;
 		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+		box-shadow: 0 6px 12px rgba(72, 187, 120, 0.4);
 	}
 
-	.start-btn:active {
-		transform: translateY(0);
+	.start-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
-	.game-container {
-		flex: 1;
-		display: flex;
-		gap: 2rem;
-		padding: 2rem;
-		max-width: 1400px;
-		margin: 0 auto;
+	.divider {
+		height: 2px;
+		background: #4a5568;
+	}
+
+	.load-btn {
 		width: 100%;
+		padding: 15px;
+		background: #4299e1;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
 	}
 
-	.game-area {
-		flex: 1;
+	.load-btn:hover {
+		background: #3182ce;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(66, 153, 225, 0.4);
+	}
+
+	.instructions {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.instruction {
+		display: flex;
+		gap: 20px;
+		align-items: flex-start;
+	}
+
+	.number {
+		width: 40px;
+		height: 40px;
+		background: #4299e1;
+		color: white;
+		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	.sidebar {
-		width: 400px;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.controls {
-		background: white;
-		padding: 1rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-	}
-
-	.btn {
-		width: 100%;
-		padding: 0.75rem 1.5rem;
-		font-size: 1rem;
 		font-weight: bold;
-		border: none;
-		border-radius: 8px;
-		cursor: pointer;
-		transition: all 0.3s ease;
+		font-size: 1.2rem;
+		flex-shrink: 0;
 	}
 
-	.btn-primary {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	.instruction strong {
+		display: block;
+		color: #e2e8f0;
+		margin-bottom: 5px;
+		font-size: 1.1rem;
 	}
 
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
-	}
-
-	footer {
-		text-align: center;
-		padding: 1.5rem;
-		background: rgba(255, 255, 255, 0.95);
-		color: #666;
-		font-size: 0.9rem;
-	}
-
-	footer p {
+	.instruction p {
 		margin: 0;
-	}
-
-	@media (max-width: 1024px) {
-		.game-container {
-			flex-direction: column;
-		}
-
-		.sidebar {
-			width: 100%;
-		}
+		color: #cbd5e0;
+		line-height: 1.5;
 	}
 
 	@media (max-width: 768px) {
 		header h1 {
-			font-size: 2rem;
+			font-size: 2.5rem;
 		}
 
-		.subtitle {
-			font-size: 0.9rem;
-		}
-
-		.setup-content {
-			padding: 2rem 1.5rem;
-		}
-
-		.setup-content h2 {
-			font-size: 2rem;
-		}
-
-		.game-container {
-			padding: 1rem;
-			gap: 1rem;
+		.mode-cards {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
