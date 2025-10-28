@@ -48,11 +48,14 @@
 	{:else if piece && piece.ownerName}
 		<!-- Show piece details if we can see it, otherwise show ? -->
 		{#if canSeePiece()}
-			{#if piece.icon}
-				<span class="icon">{piece.icon}</span>
-			{:else if piece.rank}
-				<span class="rank">{piece.rank}</span>
-			{/if}
+			<div class="piece-content">
+				{#if piece.icon}
+					<span class="icon">{piece.icon}</span>
+				{/if}
+				{#if piece.rank}
+					<span class="rank">{piece.rank}</span>
+				{/if}
+			</div>
 		{:else}
 			<!-- Enemy piece we can't see yet -->
 			<span class="hidden">?</span>
@@ -98,8 +101,17 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 	}
 
+	.piece-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+	}
+
 	.icon {
-		font-size: 2rem;
+		font-size: 1.8rem;
+		line-height: 1;
 	}
 
 	.lake-icon {
@@ -113,8 +125,12 @@
 	}
 
 	.rank {
-		font-size: 1.2rem;
+		font-size: 0.9rem;
 		font-weight: bold;
 		color: white;
+		background: rgba(0, 0, 0, 0.3);
+		padding: 1px 6px;
+		border-radius: 3px;
+		line-height: 1;
 	}
 </style>

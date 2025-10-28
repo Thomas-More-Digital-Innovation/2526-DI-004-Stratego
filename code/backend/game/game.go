@@ -12,6 +12,14 @@ const (
 	WinCauseMaxTurns        WinCause = "max_turns"
 )
 
+type CombatResult struct {
+	Occurred         bool
+	AttackerPiece    *engine.Piece
+	DefenderPiece    *engine.Piece
+	AttackerPosition engine.Position
+	DefenderPosition engine.Position
+}
+
 type Game struct {
 	Players           []*engine.Player
 	PlayerControllers []engine.PlayerController // AI or Human controllers
@@ -19,6 +27,7 @@ type Game struct {
 	CurrentPlayer     *engine.Player
 	CurrentController engine.PlayerController
 	MoveHistory       []engine.Move
+	LastCombat        *CombatResult // Track last combat for broadcasting
 	round             int
 	winner            *engine.Player
 	winCause          WinCause
@@ -59,6 +68,8 @@ func (g *Game) NextTurn() {
 		g.CurrentPlayer = g.Players[0]
 		g.CurrentController = g.PlayerControllers[0]
 		g.round++
+		// Hide all revealed pieces at the start of a new round
+		g.HideAllRevealedPieces()
 	}
 }
 
@@ -89,8 +100,23 @@ func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 }
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {
+	g.LastCombat = nil // Clear previous combat
+	
 	target := g.Board.GetPieceAt(move.GetTo())
 	if target != nil {
+		// Combat occurred - reveal both pieces
+		piece.Reveal()
+		target.Reveal()
+		
+		// Track combat result
+		g.LastCombat = &CombatResult{
+			Occurred:         true,
+			AttackerPiece:    piece,
+			DefenderPiece:    target,
+			AttackerPosition: move.GetFrom(),
+			DefenderPosition: move.GetTo(),
+		}
+		
 		result := piece.Attack(target)
 		piece, target = result[0], result[1]
 		if !piece.IsAlive() {
@@ -116,6 +142,37 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 	g.MoveHistory = append(g.MoveHistory, *move)
 	g.NextTurn()
 	return []*engine.Piece{piece, target}
+}
+
+// GetLastCombat returns the last combat result if any
+func (g *Game) GetLastCombat() *CombatResult {
+	return g.LastCombat
+}
+
+// HideCombatPieces hides the pieces involved in the last combat
+func (g *Game) HideCombatPieces() {
+	if g.LastCombat != nil && g.LastCombat.Occurred {
+		if g.LastCombat.AttackerPiece != nil && g.LastCombat.AttackerPiece.IsAlive() {
+			g.LastCombat.AttackerPiece.Hide()
+		}
+		if g.LastCombat.DefenderPiece != nil && g.LastCombat.DefenderPiece.IsAlive() {
+			g.LastCombat.DefenderPiece.Hide()
+		}
+	}
+}
+
+// HideAllRevealedPieces hides all revealed pieces on the board
+// Called at the start of each new round to reset piece visibility
+func (g *Game) HideAllRevealedPieces() {
+	field := g.Board.GetField()
+	for y := 0; y < 10; y++ {
+		for x := 0; x < 10; x++ {
+			piece := field[y][x]
+			if piece != nil && piece.IsAlive() && piece.IsRevealed() {
+				piece.Hide()
+			}
+		}
+	}
 }
 
 // InitializePieces scans board and tracks all pieces for both players (call once at game start)

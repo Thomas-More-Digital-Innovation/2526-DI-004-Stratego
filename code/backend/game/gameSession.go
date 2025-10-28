@@ -149,6 +149,20 @@ func (gs *GameSession) GetWinCause() WinCause {
 	return gs.game.GetWinCause()
 }
 
+// GetLastCombat returns the last combat result if any
+func (gs *GameSession) GetLastCombat() *CombatResult {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.game.GetLastCombat()
+}
+
+// HideCombatPieces hides the pieces from the last combat
+func (gs *GameSession) HideCombatPieces() {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.game.HideCombatPieces()
+}
+
 // GetGame returns the game instance (for advanced access)
 func (gs *GameSession) GetGame() *Game {
 	gs.mutex.RLock()

@@ -111,10 +111,12 @@ func (gr *GameRunner) ExecuteTurn() bool {
 	// AI controller - make move immediately
 	move := controller.MakeMove(gr.game.Board)
 
-	// Check if empty/invalid move (no valid moves available - player has lost)
-	from := move.GetFrom()
-	if from.X < 0 || from.Y < 0 || (from.X == 0 && from.Y == 0 && move.GetPlayer() == nil) {
-		// Current player has no valid moves - opponent wins
+	// Validate move - check if piece exists at from position
+	piece := gr.game.Board.GetPieceAt(move.GetFrom())
+	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
+		// No piece at from position or wrong owner = AI has no valid moves
+		log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)", 
+			gr.game.CurrentPlayer.GetName(), move.GetFrom())
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
@@ -123,11 +125,9 @@ func (gr *GameRunner) ExecuteTurn() bool {
 		return false
 	}
 
-	// Validate move
-	piece := gr.game.Board.GetPieceAt(move.GetFrom())
-	if piece == nil {
-		fmt.Printf("AI provided invalid move: no piece at %v\n", move.GetFrom())
-		// Opponent wins due to invalid move
+	// Validate the move is legal
+	if !gr.game.Board.IsValidMove(&move) {
+		log.Printf("AI %s provided invalid move: %v", gr.game.CurrentPlayer.GetName(), move)
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)

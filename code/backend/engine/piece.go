@@ -81,6 +81,12 @@ func (p *Piece) Reveal() {
 	p.revealed = true
 }
 
+// Hide sets the Revealed field of the piece to false, hiding it from opponents.
+// This is used to temporarily hide pieces after combat reveals them.
+func (p *Piece) Hide() {
+	p.revealed = false
+}
+
 // Eliminate marks the piece as eliminated from the game.
 // It is used by the game engine to update the state of the pieces after a battle.
 func (p *Piece) Eliminate() {
