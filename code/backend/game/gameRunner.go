@@ -33,7 +33,7 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 
 	for !gr.game.IsGameOver() && turnCount < gr.maxTurns {
 		executed := gr.ExecuteTurn()
-		
+
 		if executed {
 			// Turn was executed, increment counter
 			turnCount++
@@ -78,7 +78,7 @@ func (gr *GameRunner) ExecuteTurn() bool {
 	}
 
 	controller := gr.game.GetCurrentController()
-	log.Printf("GameRunner.ExecuteTurn: Current player=%s, controllerType=%d", 
+	log.Printf("GameRunner.ExecuteTurn: Current player=%s, controllerType=%d",
 		gr.game.CurrentPlayer.GetName(), controller.GetControllerType())
 
 	// Check if human controller and if it has a pending move
@@ -115,7 +115,7 @@ func (gr *GameRunner) ExecuteTurn() bool {
 	piece := gr.game.Board.GetPieceAt(move.GetFrom())
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
 		// No piece at from position or wrong owner = AI has no valid moves
-		log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)", 
+		log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)",
 			gr.game.CurrentPlayer.GetName(), move.GetFrom())
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()

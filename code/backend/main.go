@@ -17,7 +17,7 @@ func main() {
 	addr := flag.String("addr", ":8080", "Server address")
 	flag.Parse()
 
-	fmt.Println("=== Stratego Backend Running ===\n")
+	fmt.Println("=== Stratego Backend Running ===")
 
 	if *serverMode {
 		// Run WebSocket server
@@ -34,7 +34,7 @@ func runServer(addr string) {
 	fmt.Println("Endpoints:")
 	fmt.Println("  POST /api/games - Create a new game")
 	fmt.Println("  GET  /api/games - List all games")
-	fmt.Println("  WS   /ws/game/{gameID}?player={0|1|spectator} - Connect to game\n")
+	fmt.Println("  WS   /ws/game/{gameID}?player={0|1|spectator} - Connect to game")
 
 	server := api.NewGameServer()
 	if err := server.StartServer(addr); err != nil {

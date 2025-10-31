@@ -101,13 +101,13 @@ func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {
 	g.LastCombat = nil // Clear previous combat
-	
+
 	target := g.Board.GetPieceAt(move.GetTo())
 	if target != nil {
 		// Combat occurred - reveal both pieces
 		piece.Reveal()
 		target.Reveal()
-		
+
 		// Track combat result
 		g.LastCombat = &CombatResult{
 			Occurred:         true,
@@ -116,7 +116,7 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 			AttackerPosition: move.GetFrom(),
 			DefenderPosition: move.GetTo(),
 		}
-		
+
 		result := piece.Attack(target)
 		piece, target = result[0], result[1]
 		if !piece.IsAlive() {

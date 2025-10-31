@@ -72,7 +72,7 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 	g := session.GetGame()
 	player1Pieces := game.RandomSetup(g.Players[0])
 	player2Pieces := game.RandomSetup(g.Players[1])
-	
+
 	// Place pieces on the board
 	if err := game.SetupGame(g, player1Pieces, player2Pieces); err != nil {
 		return nil, fmt.Errorf("failed to setup game: %v", err)
