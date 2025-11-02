@@ -23,7 +23,6 @@ type GameSessionHandler struct {
 	Session  *game.GameSession
 	Hub      *WSHub
 	GameType string
-	mu       sync.RWMutex
 }
 
 func NewGameServer() *GameServer {
@@ -227,6 +226,8 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 }
 
 // broadcastBoardState sends board state to all clients
+//
+//lint:ignore U1000 Ignore unused function temporarily for debugging
 func (s *GameServer) broadcastBoardState(hub *WSHub, viewerID int) {
 	board := hub.session.GetBoard()
 	field := board.GetField()
@@ -377,7 +378,11 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 
 	log.Printf("Created game %s (type: %s)", req.GameID, req.GameType)
 }
@@ -435,7 +440,10 @@ func (s *GameServer) HandleListGames(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(games)
+	if err := json.NewEncoder(w).Encode(games); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // StartServer starts the HTTP server

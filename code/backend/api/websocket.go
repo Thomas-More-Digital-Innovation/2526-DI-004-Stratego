@@ -29,7 +29,6 @@ type WSClient struct {
 	session  *game.GameSession
 	playerID int // -1 for spectator, 0 or 1 for player
 	hub      *WSHub
-	mutex    sync.RWMutex
 }
 
 // WSHub manages all WebSocket connections for a game
@@ -204,9 +203,16 @@ func (c *WSClient) readPump() {
 		c.conn.Close()
 	}()
 
-	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	if err != nil {
+		log.Printf("Error setting read deadline: %v", err)
+		return
+	}
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		if err != nil {
+			log.Printf("Error setting read deadline: %v", err)
+		}
 		return nil
 	})
 
@@ -234,10 +240,17 @@ func (c *WSClient) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err != nil {
+				log.Printf("Error setting write deadline: %v", err)
+				return
+			}
 			if !ok {
 				// Hub closed the channel
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err != nil {
+					log.Printf("Error writing close message: %v", err)
+				}
 				return
 			}
 
@@ -247,7 +260,11 @@ func (c *WSClient) writePump() {
 			}
 
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err != nil {
+				log.Printf("Error setting write deadline: %v", err)
+				return
+			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
