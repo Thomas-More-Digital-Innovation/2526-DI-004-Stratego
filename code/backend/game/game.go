@@ -100,7 +100,8 @@ func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 }
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {
-	g.LastCombat = nil // Clear previous combat
+	// Don't clear LastCombat here - it will be cleared after broadcast
+	// This prevents race condition where AI moves immediately after player combat
 
 	target := g.Board.GetPieceAt(move.GetTo())
 	if target != nil {
@@ -136,6 +137,8 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 			piece.GetOwner().UpdatePiecePosition(piece, move.GetTo())
 		}
 	} else {
+		// No combat - clear any previous combat result
+		g.LastCombat = nil
 		g.Board.MovePiece(move, piece)
 		piece.GetOwner().UpdatePiecePosition(piece, move.GetTo())
 	}
@@ -147,6 +150,11 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 // GetLastCombat returns the last combat result if any
 func (g *Game) GetLastCombat() *CombatResult {
 	return g.LastCombat
+}
+
+// ClearLastCombat clears the last combat result (called after broadcast)
+func (g *Game) ClearLastCombat() {
+	g.LastCombat = nil
 }
 
 // HideCombatPieces hides the pieces involved in the last combat

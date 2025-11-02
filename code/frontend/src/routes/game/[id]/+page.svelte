@@ -3,6 +3,7 @@
 	import Board from '$lib/components/Board.svelte';
 	import GameInfo from '$lib/components/GameInfo.svelte';
 	import GameHistory from '$lib/components/GameHistory.svelte';
+	import CombatAnimation from '$lib/components/CombatAnimation.svelte';
 	import { GameAPI } from '$lib/api';
 	import { gameStore } from '$lib/store.svelte';
 	import type { Position } from '$lib/types';
@@ -59,8 +60,7 @@
 		await api.connectWebSocket(gameId as string, playerId);
 		isConnected = true;
 		
-		// Request initial state
-		setTimeout(() => api.requestState(), 500);
+		// Backend will automatically send initial state when we connect
 	}
 
 	function setupMessageHandlers() {
@@ -71,8 +71,6 @@
 
 		api.onMessage('boardState', (data) => {
 			console.log('Received boardState:', data);
-			console.log('Sample piece from board[0][0]:', data.board?.[0]?.[0]);
-			console.log('Sample piece from board[9][0] (enemy):', data.board?.[9]?.[0]);
 			gameStore.updateBoardState(data);
 		});
 
@@ -81,17 +79,26 @@
 			if (!data.success) {
 				errorMessage = data.error || 'Move failed';
 				setTimeout(() => errorMessage = '', 3000);
-			} else {
-				console.log('✓ Move successful, requesting updated state');
-				// Request fresh board state after successful move
-				setTimeout(() => api.requestState(), 100);
+				gameStore.setSelectedPosition(null);
+				validMoves = [];
 			}
-			gameStore.setSelectedPosition(null);
-			validMoves = [];
+			// Backend will automatically push updated state after move is processed
 		});
 
-		api.onMessage('aiMove', (data) => {
-			console.log('AI Move:', data);
+		api.onMessage('validMoves', (data) => {
+			console.log('Valid moves received:', data);
+			validMoves = data.validMoves || [];
+		});
+
+		api.onMessage('combat', (data) => {
+			console.log('💥 Combat message received:', data);
+			// Show combat animation
+			gameStore.showCombatAnimation({
+				attacker: data.attacker,
+				defender: data.defender,
+				attackerWon: data.attackerWon,
+				defenderWon: data.defenderWon
+			});
 		});
 
 		api.onMessage('gameOver', (data) => {
@@ -109,94 +116,11 @@
 		});
 	}
 
-	function calculateValidMoves(x: number, y: number) {
-		const board = gameStore.boardState?.board;
-		if (!board) {
-			console.log('No board in calculateValidMoves');
-			return [];
-		}
-
-		const piece = board[y][x];
-		console.log('calculateValidMoves for position', { x, y }, 'piece:', piece);
-		
-		// Check if cell is actually empty (no ownerName means it's an empty cell from backend)
-		// Backend always sets ownerName for real pieces, even if type is hidden
-		if (!piece || !piece.ownerName) {
-			console.log('Empty cell (no ownerName)');
-			return [];
-		}
-		
-		// Check if piece belongs to player
-		if (piece.ownerId !== 0) {
-			console.log('Piece belongs to opponent, ownerId:', piece.ownerId);
-			return [];
-		}
-
-		// Bombs and Flags cannot move
-		if (piece.type === 'Bomb' || piece.type === 'Flag') {
-			console.log('Piece cannot move:', piece.type);
-			return [];
-		}
-
-		const moves: Position[] = [];
-		const directions = [
-			{ dx: 0, dy: -1 },  // up
-			{ dx: 0, dy: 1 },   // down
-			{ dx: -1, dy: 0 },  // left
-			{ dx: 1, dy: 0 }    // right
-		];
-
-		// Check if piece is Scout (can move multiple spaces)
-		const isScout = piece.type === 'Scout';
-
-		for (const dir of directions) {
-			let distance = 1;
-			const maxDistance = isScout ? 10 : 1;
-
-			while (distance <= maxDistance) {
-				const newX = x + (dir.dx * distance);
-				const newY = y + (dir.dy * distance);
-
-				// Out of bounds
-				if (newX < 0 || newX >= 10 || newY < 0 || newY >= 10) break;
-
-				// Check for lakes
-				const lakes = [
-					{ x: 2, y: 4 }, { x: 3, y: 4 }, { x: 2, y: 5 }, { x: 3, y: 5 },
-					{ x: 6, y: 4 }, { x: 7, y: 4 }, { x: 6, y: 5 }, { x: 7, y: 5 }
-				];
-				const isLake = lakes.some(l => l.x === newX && l.y === newY);
-				if (isLake) break;
-
-				const targetPiece = board[newY][newX];
-
-				// Check if target cell has a piece (has ownerName field)
-				if (targetPiece && targetPiece.ownerName) {
-					// Can attack enemy pieces
-					if (targetPiece.ownerId !== 0) {
-						moves.push({ x: newX, y: newY });
-					}
-					// Stop at any piece
-					break;
-				}
-
-				// Empty space - valid move
-				moves.push({ x: newX, y: newY });
-				distance++;
-			}
-		}
-
-		console.log('Calculated moves:', moves);
-		return moves;
-	}
-
 	function handleCellClick(x: number, y: number) {
 		console.log('=== Cell clicked ===');
 		console.log('Position:', { x, y });
 		console.log('isReplaying:', gameStore.isReplaying);
 		console.log('isHumanTurn:', isHumanTurn);
-		console.log('gameMode:', gameMode);
-		console.log('currentPlayerId:', gameStore.gameState?.currentPlayerId);
 		
 		// Prevent moves during replay or if not human's turn
 		if (gameStore.isReplaying || !isHumanTurn) {
@@ -217,7 +141,6 @@
 		console.log('Currently selected:', selected);
 		
 		// Check if clicked cell has a valid piece (must have ownerName field)
-		// Backend always sets ownerName for real pieces, even if type is hidden
 		const hasValidPiece = clickedPiece && clickedPiece.ownerName;
 
 		// If no piece selected, select this one if it belongs to player
@@ -225,17 +148,10 @@
 			console.log('No piece currently selected');
 			
 			if (hasValidPiece && clickedPiece.ownerId === 0) {
-				console.log('✓ Attempting to select own piece');
-				const moves = calculateValidMoves(x, y);
-				
-				// Only select if piece can actually move
-				if (moves.length > 0) {
-					console.log('✓ Piece can move, selecting it');
-					gameStore.setSelectedPosition({ x, y });
-					validMoves = moves;
-				} else {
-					console.log('❌ Piece has no valid moves');
-				}
+				console.log('✓ Requesting valid moves from backend');
+				gameStore.setSelectedPosition({ x, y });
+				// Request valid moves from backend
+				api.requestValidMoves({ x, y });
 			} else if (hasValidPiece) {
 				console.log('❌ Not your piece (ownerId:', clickedPiece.ownerId, ')');
 			} else {
@@ -263,18 +179,11 @@
 			gameStore.setSelectedPosition(null);
 			validMoves = [];
 		} else {
-			// Select different piece if it's yours and it can move
+			// Select different piece if it's yours
 			if (hasValidPiece && clickedPiece.ownerId === 0) {
 				console.log('Selecting different piece');
-				const moves = calculateValidMoves(x, y);
-				if (moves.length > 0) {
-					gameStore.setSelectedPosition({ x, y });
-					validMoves = moves;
-				} else {
-					// Piece can't move, deselect current
-					gameStore.setSelectedPosition(null);
-					validMoves = [];
-				}
+				gameStore.setSelectedPosition({ x, y });
+				api.requestValidMoves({ x, y });
 			} else {
 				// Clicked on empty or enemy, deselect
 				console.log('Deselecting (clicked empty or enemy)');
@@ -361,6 +270,21 @@
 					/>
 				</div>
 			</div>
+		{/if}
+		
+		<!-- Combat Animation -->
+		{#if gameStore.combatAnimation}
+			<CombatAnimation
+				attacker={gameStore.combatAnimation.attacker}
+				defender={gameStore.combatAnimation.defender}
+				attackerWon={gameStore.combatAnimation.attackerWon}
+				defenderWon={gameStore.combatAnimation.defenderWon}
+				onComplete={() => {
+					console.log('Combat animation complete, notifying backend');
+					api.sendAnimationComplete();
+					gameStore.hideCombatAnimation();
+				}}
+			/>
 		{/if}
 	</div>
 </main>

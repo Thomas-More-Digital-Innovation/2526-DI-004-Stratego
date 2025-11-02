@@ -1,6 +1,6 @@
 // filepath: /home/sem/prog/go/2526-DI-004-Stratego/code/frontend/src/lib/store.svelte.ts
 
-import type { GameState, BoardState, HistoryMove, Piece } from './types';
+import type { GameState, BoardState, HistoryMove, Piece, CombatAnimation } from './types';
 
 export class GameStore {
 	gameState = $state<GameState | null>(null);
@@ -9,6 +9,7 @@ export class GameStore {
 	currentHistoryIndex = $state<number>(-1);
 	isReplaying = $state<boolean>(false);
 	selectedPosition = $state<{ x: number; y: number } | null>(null);
+	combatAnimation = $state<CombatAnimation | null>(null);
 
 	updateGameState(state: GameState) {
 		this.gameState = state;
@@ -38,6 +39,14 @@ export class GameStore {
 
 	setSelectedPosition(pos: { x: number; y: number } | null) {
 		this.selectedPosition = pos;
+	}
+
+	showCombatAnimation(combat: CombatAnimation) {
+		this.combatAnimation = combat;
+	}
+
+	hideCombatAnimation() {
+		this.combatAnimation = null;
 	}
 
 	// History navigation

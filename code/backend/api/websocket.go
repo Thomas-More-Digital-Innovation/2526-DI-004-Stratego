@@ -241,20 +241,8 @@ func (c *WSClient) writePump() {
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			// Add queued messages to the current websocket message
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
+			// Send each message separately instead of concatenating
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 
@@ -278,10 +266,12 @@ func (c *WSClient) handleMessage(message []byte) {
 	switch baseMsg.Type {
 	case MsgTypeMove:
 		c.handleMove(baseMsg.Data)
-	case MsgTypeRequestState:
-		c.hub.sendGameState(c)
+	case MsgTypeGetValidMoves:
+		c.handleGetValidMoves(baseMsg.Data)
 	case MsgTypePing:
 		c.sendPong()
+	case MsgTypeAnimationComplete:
+		c.handleAnimationComplete()
 	default:
 		c.sendError("Unknown message type")
 	}
@@ -319,23 +309,73 @@ func (c *WSClient) handleMove(data interface{}) {
 	// Submit move to game session
 	err = c.session.SubmitMove(c.playerID, move)
 	if err != nil {
-		c.sendMoveResult(false, err.Error(), MoveDTO{}, false, false, nil)
+		c.sendMoveResult(false, err.Error())
 		return
 	}
 
 	// Move accepted - result will be broadcast when processed
-	c.sendMoveResult(true, "", MoveToDTO(move), false, false, nil)
+	c.sendMoveResult(true, "")
+}
+
+// handleGetValidMoves processes a request for valid moves for a piece
+func (c *WSClient) handleGetValidMoves(data interface{}) {
+	// Only players can request moves for their pieces
+	if c.playerID < 0 {
+		c.sendError("Spectators cannot request valid moves")
+		return
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		c.sendError("Invalid request data")
+		return
+	}
+
+	var reqMsg GetValidMovesMessage
+	if err := json.Unmarshal(jsonData, &reqMsg); err != nil {
+		c.sendError("Invalid request format")
+		return
+	}
+
+	// Convert to engine type
+	pos := engine.NewPosition(reqMsg.Position.X, reqMsg.Position.Y)
+
+	// Get available moves
+	moves, err := c.session.GetAvailableMoves(pos)
+	if err != nil {
+		c.sendError(err.Error())
+		return
+	}
+
+	// Convert to DTOs
+	validMoveDTOs := make([]PositionDTO, len(moves))
+	for i, move := range moves {
+		validMoveDTOs[i] = PositionToDTO(move.GetTo())
+	}
+
+	// Send response
+	msg := WSMessage{
+		Type: MsgTypeValidMoves,
+		Data: ValidMovesMessage{
+			Position:   reqMsg.Position,
+			ValidMoves: validMoveDTOs,
+		},
+	}
+
+	jsonResponse, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling valid moves: %v", err)
+		return
+	}
+
+	c.send <- jsonResponse
 }
 
 // sendMoveResult sends a move result message
-func (c *WSClient) sendMoveResult(success bool, error string, move MoveDTO, attackerDied, defenderDied bool, combat *CombatDTO) {
+func (c *WSClient) sendMoveResult(success bool, error string) {
 	result := MoveResultMessage{
-		Success:      success,
-		Error:        error,
-		Move:         move,
-		AttackerDied: attackerDied,
-		DefenderDied: defenderDied,
-		CombatResult: combat,
+		Success: success,
+		Error:   error,
 	}
 
 	msg := WSMessage{
@@ -350,6 +390,12 @@ func (c *WSClient) sendMoveResult(success bool, error string, move MoveDTO, atta
 	}
 
 	c.send <- jsonData
+}
+
+// handleAnimationComplete processes animation complete message from client
+func (c *WSClient) handleAnimationComplete() {
+	log.Printf("Animation complete received from client %d", c.playerID)
+	c.session.SignalAnimationComplete()
 }
 
 // sendError sends an error message

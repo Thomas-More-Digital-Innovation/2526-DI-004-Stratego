@@ -107,77 +107,123 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	session := handler.Session
 	hub := handler.Hub
 
-	// Add delay for AI vs AI games to make them watchable
-	moveDelay := 100 * time.Millisecond
-	if gameType == "ai-vs-ai" {
-		moveDelay = 500 * time.Millisecond // Half second per move for AI vs AI
-	}
+	log.Printf("Starting game monitor for %s (type: %s)", handler.Session.ID, gameType)
 
-	lastMoveCount := 0
-	ticker := time.NewTicker(moveDelay)
-	defer ticker.Stop()
+	// Send initial state to all connected clients
+	time.Sleep(100 * time.Millisecond) // Brief delay for clients to connect
+	s.broadcastFullState(hub, gameType)
 
 	for {
-		<-ticker.C
-
-		if !session.IsRunning() && session.GetGameState().IsGameOver {
-			// Game over - broadcast final state with all pieces revealed
-			state := session.GetGameState()
-			winner := session.GetWinner()
-			var winnerID *int
-			var winnerName string
-			if winner != nil {
-				id := winner.GetID()
-				winnerID = &id
-				winnerName = winner.GetName()
+		// Wait for a move notification with timeout
+		if !session.WaitForMoveNotification(5 * time.Second) {
+			// Timeout - check if game is over
+			if !session.IsRunning() && session.GetGameState().IsGameOver {
+				s.handleGameOver(session, hub)
+				return
 			}
+			continue
+		}
 
-			gameOverMsg := GameOverMessage{
-				WinnerID:   winnerID,
-				WinnerName: winnerName,
-				WinCause:   string(session.GetWinCause()),
-				Round:      state.Round,
-			}
+		// Move was executed
+		log.Printf("Move executed in game %s", session.ID)
 
-			hub.BroadcastMessage(MsgTypeGameOver, gameOverMsg)
+		// Check if combat occurred
+		combat := session.GetLastCombat()
+		hasCombat := combat != nil && combat.Occurred
 
-			// Broadcast final board state with all pieces revealed
-			s.broadcastBoardStateRevealed(hub)
+		if hasCombat {
+			log.Printf("Combat detected! Broadcasting combat and waiting for animation")
 
-			// Wait longer before stopping monitoring so users can see results
-			time.Sleep(30 * time.Second)
+			// Broadcast combat message FIRST
+			s.broadcastCombat(hub, combat, gameType)
+
+			// Wait for animation to complete (3 second timeout)
+			session.WaitForAnimationComplete(3 * time.Second)
+
+			// Clear combat after animation
+			session.ClearLastCombat()
+
+			log.Printf("Animation complete, continuing...")
+		}
+
+		// Broadcast updated game state and board
+		s.broadcastFullState(hub, gameType)
+
+		// Check if game is over
+		state := session.GetGameState()
+		if state.IsGameOver {
+			time.Sleep(500 * time.Millisecond) // Brief delay before game over message
+			s.handleGameOver(session, hub)
 			return
 		}
-
-		// Check for new moves
-		state := session.GetGameState()
-		if state.MoveCount > lastMoveCount {
-			lastMoveCount = state.MoveCount
-
-			// Broadcast game state update
-			hub.BroadcastMessage(MsgTypeGameState, GameStateMessage{
-				Round:              state.Round,
-				CurrentPlayerID:    state.CurrentPlayerID,
-				CurrentPlayerName:  state.CurrentPlayerName,
-				IsGameOver:         state.IsGameOver,
-				WinnerID:           state.WinnerID,
-				Player1Score:       state.Player1Score,
-				Player2Score:       state.Player2Score,
-				WaitingForInput:    state.WaitingForInput,
-				MoveCount:          state.MoveCount,
-				Player1AlivePieces: state.Player1AlivePieces,
-				Player2AlivePieces: state.Player2AlivePieces,
-			})
-
-			// For AI vs AI, show all pieces to spectators
-			if gameType == "ai-vs-ai" {
-				s.broadcastBoardStateRevealed(hub)
-			} else {
-				// For other modes, send personalized board state to each client
-				s.broadcastBoardStatePerClient(hub)
-			}
-		}
 	}
+}
+
+// broadcastFullState sends complete game state and board to all clients
+func (s *GameServer) broadcastFullState(hub *WSHub, gameType string) {
+	state := hub.session.GetGameState()
+
+	var winnerName string
+	var winCause string
+	if state.WinnerID != nil {
+		winner := hub.session.GetWinner()
+		if winner != nil {
+			winnerName = winner.GetName()
+		}
+		winCause = string(hub.session.GetWinCause())
+	}
+
+	// Broadcast game state
+	hub.BroadcastMessage(MsgTypeGameState, GameStateMessage{
+		Round:              state.Round,
+		CurrentPlayerID:    state.CurrentPlayerID,
+		CurrentPlayerName:  state.CurrentPlayerName,
+		IsGameOver:         state.IsGameOver,
+		WinnerID:           state.WinnerID,
+		WinnerName:         winnerName,
+		WinCause:           winCause,
+		Player1Score:       state.Player1Score,
+		Player2Score:       state.Player2Score,
+		WaitingForInput:    state.WaitingForInput,
+		MoveCount:          state.MoveCount,
+		Player1AlivePieces: state.Player1AlivePieces,
+		Player2AlivePieces: state.Player2AlivePieces,
+	})
+
+	// Broadcast board state
+	if gameType == "ai-vs-ai" {
+		s.broadcastBoardStateRevealed(hub)
+	} else {
+		s.broadcastBoardStatePerClient(hub)
+	}
+}
+
+// handleGameOver broadcasts final game state
+func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
+	state := session.GetGameState()
+	winner := session.GetWinner()
+	var winnerID *int
+	var winnerName string
+	if winner != nil {
+		id := winner.GetID()
+		winnerID = &id
+		winnerName = winner.GetName()
+	}
+
+	gameOverMsg := GameOverMessage{
+		WinnerID:   winnerID,
+		WinnerName: winnerName,
+		WinCause:   string(session.GetWinCause()),
+		Round:      state.Round,
+	}
+
+	hub.BroadcastMessage(MsgTypeGameOver, gameOverMsg)
+
+	// Broadcast final board state with all pieces revealed
+	s.broadcastBoardStateRevealed(hub)
+
+	// Wait longer before stopping monitoring so users can see results
+	time.Sleep(30 * time.Second)
 }
 
 // broadcastBoardState sends board state to all clients
@@ -220,6 +266,38 @@ func (s *GameServer) broadcastBoardStatePerClient(hub *WSHub) {
 	for _, client := range clients {
 		hub.sendBoardState(client)
 	}
+}
+
+// broadcastCombat sends combat information to all clients
+func (s *GameServer) broadcastCombat(hub *WSHub, combat *game.CombatResult, gameType string) {
+	if combat == nil || !combat.Occurred {
+		return
+	}
+
+	attacker := combat.AttackerPiece
+	defender := combat.DefenderPiece
+
+	// For AI vs AI or spectators, reveal both pieces
+	// For player games, reveal based on ownership
+	attackerDTO := PieceToDTO(attacker, attacker.GetOwner().GetID())
+	attackerDTO.Position = PositionToDTO(combat.AttackerPosition)
+	attackerDTO.Revealed = true
+
+	defenderDTO := PieceToDTO(defender, defender.GetOwner().GetID())
+	defenderDTO.Position = PositionToDTO(combat.DefenderPosition)
+	defenderDTO.Revealed = true
+
+	combatMsg := CombatMessage{
+		Attacker:     attackerDTO,
+		Defender:     defenderDTO,
+		AttackerWon:  attacker.IsAlive(),
+		DefenderWon:  defender.IsAlive(),
+		AttackerDied: !attacker.IsAlive(),
+		DefenderDied: !defender.IsAlive(),
+	}
+
+	hub.BroadcastMessage(MsgTypeCombat, combatMsg)
+	log.Printf("Combat message sent: %+v", combatMsg)
 }
 
 // broadcastBoardStateRevealed sends board state with all pieces revealed (for AI vs AI spectating)

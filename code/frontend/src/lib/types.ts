@@ -1,4 +1,3 @@
-
 export interface Position {
 	x: number;
 	y: number;
@@ -69,6 +68,22 @@ export interface HistoryMove {
 	piece?: Piece;
 	result?: MoveResult;
 	boardState: Piece[][];
+}
+
+export interface CombatAnimation {
+	attacker: Piece;
+	defender: Piece;
+	attackerWon: boolean;
+	defenderWon: boolean;
+}
+
+export interface CombatMessage {
+	attacker: Piece;
+	defender: Piece;
+	attackerWon: boolean;
+	defenderWon: boolean;
+	attackerDied: boolean;
+	defenderDied: boolean;
 }
 
 export type GameMode = 'human-vs-ai' | 'ai-vs-ai';

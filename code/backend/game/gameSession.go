@@ -5,28 +5,41 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"time"
 )
 
 // GameSession manages a game that can be controlled via API
 // Supports async gameplay for human players
 type GameSession struct {
-	ID       string
-	game     *Game
-	runner   *GameRunner
-	mutex    sync.RWMutex
-	running  bool
-	doneChan chan *engine.Player // Signals when game is complete
+	ID                    string
+	game                  *Game
+	runner                *GameRunner
+	mutex                 sync.RWMutex
+	running               bool
+	doneChan              chan *engine.Player // Signals when game is complete
+	waitingForAnimation   bool
+	animationCompleteChan chan bool
+	moveNotifyChan        chan bool // Signals when a move has been executed
 }
 
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
 	g := NewGame(controller1, controller2)
 
-	return &GameSession{
-		ID:       id,
-		game:     g,
-		runner:   NewGameRunner(g, 0, 1000),
-		doneChan: make(chan *engine.Player, 1),
+	session := &GameSession{
+		ID:                    id,
+		game:                  g,
+		runner:                NewGameRunner(g, 0, 1000),
+		doneChan:              make(chan *engine.Player, 1),
+		animationCompleteChan: make(chan bool, 1),
+		moveNotifyChan:        make(chan bool, 100), // Buffered to prevent blocking
 	}
+
+	// Set callback for move notifications
+	session.runner.SetMoveCallback(func() {
+		session.NotifyMoveExecuted()
+	})
+
+	return session
 }
 
 // Start begins the game loop in a goroutine
@@ -156,6 +169,13 @@ func (gs *GameSession) GetLastCombat() *CombatResult {
 	return gs.game.GetLastCombat()
 }
 
+// ClearLastCombat clears the last combat result
+func (gs *GameSession) ClearLastCombat() {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.game.ClearLastCombat()
+}
+
 // HideCombatPieces hides the pieces from the last combat
 func (gs *GameSession) HideCombatPieces() {
 	gs.mutex.Lock()
@@ -163,11 +183,73 @@ func (gs *GameSession) HideCombatPieces() {
 	gs.game.HideCombatPieces()
 }
 
+// WaitForAnimationComplete blocks until animation is complete or timeout
+func (gs *GameSession) WaitForAnimationComplete(timeout time.Duration) {
+	gs.mutex.Lock()
+	gs.waitingForAnimation = true
+	gs.mutex.Unlock()
+
+	select {
+	case <-gs.animationCompleteChan:
+		log.Printf("GameSession %s: Animation complete signal received", gs.ID)
+	case <-time.After(timeout):
+		log.Printf("GameSession %s: Animation timeout", gs.ID)
+	}
+
+	gs.mutex.Lock()
+	gs.waitingForAnimation = false
+	gs.mutex.Unlock()
+}
+
+// SignalAnimationComplete signals that the animation has completed
+func (gs *GameSession) SignalAnimationComplete() {
+	gs.mutex.RLock()
+	waiting := gs.waitingForAnimation
+	gs.mutex.RUnlock()
+
+	if waiting {
+		select {
+		case gs.animationCompleteChan <- true:
+			log.Printf("GameSession %s: Animation complete signal sent", gs.ID)
+		default:
+			log.Printf("GameSession %s: Animation complete channel full", gs.ID)
+		}
+	}
+}
+
+// IsWaitingForAnimation returns whether the session is waiting for animation
+func (gs *GameSession) IsWaitingForAnimation() bool {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.waitingForAnimation
+}
+
 // GetGame returns the game instance (for advanced access)
 func (gs *GameSession) GetGame() *Game {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.game
+}
+
+// NotifyMoveExecuted signals that a move has been executed
+func (gs *GameSession) NotifyMoveExecuted() {
+	select {
+	case gs.moveNotifyChan <- true:
+		// Move notification sent
+	default:
+		// Channel full, skip notification
+		log.Printf("GameSession %s: Move notification channel full", gs.ID)
+	}
+}
+
+// WaitForMoveNotification waits for a move to be executed
+func (gs *GameSession) WaitForMoveNotification(timeout time.Duration) bool {
+	select {
+	case <-gs.moveNotifyChan:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // GameState represents the current state of a game (for API responses)

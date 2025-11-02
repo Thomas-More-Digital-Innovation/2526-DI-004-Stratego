@@ -1,4 +1,3 @@
-
 import type { GameInfo, GameMode, Position, Move } from './types';
 
 const API_BASE = 'http://localhost:8080';
@@ -77,9 +76,18 @@ export class GameAPI {
 		}));
 	}
 
-	requestState() {
+	requestValidMoves(position: Position) {
 		if (!this.ws) return;
-		this.ws.send(JSON.stringify({ type: 'requestState' }));
+		this.ws.send(JSON.stringify({
+			type: 'getValidMoves',
+			data: { position }
+		}));
+	}
+
+	sendAnimationComplete() {
+		if (!this.ws) return;
+		console.log('Sending animation complete signal to backend');
+		this.ws.send(JSON.stringify({ type: 'animationComplete' }));
 	}
 
 	disconnect() {

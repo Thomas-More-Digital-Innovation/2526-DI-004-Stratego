@@ -5,18 +5,20 @@ import "digital-innovation/stratego/engine"
 // WebSocket message types
 const (
 	// Client -> Server
-	MsgTypeMove         = "move"
-	MsgTypeRequestState = "requestState"
-	MsgTypePing         = "ping"
+	MsgTypeMove              = "move"
+	MsgTypeGetValidMoves     = "getValidMoves"
+	MsgTypePing              = "ping"
+	MsgTypeAnimationComplete = "animationComplete"
 
 	// Server -> Client
 	MsgTypeGameState  = "gameState"
 	MsgTypeMoveResult = "moveResult"
-	MsgTypeAIMove     = "aiMove"
 	MsgTypeGameOver   = "gameOver"
 	MsgTypeError      = "error"
 	MsgTypePong       = "pong"
 	MsgTypeBoardState = "boardState"
+	MsgTypeCombat     = "combat"
+	MsgTypeValidMoves = "validMoves"
 )
 
 // Base message structure
@@ -29,6 +31,10 @@ type WSMessage struct {
 type MoveMessage struct {
 	From PositionDTO `json:"from"`
 	To   PositionDTO `json:"to"`
+}
+
+type GetValidMovesMessage struct {
+	Position PositionDTO `json:"position"`
 }
 
 // Server messages
@@ -49,21 +55,13 @@ type GameStateMessage struct {
 }
 
 type MoveResultMessage struct {
-	Success      bool       `json:"success"`
-	Error        string     `json:"error,omitempty"`
-	Move         MoveDTO    `json:"move,omitempty"`
-	AttackerDied bool       `json:"attackerDied"`
-	DefenderDied bool       `json:"defenderDied"`
-	CombatResult *CombatDTO `json:"combatResult,omitempty"`
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
 }
 
-type AIMoveMessage struct {
-	PlayerID     int        `json:"playerId"`
-	PlayerName   string     `json:"playerName"`
-	Move         MoveDTO    `json:"move"`
-	AttackerDied bool       `json:"attackerDied"`
-	DefenderDied bool       `json:"defenderDied"`
-	CombatResult *CombatDTO `json:"combatResult,omitempty"`
+type ValidMovesMessage struct {
+	Position   PositionDTO   `json:"position"`
+	ValidMoves []PositionDTO `json:"validMoves"`
 }
 
 type GameOverMessage struct {
@@ -81,6 +79,15 @@ type BoardStateMessage struct {
 	Board  [][]PieceDTO `json:"board"`
 	Width  int          `json:"width"`
 	Height int          `json:"height"`
+}
+
+type CombatMessage struct {
+	Attacker     PieceDTO `json:"attacker"`
+	Defender     PieceDTO `json:"defender"`
+	AttackerWon  bool     `json:"attackerWon"`
+	DefenderWon  bool     `json:"defenderWon"`
+	AttackerDied bool     `json:"attackerDied"`
+	DefenderDied bool     `json:"defenderDied"`
 }
 
 // DTOs for data transfer

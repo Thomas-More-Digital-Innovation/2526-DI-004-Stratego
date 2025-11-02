@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/engine"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type GameRunner struct {
 	turnDelay       time.Duration // Optional delay between AI turns for visualization
 	maxTurns        int           // Safety limit to prevent infinite games
 	waitingForInput bool          // True when waiting for human player input
+	onMoveExecuted  func()        // Callback when a move is executed
 }
 
 func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunner {
@@ -24,6 +26,11 @@ func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunne
 		turnDelay: turnDelay,
 		maxTurns:  maxTurns,
 	}
+}
+
+// SetMoveCallback sets the callback to be called when a move is executed
+func (gr *GameRunner) SetMoveCallback(callback func()) {
+	gr.onMoveExecuted = callback
 }
 
 // RunToCompletion runs the game until it's over (for AI vs AI)
@@ -85,8 +92,11 @@ func (gr *GameRunner) ExecuteTurn() bool {
 	if controller.GetControllerType() == engine.HumanController {
 		humanController, ok := controller.(*engine.HumanPlayerController)
 		if !ok || !humanController.HasPendingMove() {
-			gr.waitingForInput = true
-			log.Printf("GameRunner.ExecuteTurn: Waiting for human input")
+			if !gr.waitingForInput {
+				// Only log once when we start waiting
+				log.Printf("GameRunner.ExecuteTurn: Waiting for human input")
+				gr.waitingForInput = true
+			}
 			return false // Wait for human input
 		}
 
@@ -105,10 +115,19 @@ func (gr *GameRunner) ExecuteTurn() bool {
 
 		gr.game.MakeMove(move, piece)
 		gr.waitingForInput = false
+
+		// Notify that a move was executed
+		if gr.onMoveExecuted != nil {
+			gr.onMoveExecuted()
+		}
 		return true
 	}
 
 	// AI controller - make move immediately
+	// Add random delay between 500ms and 1000ms for natural feel
+	aiDelay := time.Duration(500+rand.Intn(500)) * time.Millisecond
+	time.Sleep(aiDelay)
+
 	move := controller.MakeMove(gr.game.Board)
 
 	// Validate move - check if piece exists at from position
@@ -135,6 +154,11 @@ func (gr *GameRunner) ExecuteTurn() bool {
 	}
 
 	gr.game.MakeMove(&move, piece)
+
+	// Notify that a move was executed
+	if gr.onMoveExecuted != nil {
+		gr.onMoveExecuted()
+	}
 	return true
 }
 
