@@ -1,14 +1,20 @@
-name: CI
+name: Backend CI
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: backend-ci-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - 'code/backend/**'
+      - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [ main, master, develop ]
+    paths:
+      - 'code/backend/**'
+      - '.github/workflows/backend-ci.yml'
 
 jobs:
   lint:
@@ -115,10 +121,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: backend-coverage-report
           path: code/backend/coverage.out
 
       - name: Summary
         if: failure()
         run: |
-          echo "One or more checks failed. Review the logs above to see test/lint failures."
+          echo "Backend CI failed. Review the logs above to see test/lint failures."

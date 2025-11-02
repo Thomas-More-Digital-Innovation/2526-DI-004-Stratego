@@ -1,0 +1,90 @@
+name: Frontend CI
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'code/frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'code/frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: code/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: code/frontend
+        run: npm ci
+
+      - name: Run Svelte type check
+        working-directory: code/frontend
+        run: npm run check
+
+      - name: Summary
+        if: failure()
+        run: |
+          echo "Frontend type checking failed. Review the logs above to see errors."
+
+  build:
+    name: Build
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: code/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: code/frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: code/frontend
+        run: npm run build
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: code/frontend/build/
+          retention-days: 7
+
+      - name: Summary
+        if: failure()
+        run: |
+          echo "Frontend build failed. Review the logs above to see errors."
