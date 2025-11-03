@@ -3,6 +3,7 @@ package game
 import (
 	"digital-innovation/stratego/engine"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -16,6 +17,9 @@ type GameSession struct {
 	runner                *GameRunner
 	mutex                 sync.RWMutex
 	running               bool
+	isSetupPhase          bool
+	player1Pieces         []*engine.Piece     // Pieces for player 1 during setup
+	player2Pieces         []*engine.Piece     // Pieces for player 2 during setup
 	doneChan              chan *engine.Player // Signals when game is complete
 	waitingForAnimation   bool
 	animationCompleteChan chan bool
@@ -25,10 +29,17 @@ type GameSession struct {
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
 	g := NewGame(controller1, controller2)
 
+	// Generate initial piece setups for both players
+	player1Pieces := RandomSetup(g.Players[0])
+	player2Pieces := RandomSetup(g.Players[1])
+
 	session := &GameSession{
 		ID:                    id,
 		game:                  g,
 		runner:                NewGameRunner(g, 0, 1000),
+		isSetupPhase:          true,
+		player1Pieces:         player1Pieces,
+		player2Pieces:         player2Pieces,
 		doneChan:              make(chan *engine.Player, 1),
 		animationCompleteChan: make(chan bool, 1),
 		moveNotifyChan:        make(chan bool, 100), // Buffered to prevent blocking
@@ -118,6 +129,7 @@ func (gs *GameSession) GetGameState() GameState {
 		MoveCount:          len(gs.game.MoveHistory),
 		Player1AlivePieces: len(gs.game.Players[0].GetAlivePieces()),
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),
+		IsSetupPhase:       gs.isSetupPhase,
 	}
 }
 
@@ -265,6 +277,7 @@ type GameState struct {
 	MoveCount          int    `json:"moveCount"`
 	Player1AlivePieces int    `json:"player1AlivePieces"`
 	Player2AlivePieces int    `json:"player2AlivePieces"`
+	IsSetupPhase       bool   `json:"isSetupPhase"`
 }
 
 func getPlayerIDOrNil(player *engine.Player) *int {
@@ -273,4 +286,140 @@ func getPlayerIDOrNil(player *engine.Player) *int {
 	}
 	id := player.GetID()
 	return &id
+}
+
+// IsSetupPhase returns whether the game is in setup phase
+func (gs *GameSession) IsSetupPhase() bool {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.isSetupPhase
+}
+
+// SetSetupPhaseComplete marks the setup phase as complete
+func (gs *GameSession) SetSetupPhaseComplete() {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.isSetupPhase = false
+}
+
+// GetSetupPieces returns the setup pieces for a player
+func (gs *GameSession) GetSetupPieces(playerID int) []*engine.Piece {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+
+	if playerID == 0 {
+		return gs.player1Pieces
+	}
+	return gs.player2Pieces
+}
+
+// SwapPieces swaps two pieces in the setup
+func (gs *GameSession) SwapPieces(playerID int, pos1, pos2 engine.Position) error {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+
+	if !gs.isSetupPhase {
+		return errors.New("not in setup phase")
+	}
+
+	var pieces []*engine.Piece
+	if playerID == 0 {
+		pieces = gs.player1Pieces
+	} else if playerID == 1 {
+		pieces = gs.player2Pieces
+	} else {
+		return errors.New("invalid player ID")
+	}
+
+	// Calculate indices from positions (setup area is 4x10 = 40 pieces)
+	idx1 := gs.positionToIndex(pos1, playerID)
+	idx2 := gs.positionToIndex(pos2, playerID)
+
+	if idx1 < 0 || idx1 >= len(pieces) || idx2 < 0 || idx2 >= len(pieces) {
+		return fmt.Errorf("invalid positions for swap: %v, %v", pos1, pos2)
+	}
+
+	// Swap the pieces
+	pieces[idx1], pieces[idx2] = pieces[idx2], pieces[idx1]
+
+	log.Printf("Swapped pieces for player %d: index %d <-> %d", playerID, idx1, idx2)
+	return nil
+}
+
+// positionToIndex converts a board position to piece array index
+func (gs *GameSession) positionToIndex(pos engine.Position, playerID int) int {
+	var startRow, endRow int
+	if playerID == 0 {
+		startRow = 6
+		endRow = 9
+	} else {
+		startRow = 0
+		endRow = 3
+	}
+
+	// Check if position is in valid range
+	if pos.Y < startRow || pos.Y > endRow || pos.X < 0 || pos.X >= 10 {
+		return -1
+	}
+
+	// Calculate index
+	rowOffset := pos.Y - startRow
+	return rowOffset*10 + pos.X
+}
+
+// RandomizeSetup randomizes the setup for a player
+func (gs *GameSession) RandomizeSetup(playerID int) error {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+
+	if !gs.isSetupPhase {
+		return errors.New("not in setup phase")
+	}
+
+	var player *engine.Player
+	if playerID == 0 {
+		player = gs.game.Players[0]
+		gs.player1Pieces = RandomSetup(player)
+	} else if playerID == 1 {
+		player = gs.game.Players[1]
+		gs.player2Pieces = RandomSetup(player)
+	} else {
+		return errors.New("invalid player ID")
+	}
+
+	log.Printf("Randomized setup for player %d", playerID)
+	return nil
+}
+
+// StartGameFromSetup starts the game from setup phase
+func (gs *GameSession) StartGameFromSetup() error {
+	gs.mutex.Lock()
+
+	if !gs.isSetupPhase {
+		gs.mutex.Unlock()
+		return errors.New("not in setup phase")
+	}
+
+	log.Printf("Game %s: Starting game from setup - placing pieces on board", gs.ID)
+
+	// Place pieces on the board
+	if err := SetupGame(gs.game, gs.player1Pieces, gs.player2Pieces); err != nil {
+		gs.mutex.Unlock()
+		return fmt.Errorf("failed to setup game: %v", err)
+	}
+
+	// Exit setup phase BEFORE starting the game
+	gs.isSetupPhase = false
+	log.Printf("Game %s: Setup phase marked complete", gs.ID)
+
+	gs.mutex.Unlock()
+
+	// Start the game (now outside the lock)
+	log.Printf("Game %s: Calling Start() to begin game loop", gs.ID)
+	if err := gs.Start(); err != nil {
+		log.Printf("Error starting game: %v", err)
+		return err
+	}
+
+	return nil
 }

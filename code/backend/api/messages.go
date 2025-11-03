@@ -9,6 +9,9 @@ const (
 	MsgTypeGetValidMoves     = "getValidMoves"
 	MsgTypePing              = "ping"
 	MsgTypeAnimationComplete = "animationComplete"
+	MsgTypeSwapPieces        = "swapPieces"
+	MsgTypeRandomizeSetup    = "randomizeSetup"
+	MsgTypeStartGame         = "startGame"
 
 	// Server -> Client
 	MsgTypeGameState  = "gameState"
@@ -19,6 +22,7 @@ const (
 	MsgTypeBoardState = "boardState"
 	MsgTypeCombat     = "combat"
 	MsgTypeValidMoves = "validMoves"
+	MsgTypeSetupPhase = "setupPhase"
 )
 
 // Base message structure
@@ -37,6 +41,11 @@ type GetValidMovesMessage struct {
 	Position PositionDTO `json:"position"`
 }
 
+type SwapPiecesMessage struct {
+	Pos1 PositionDTO `json:"pos1"`
+	Pos2 PositionDTO `json:"pos2"`
+}
+
 // Server messages
 type GameStateMessage struct {
 	Round              int    `json:"round"`
@@ -52,6 +61,7 @@ type GameStateMessage struct {
 	MoveCount          int    `json:"moveCount"`
 	Player1AlivePieces int    `json:"player1AlivePieces"`
 	Player2AlivePieces int    `json:"player2AlivePieces"`
+	IsSetupPhase       bool   `json:"isSetupPhase"`
 }
 
 type MoveResultMessage struct {

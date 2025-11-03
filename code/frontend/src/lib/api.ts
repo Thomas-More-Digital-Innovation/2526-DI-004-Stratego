@@ -90,6 +90,27 @@ export class GameAPI {
 		this.ws.send(JSON.stringify({ type: 'animationComplete' }));
 	}
 
+	sendSwapPieces(pos1: Position, pos2: Position) {
+		if (!this.ws) return;
+		console.log('Sending swap pieces:', pos1, pos2);
+		this.ws.send(JSON.stringify({
+			type: 'swapPieces',
+			data: { pos1, pos2 }
+		}));
+	}
+
+	sendRandomizeSetup() {
+		if (!this.ws) return;
+		console.log('Sending randomize setup');
+		this.ws.send(JSON.stringify({ type: 'randomizeSetup' }));
+	}
+
+	sendStartGame() {
+		if (!this.ws) return;
+		console.log('Sending start game');
+		this.ws.send(JSON.stringify({ type: 'startGame' }));
+	}
+
 	disconnect() {
 		if (this.ws) {
 			this.ws.close();

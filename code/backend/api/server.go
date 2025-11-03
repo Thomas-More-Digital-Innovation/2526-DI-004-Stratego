@@ -67,17 +67,24 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 
 	session := game.NewGameSession(gameID, controller1, controller2)
 
-	// Setup the game board with pieces (random placement)
-	g := session.GetGame()
-	player1Pieces := game.RandomSetup(g.Players[0])
-	player2Pieces := game.RandomSetup(g.Players[1])
+	// For AI vs AI, setup immediately and start
+	if gameType == "ai-vs-ai" {
+		g := session.GetGame()
+		player1Pieces := game.RandomSetup(g.Players[0])
+		player2Pieces := game.RandomSetup(g.Players[1])
 
-	// Place pieces on the board
-	if err := game.SetupGame(g, player1Pieces, player2Pieces); err != nil {
-		return nil, fmt.Errorf("failed to setup game: %v", err)
+		// Place pieces on the board
+		if err := game.SetupGame(g, player1Pieces, player2Pieces); err != nil {
+			return nil, fmt.Errorf("failed to setup game: %v", err)
+		}
+
+		// Exit setup phase for AI vs AI
+		session.SetSetupPhaseComplete()
 	}
+	// For human vs AI, pieces are already generated in NewGameSession
+	// Game will stay in setup phase until human confirms
 
-	hub := NewWSHub(session)
+	hub := NewWSHub(session, gameType)
 
 	handler := &GameSessionHandler{
 		Session:  session,
@@ -93,9 +100,11 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 	// Start game monitoring for broadcasting moves
 	go s.monitorGame(handler, gameType)
 
-	// Start the game
-	if err := session.Start(); err != nil {
-		return nil, err
+	// Start the game only for AI vs AI
+	if gameType == "ai-vs-ai" {
+		if err := session.Start(); err != nil {
+			return nil, err
+		}
 	}
 
 	return handler, nil
@@ -105,13 +114,20 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	session := handler.Session
 	hub := handler.Hub
-
 	log.Printf("Starting game monitor for %s (type: %s)", handler.Session.ID, gameType)
 
 	// Send initial state to all connected clients
 	time.Sleep(100 * time.Millisecond) // Brief delay for clients to connect
 	s.broadcastFullState(hub, gameType)
 
+	// WAIT IN SETUP PHASE - WebSocket handlers will broadcast when user acts
+	for session.IsSetupPhase() {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	log.Printf("GameMonitor %s: Exiting setup phase, game starting", session.ID)
+
+	// NOW we enter the game loop
 	for {
 		// Wait for a move notification with timeout
 		if !session.WaitForMoveNotification(5 * time.Second) {
@@ -187,10 +203,13 @@ func (s *GameServer) broadcastFullState(hub *WSHub, gameType string) {
 		MoveCount:          state.MoveCount,
 		Player1AlivePieces: state.Player1AlivePieces,
 		Player2AlivePieces: state.Player2AlivePieces,
+		IsSetupPhase:       state.IsSetupPhase,
 	})
 
 	// Broadcast board state
-	if gameType == "ai-vs-ai" {
+	if state.IsSetupPhase {
+		s.broadcastSetupBoard(hub, gameType)
+	} else if gameType == "ai-vs-ai" {
 		s.broadcastBoardStateRevealed(hub)
 	} else {
 		s.broadcastBoardStatePerClient(hub)
@@ -241,6 +260,61 @@ func (s *GameServer) broadcastBoardState(hub *WSHub, viewerID int) {
 				dto := PieceToDTO(piece, viewerID)
 				dto.Position = PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dto
+			}
+		}
+	}
+
+	boardMsg := BoardStateMessage{
+		Board:  boardDTO,
+		Width:  10,
+		Height: 10,
+	}
+
+	hub.BroadcastMessage(MsgTypeBoardState, boardMsg)
+}
+
+// broadcastSetupBoard sends the setup board state (pieces not yet placed on board)
+func (s *GameServer) broadcastSetupBoard(hub *WSHub, gameType string) {
+	session := hub.session
+
+	// Create empty board
+	boardDTO := make([][]PieceDTO, 10)
+	for y := 0; y < 10; y++ {
+		boardDTO[y] = make([]PieceDTO, 10)
+	}
+
+	// Place player 1 pieces in setup area (rows 6-9)
+	player1Pieces := session.GetSetupPieces(0)
+	idx := 0
+	for y := 6; y <= 9; y++ {
+		for x := 0; x < 10; x++ {
+			if idx < len(player1Pieces) {
+				piece := player1Pieces[idx]
+				dto := PieceToDTO(piece, 0) // Player 0 can see their own pieces
+				dto.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dto
+				idx++
+			}
+		}
+	}
+
+	// Place player 2 pieces in setup area (rows 0-3)
+	// In human vs AI, player 2 is AI, so pieces are hidden
+	player2Pieces := session.GetSetupPieces(1)
+	idx = 0
+	for y := 0; y <= 3; y++ {
+		for x := 0; x < 10; x++ {
+			if idx < len(player2Pieces) {
+				piece := player2Pieces[idx]
+				// For human vs AI, hide AI pieces during setup
+				viewerID := -1
+				if gameType == "ai-vs-ai" {
+					viewerID = 1 // Show all pieces in AI vs AI
+				}
+				dto := PieceToDTO(piece, viewerID)
+				dto.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dto
+				idx++
 			}
 		}
 	}

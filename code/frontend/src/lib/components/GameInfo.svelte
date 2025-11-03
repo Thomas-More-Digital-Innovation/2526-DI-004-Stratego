@@ -45,10 +45,12 @@
 				<span class="value">{gameState.player2AlivePieces}</span>
 			</div>
 
-			<div class="info-item">
-				<span class="label">Moves:</span>
-				<span class="value">{gameState.moveCount}</span>
-			</div>
+			{#if !gameState.isSetupPhase}
+				<div class="info-item">
+					<span class="label">Moves:</span>
+					<span class="value">{gameState.moveCount}</span>
+				</div>
+			{/if}
 
 			{#if gameState.isGameOver}
 				<div class="game-over">

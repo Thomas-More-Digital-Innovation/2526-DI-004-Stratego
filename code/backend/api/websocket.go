@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -38,16 +39,18 @@ type WSHub struct {
 	register   chan *WSClient
 	unregister chan *WSClient
 	session    *game.GameSession
+	gameType   string
 	mutex      sync.RWMutex
 }
 
-func NewWSHub(session *game.GameSession) *WSHub {
+func NewWSHub(session *game.GameSession, gameType string) *WSHub {
 	return &WSHub{
 		clients:    make(map[*WSClient]bool),
 		broadcast:  make(chan []byte, 256),
 		register:   make(chan *WSClient),
 		unregister: make(chan *WSClient),
 		session:    session,
+		gameType:   gameType,
 	}
 }
 
@@ -103,6 +106,139 @@ func (h *WSHub) BroadcastMessage(msgType string, data interface{}) {
 	h.broadcast <- jsonData
 }
 
+// BroadcastSetupBoard sends the setup board state to all clients
+func (h *WSHub) BroadcastSetupBoard() {
+	session := h.session
+
+	// Create empty board
+	boardDTO := make([][]PieceDTO, 10)
+	for y := 0; y < 10; y++ {
+		boardDTO[y] = make([]PieceDTO, 10)
+	}
+
+	// Place player 1 pieces in setup area (rows 6-9)
+	player1Pieces := session.GetSetupPieces(0)
+	idx := 0
+	for y := 6; y <= 9; y++ {
+		for x := 0; x < 10; x++ {
+			if idx < len(player1Pieces) {
+				piece := player1Pieces[idx]
+				dto := PieceToDTO(piece, 0) // Player 0 can see their own pieces
+				dto.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dto
+				idx++
+			}
+		}
+	}
+
+	// Place player 2 pieces in setup area (rows 0-3)
+	// Hide opponent pieces during setup
+	player2Pieces := session.GetSetupPieces(1)
+	idx = 0
+	for y := 0; y <= 3; y++ {
+		for x := 0; x < 10; x++ {
+			if idx < len(player2Pieces) {
+				piece := player2Pieces[idx]
+				dto := PieceToDTO(piece, -1) // Hide pieces
+				dto.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dto
+				idx++
+			}
+		}
+	}
+
+	boardMsg := BoardStateMessage{
+		Board:  boardDTO,
+		Width:  10,
+		Height: 10,
+	}
+
+	h.BroadcastMessage(MsgTypeBoardState, boardMsg)
+}
+
+// BroadcastGameTransition broadcasts complete state after setup phase ends
+func (h *WSHub) BroadcastGameTransition() {
+	state := h.session.GetGameState()
+
+	var winnerName string
+	var winCause string
+	if state.WinnerID != nil {
+		winner := h.session.GetWinner()
+		if winner != nil {
+			winnerName = winner.GetName()
+		}
+		winCause = string(h.session.GetWinCause())
+	}
+
+	// Broadcast updated game state (with isSetupPhase = false)
+	h.BroadcastMessage(MsgTypeGameState, GameStateMessage{
+		Round:              state.Round,
+		CurrentPlayerID:    state.CurrentPlayerID,
+		CurrentPlayerName:  state.CurrentPlayerName,
+		IsGameOver:         state.IsGameOver,
+		WinnerID:           state.WinnerID,
+		WinnerName:         winnerName,
+		WinCause:           winCause,
+		Player1Score:       state.Player1Score,
+		Player2Score:       state.Player2Score,
+		WaitingForInput:    state.WaitingForInput,
+		MoveCount:          state.MoveCount,
+		Player1AlivePieces: state.Player1AlivePieces,
+		Player2AlivePieces: state.Player2AlivePieces,
+		IsSetupPhase:       state.IsSetupPhase, // This will be false now
+	})
+
+	// Broadcast board state (pieces are now on the board)
+	if h.gameType == "ai-vs-ai" {
+		h.broadcastBoardStateRevealed()
+	} else {
+		h.broadcastBoardStatePerClient()
+	}
+}
+
+// broadcastBoardStatePerClient sends personalized board to each client
+func (h *WSHub) broadcastBoardStatePerClient() {
+	h.mutex.RLock()
+	clients := make([]*WSClient, 0, len(h.clients))
+	for client := range h.clients {
+		clients = append(clients, client)
+	}
+	h.mutex.RUnlock()
+
+	// Send personalized board state to each client
+	for _, client := range clients {
+		h.sendBoardState(client)
+	}
+}
+
+// broadcastBoardStateRevealed sends board with all pieces revealed
+func (h *WSHub) broadcastBoardStateRevealed() {
+	board := h.session.GetBoard()
+	field := board.GetField()
+
+	boardDTO := make([][]PieceDTO, 10)
+	for y := 0; y < 10; y++ {
+		boardDTO[y] = make([]PieceDTO, 10)
+		for x := 0; x < 10; x++ {
+			piece := field[y][x]
+			if piece != nil && piece.IsAlive() {
+				dto := PieceToDTO(piece, piece.GetOwner().GetID())
+				dto.Position = PositionDTO{X: x, Y: y}
+				dto.Revealed = true
+				boardDTO[y][x] = dto
+			}
+		}
+	}
+
+	boardMsg := BoardStateMessage{
+		Board:  boardDTO,
+		Width:  10,
+		Height: 10,
+	}
+
+	h.BroadcastMessage(MsgTypeBoardState, boardMsg)
+}
+
 // sendGameState sends the current game state to a specific client
 func (h *WSHub) sendGameState(client *WSClient) {
 	state := h.session.GetGameState()
@@ -131,6 +267,7 @@ func (h *WSHub) sendGameState(client *WSClient) {
 		MoveCount:          state.MoveCount,
 		Player1AlivePieces: state.Player1AlivePieces,
 		Player2AlivePieces: state.Player2AlivePieces,
+		IsSetupPhase:       state.IsSetupPhase,
 	}
 
 	msg := WSMessage{
@@ -156,6 +293,12 @@ func (h *WSHub) sendGameState(client *WSClient) {
 
 // sendBoardState sends the current board state to a specific client
 func (h *WSHub) sendBoardState(client *WSClient) {
+	// Check if we're in setup phase
+	if h.session.IsSetupPhase() {
+		h.sendSetupBoard(client)
+		return
+	}
+
 	board := h.session.GetBoard()
 	field := board.GetField()
 
@@ -193,6 +336,71 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 	case client.send <- jsonData:
 	case <-time.After(time.Second):
 		log.Printf("Timeout sending board state to client")
+	}
+}
+
+// sendSetupBoard sends the setup board state to a specific client
+func (h *WSHub) sendSetupBoard(client *WSClient) {
+	session := h.session
+
+	// Create empty board
+	boardDTO := make([][]PieceDTO, 10)
+	for y := 0; y < 10; y++ {
+		boardDTO[y] = make([]PieceDTO, 10)
+	}
+
+	// Place player 1 pieces in setup area (rows 6-9)
+	player1Pieces := session.GetSetupPieces(0)
+	idx := 0
+	for y := 6; y <= 9; y++ {
+		for x := 0; x < 10; x++ {
+			if idx < len(player1Pieces) {
+				piece := player1Pieces[idx]
+				dto := PieceToDTO(piece, 0) // Player 0 can see their own pieces
+				dto.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dto
+				idx++
+			}
+		}
+	}
+
+	// Place player 2 pieces in setup area (rows 0-3)
+	// Hide opponent pieces during setup
+	player2Pieces := session.GetSetupPieces(1)
+	idx = 0
+	for y := 0; y <= 3; y++ {
+		for x := 0; x < 10; x++ {
+			if idx < len(player2Pieces) {
+				piece := player2Pieces[idx]
+				dto := PieceToDTO(piece, -1) // Hide pieces
+				dto.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dto
+				idx++
+			}
+		}
+	}
+
+	boardMsg := BoardStateMessage{
+		Board:  boardDTO,
+		Width:  10,
+		Height: 10,
+	}
+
+	msg := WSMessage{
+		Type: MsgTypeBoardState,
+		Data: boardMsg,
+	}
+
+	jsonData, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling setup board state: %v", err)
+		return
+	}
+
+	select {
+	case client.send <- jsonData:
+	case <-time.After(time.Second):
+		log.Printf("Timeout sending setup board state to client")
 	}
 }
 
@@ -289,6 +497,12 @@ func (c *WSClient) handleMessage(message []byte) {
 		c.sendPong()
 	case MsgTypeAnimationComplete:
 		c.handleAnimationComplete()
+	case MsgTypeSwapPieces:
+		c.handleSwapPieces(baseMsg.Data)
+	case MsgTypeRandomizeSetup:
+		c.handleRandomizeSetup()
+	case MsgTypeStartGame:
+		c.handleStartGame()
 	default:
 		c.sendError("Unknown message type")
 	}
@@ -444,6 +658,75 @@ func (c *WSClient) sendPong() {
 	}
 
 	c.send <- jsonData
+}
+
+// handleSwapPieces processes a swap pieces message during setup
+func (c *WSClient) handleSwapPieces(data interface{}) {
+	if c.playerID < 0 {
+		c.sendError("Spectators cannot swap pieces")
+		return
+	}
+
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		c.sendError("Invalid swap message format")
+		return
+	}
+
+	var swapMsg SwapPiecesMessage
+	if err := json.Unmarshal(dataBytes, &swapMsg); err != nil {
+		c.sendError("Invalid swap message")
+		return
+	}
+
+	pos1 := engine.NewPosition(swapMsg.Pos1.X, swapMsg.Pos1.Y)
+	pos2 := engine.NewPosition(swapMsg.Pos2.X, swapMsg.Pos2.Y)
+
+	if err := c.session.SwapPieces(c.playerID, pos1, pos2); err != nil {
+		c.sendError(fmt.Sprintf("Failed to swap pieces: %v", err))
+		return
+	}
+
+	log.Printf("Pieces swapped: %v <-> %v", pos1, pos2)
+
+	// Broadcast updated setup board to all clients
+	c.hub.BroadcastSetupBoard()
+}
+
+// handleRandomizeSetup processes a randomize setup message
+func (c *WSClient) handleRandomizeSetup() {
+	if c.playerID < 0 {
+		c.sendError("Spectators cannot randomize setup")
+		return
+	}
+
+	if err := c.session.RandomizeSetup(c.playerID); err != nil {
+		c.sendError(fmt.Sprintf("Failed to randomize setup: %v", err))
+		return
+	}
+
+	log.Printf("Setup randomized for player %d", c.playerID)
+
+	// Broadcast updated setup board to all clients
+	c.hub.BroadcastSetupBoard()
+}
+
+// handleStartGame processes a start game message
+func (c *WSClient) handleStartGame() {
+	if c.playerID < 0 {
+		c.sendError("Spectators cannot start game")
+		return
+	}
+
+	if err := c.session.StartGameFromSetup(); err != nil {
+		c.sendError(fmt.Sprintf("Failed to start game: %v", err))
+		return
+	}
+
+	log.Printf("Game started by player %d", c.playerID)
+
+	// Broadcast the transition out of setup phase to all clients
+	c.hub.BroadcastGameTransition()
 }
 
 // HandleWebSocket handles WebSocket connections

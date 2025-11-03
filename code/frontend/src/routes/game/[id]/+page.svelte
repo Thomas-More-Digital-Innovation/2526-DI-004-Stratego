@@ -4,6 +4,7 @@
 	import GameInfo from '$lib/components/GameInfo.svelte';
 	import GameHistory from '$lib/components/GameHistory.svelte';
 	import CombatAnimation from '$lib/components/CombatAnimation.svelte';
+	import SetupPhase from '$lib/components/SetupPhase.svelte';
 	import { GameAPI } from '$lib/api';
 	import { gameStore } from '$lib/store.svelte';
 	import type { Position } from '$lib/types';
@@ -14,15 +15,20 @@
 	let errorMessage = $state<string>('');
 	let isConnected = $state<boolean>(false);
 	let validMoves = $state<Position[]>([]);
+	let setupSwapPos1 = $state<Position | null>(null);
+
+	const isSetupPhase = $derived(gameStore.gameState?.isSetupPhase ?? false);
 
 	const isHumanTurn = $derived.by(() => {
 		const result = gameStore.gameState?.currentPlayerId === 0 && 
 			gameMode === 'human-vs-ai' && 
-			!gameStore.gameState?.isGameOver;
+			!gameStore.gameState?.isGameOver &&
+			!isSetupPhase;
 		console.log('🎮 isHumanTurn calculation:', {
 			currentPlayerId: gameStore.gameState?.currentPlayerId,
 			gameMode,
 			isGameOver: gameStore.gameState?.isGameOver,
+			isSetupPhase,
 			waitingForInput: gameStore.gameState?.waitingForInput,
 			result
 		});
@@ -120,7 +126,14 @@
 		console.log('=== Cell clicked ===');
 		console.log('Position:', { x, y });
 		console.log('isReplaying:', gameStore.isReplaying);
+		console.log('isSetupPhase:', isSetupPhase);
 		console.log('isHumanTurn:', isHumanTurn);
+		
+		// Handle setup phase clicks (swapping pieces)
+		if (isSetupPhase && gameMode === 'human-vs-ai') {
+			handleSetupClick(x, y);
+			return;
+		}
 		
 		// Prevent moves during replay or if not human's turn
 		if (gameStore.isReplaying || !isHumanTurn) {
@@ -194,6 +207,37 @@
 		console.log('=== End click handler ===');
 	}
 
+	function handleSetupClick(x: number, y: number) {
+		// Only allow swapping in player's setup area (rows 6-9)
+		if (y < 6 || y > 9) {
+			console.log('❌ Click outside setup area');
+			return;
+		}
+
+		if (!setupSwapPos1) {
+			// First piece selected
+			console.log('✓ First piece selected:', { x, y });
+			setupSwapPos1 = { x, y };
+		} else {
+			// Second piece selected, perform swap
+			console.log('✓ Swapping pieces:', setupSwapPos1, { x, y });
+			api.sendSwapPieces(setupSwapPos1, { x, y });
+			setupSwapPos1 = null;
+		}
+	}
+
+	function handleRandomizeSetup() {
+		console.log('🎲 Randomizing setup');
+		api.sendRandomizeSetup();
+		setupSwapPos1 = null;
+	}
+
+	function handleStartGame() {
+		console.log('▶️ Starting game');
+		api.sendStartGame();
+		setupSwapPos1 = null;
+	}
+
 	function saveGame() {
 		try {
 			const gameData = gameStore.exportGame();
@@ -250,9 +294,9 @@
 				<div class="center-panel">
 					<Board 
 						boardState={gameStore.boardState}
-						selectedPosition={gameStore.selectedPosition}
+						selectedPosition={isSetupPhase ? setupSwapPos1 : gameStore.selectedPosition}
 						onCellClick={handleCellClick}
-						isInteractive={!gameStore.isReplaying && isHumanTurn}
+						isInteractive={!gameStore.isReplaying && (isHumanTurn || isSetupPhase)}
 						{viewerId}
 						{validMoves}
 					/>
@@ -284,6 +328,15 @@
 					api.sendAnimationComplete();
 					gameStore.hideCombatAnimation();
 				}}
+			/>
+		{/if}
+		
+		<!-- Setup Phase Overlay -->
+		{#if isSetupPhase && gameMode === 'human-vs-ai'}
+			<SetupPhase
+				onSwapPieces={(pos1, pos2) => api.sendSwapPieces(pos1, pos2)}
+				onRandomize={handleRandomizeSetup}
+				onStart={handleStartGame}
 			/>
 		{/if}
 	</div>

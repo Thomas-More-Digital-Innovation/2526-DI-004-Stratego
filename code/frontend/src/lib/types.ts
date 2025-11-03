@@ -32,6 +32,7 @@ export interface GameState {
 	moveCount: number;
 	player1AlivePieces: number;
 	player2AlivePieces: number;
+	isSetupPhase: boolean;
 }
 
 export interface MoveResult {
