@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"digital-innovation/stratego/models"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -189,7 +191,7 @@ func (h *WSHub) BroadcastGameTransition() {
 	})
 
 	// Broadcast board state (pieces are now on the board)
-	if h.gameType == "ai-vs-ai" {
+	if h.gameType == models.AiVsAi {
 		h.broadcastBoardStateRevealed()
 	} else {
 		h.broadcastBoardStatePerClient()

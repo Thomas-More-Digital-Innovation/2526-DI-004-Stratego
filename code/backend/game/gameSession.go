@@ -323,11 +323,12 @@ func (gs *GameSession) SwapPieces(playerID int, pos1, pos2 engine.Position) erro
 	}
 
 	var pieces []*engine.Piece
-	if playerID == 0 {
+	switch playerID {
+	case 0:
 		pieces = gs.player1Pieces
-	} else if playerID == 1 {
+	case 1:
 		pieces = gs.player2Pieces
-	} else {
+	default:
 		return errors.New("invalid player ID")
 	}
 
@@ -377,13 +378,14 @@ func (gs *GameSession) RandomizeSetup(playerID int) error {
 	}
 
 	var player *engine.Player
-	if playerID == 0 {
+	switch playerID {
+	case 0:
 		player = gs.game.Players[0]
 		gs.player1Pieces = RandomSetup(player)
-	} else if playerID == 1 {
+	case 1:
 		player = gs.game.Players[1]
 		gs.player2Pieces = RandomSetup(player)
-	} else {
+	default:
 		return errors.New("invalid player ID")
 	}
 

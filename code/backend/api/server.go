@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/ai/fafo"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/models"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -43,19 +44,19 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 	var controller1, controller2 engine.PlayerController
 
 	switch gameType {
-	case "human-vs-ai":
+	case models.HumanVsAi:
 		player1 := engine.NewPlayer(0, "Human Player", "red")
 		player2 := engine.NewPlayer(1, "AI Player", "blue")
 		controller1 = engine.NewHumanPlayerController(&player1)
 		controller2 = fafo.NewFafoAI(&player2)
 
-	case "ai-vs-ai":
+	case models.AiVsAi:
 		player1 := engine.NewPlayer(0, "AI Red", "red")
 		player2 := engine.NewPlayer(1, "AI Blue", "blue")
 		controller1 = fafo.NewFafoAI(&player1)
 		controller2 = fafo.NewFafoAI(&player2)
 
-	case "human-vs-human":
+	case models.HumanVsHuman:
 		player1 := engine.NewPlayer(0, "Human Red", "red")
 		player2 := engine.NewPlayer(1, "Human Blue", "blue")
 		controller1 = engine.NewHumanPlayerController(&player1)
@@ -68,7 +69,7 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 	session := game.NewGameSession(gameID, controller1, controller2)
 
 	// For AI vs AI, setup immediately and start
-	if gameType == "ai-vs-ai" {
+	if gameType == models.AiVsAi {
 		g := session.GetGame()
 		player1Pieces := game.RandomSetup(g.Players[0])
 		player2Pieces := game.RandomSetup(g.Players[1])
@@ -101,7 +102,7 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 	go s.monitorGame(handler, gameType)
 
 	// Start the game only for AI vs AI
-	if gameType == "ai-vs-ai" {
+	if gameType == models.AiVsAi {
 		if err := session.Start(); err != nil {
 			return nil, err
 		}
@@ -207,11 +208,12 @@ func (s *GameServer) broadcastFullState(hub *WSHub, gameType string) {
 	})
 
 	// Broadcast board state
-	if state.IsSetupPhase {
+	switch {
+	case state.IsSetupPhase:
 		s.broadcastSetupBoard(hub, gameType)
-	} else if gameType == "ai-vs-ai" {
+	case gameType == models.AiVsAi:
 		s.broadcastBoardStateRevealed(hub)
-	} else {
+	default:
 		s.broadcastBoardStatePerClient(hub)
 	}
 }
@@ -308,7 +310,7 @@ func (s *GameServer) broadcastSetupBoard(hub *WSHub, gameType string) {
 				piece := player2Pieces[idx]
 				// For human vs AI, hide AI pieces during setup
 				viewerID := -1
-				if gameType == "ai-vs-ai" {
+				if gameType == models.AiVsAi {
 					viewerID = 1 // Show all pieces in AI vs AI
 				}
 				dto := PieceToDTO(piece, viewerID)
@@ -423,7 +425,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		GameID   string `json:"gameId"`
-		GameType string `json:"gameType"` // "human-vs-ai", "ai-vs-ai", "human-vs-human"
+		GameType string `json:"gameType"` // "human-vs-ai", models.AiVsAi, models.HumanVsHuman
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -436,7 +438,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.GameType == "" {
-		req.GameType = "human-vs-ai"
+		req.GameType = models.HumanVsAi
 	}
 
 	_, err := s.CreateGame(req.GameID, req.GameType)
