@@ -1,2 +1,4 @@
-# 2223-DI000-TemplateRepo
-Template repository
+# Stratego
+
+<img src="documents/pictures/logo.png" width=300>
+
