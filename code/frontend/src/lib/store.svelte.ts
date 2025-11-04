@@ -18,8 +18,8 @@ export class GameStore {
 	updateBoardState(board: BoardState) {
 		this.boardState = board;
 		
-		// Add to history if not replaying
-		if (!this.isReplaying && this.gameState) {
+		// Add to history only if NOT replaying and NOT in setup phase
+		if (!this.isReplaying && this.gameState && !this.gameState.isSetupPhase) {
 			this.addToHistory(board.board);
 		}
 	}
@@ -47,6 +47,23 @@ export class GameStore {
 
 	hideCombatAnimation() {
 		this.combatAnimation = null;
+	}
+
+	// Load move history from backend (on reconnect)
+	loadMoveHistory(moves: Array<{from: {x: number, y: number}, to: {x: number, y: number}}>) {
+		// Create placeholder history entries for each move
+		// We don't have the board states, so we can't do full replay
+		// But we can show the move count
+		this.history = moves.map((move, index) => ({
+			moveNumber: index,
+			move: move,
+			boardState: [] // Empty board state since we don't have historical snapshots
+		}));
+		
+		// Set current index to the last move
+		this.currentHistoryIndex = this.history.length > 0 ? this.history.length - 1 : -1;
+		
+		console.log(`Loaded ${moves.length} moves from backend - history populated`);
 	}
 
 	// History navigation

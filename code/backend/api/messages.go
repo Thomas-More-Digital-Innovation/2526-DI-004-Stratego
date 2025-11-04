@@ -23,6 +23,7 @@ const (
 	MsgTypeCombat     = "combat"
 	MsgTypeValidMoves = "validMoves"
 	MsgTypeSetupPhase = "setupPhase"
+	MsgTypeMoveHistory = "moveHistory"
 )
 
 // Base message structure
@@ -98,6 +99,10 @@ type CombatMessage struct {
 	DefenderWon  bool     `json:"defenderWon"`
 	AttackerDied bool     `json:"attackerDied"`
 	DefenderDied bool     `json:"defenderDied"`
+}
+
+type MoveHistoryMessage struct {
+	Moves []MoveDTO `json:"moves"`
 }
 
 // DTOs for data transfer

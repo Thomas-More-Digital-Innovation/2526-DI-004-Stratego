@@ -3,7 +3,7 @@
 	import type { GameMode } from '$lib/types';
 
 	let api = new GameAPI();
-	let selectedMode = $state<GameMode>('human-vs-ai');
+	let selectedMode = $state<GameMode>('human_vs_ai');
 	let isCreating = $state<boolean>(false);
 	let errorMessage = $state<string>('');
 	let loadedGameData = $state<string | null>(null);
@@ -67,8 +67,8 @@
 				<div class="mode-cards">
 					<button 
 						class="mode-card"
-						class:selected={selectedMode === 'human-vs-ai'}
-						onclick={() => selectedMode = 'human-vs-ai'}
+						class:selected={selectedMode === 'human_vs_ai'}
+						onclick={() => selectedMode = 'human_vs_ai'}
 						disabled={isCreating}
 					>
 						<div class="mode-icon">🧑 vs 🤖</div>
@@ -83,8 +83,8 @@
 
 					<button 
 						class="mode-card"
-						class:selected={selectedMode === 'ai-vs-ai'}
-						onclick={() => selectedMode = 'ai-vs-ai'}
+						class:selected={selectedMode === 'ai_vs_ai'}
+						onclick={() => selectedMode = 'ai_vs_ai'}
 						disabled={isCreating}
 					>
 						<div class="mode-icon">🤖 vs 🤖</div>

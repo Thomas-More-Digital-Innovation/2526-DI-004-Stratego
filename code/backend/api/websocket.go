@@ -291,6 +291,11 @@ func (h *WSHub) sendGameState(client *WSClient) {
 
 	// Also send board state
 	h.sendBoardState(client)
+	
+	// Send move history if not in setup phase
+	if !state.IsSetupPhase {
+		h.sendMoveHistory(client)
+	}
 }
 
 // sendBoardState sends the current board state to a specific client
@@ -403,6 +408,38 @@ func (h *WSHub) sendSetupBoard(client *WSClient) {
 	case client.send <- jsonData:
 	case <-time.After(time.Second):
 		log.Printf("Timeout sending setup board state to client")
+	}
+}
+
+// sendMoveHistory sends the move history to a specific client
+func (h *WSHub) sendMoveHistory(client *WSClient) {
+	g := h.session.GetGame()
+	moveHistory := g.MoveHistory
+	
+	moveDTOs := make([]MoveDTO, len(moveHistory))
+	for i, move := range moveHistory {
+		moveDTOs[i] = MoveToDTO(move)
+	}
+	
+	historyMsg := MoveHistoryMessage{
+		Moves: moveDTOs,
+	}
+	
+	msg := WSMessage{
+		Type: MsgTypeMoveHistory,
+		Data: historyMsg,
+	}
+	
+	jsonData, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling move history: %v", err)
+		return
+	}
+	
+	select {
+	case client.send <- jsonData:
+	case <-time.After(time.Second):
+		log.Printf("Timeout sending move history to client")
 	}
 }
 

@@ -148,22 +148,28 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		hasCombat := combat != nil && combat.Occurred
 
 		if hasCombat {
-			log.Printf("Combat detected! Broadcasting combat and waiting for animation")
+			log.Printf("Combat detected! Broadcasting combat data and waiting for animation")
 
-			// Broadcast combat message FIRST
+			// Broadcast combat message (with piece info)
 			s.broadcastCombat(hub, combat, gameType)
 
-			// Wait for animation to complete (3 second timeout)
+			// Wait for frontend animation to complete (3 second timeout)
 			session.WaitForAnimationComplete(3 * time.Second)
+
+			log.Printf("Animation complete, broadcasting updated state")
 
 			// Clear combat after animation
 			session.ClearLastCombat()
 
-			log.Printf("Animation complete, continuing...")
+			// NOW broadcast state after animation (winner moves to position, loser removed)
+			s.broadcastFullState(hub, gameType)
+		} else {
+			// No combat - broadcast state immediately
+			s.broadcastFullState(hub, gameType)
 		}
 
-		// Broadcast updated game state and board
-		s.broadcastFullState(hub, gameType)
+		// Signal that move has been processed - GameRunner can continue
+		session.AckMoveProcessed()
 
 		// Check if game is over
 		state := session.GetGameState()

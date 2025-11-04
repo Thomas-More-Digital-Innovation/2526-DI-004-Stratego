@@ -21,7 +21,7 @@
 
 	const isHumanTurn = $derived.by(() => {
 		const result = gameStore.gameState?.currentPlayerId === 0 && 
-			gameMode === 'human-vs-ai' && 
+			gameMode === 'human_vs_ai' && 
 			!gameStore.gameState?.isGameOver &&
 			!isSetupPhase;
 		console.log('🎮 isHumanTurn calculation:', {
@@ -35,7 +35,7 @@
 		return result;
 	});
 
-	const viewerId = $derived(gameMode === 'human-vs-ai' ? 0 : -1);
+	const viewerId = $derived(gameMode === 'human_vs_ai' ? 0 : -1);
 
 	onMount(async () => {
 		// Extract game ID from URL path
@@ -44,7 +44,7 @@
 		
 		// Get game mode from URL params
 		const params = new URLSearchParams(window.location.search);
-		gameMode = params.get('mode') || 'human-vs-ai';
+		gameMode = params.get('mode') || 'human_vs_ai';
 
 		try {
 			await connectToGame();
@@ -62,7 +62,7 @@
 	async function connectToGame() {
 		setupMessageHandlers();
 		
-		const playerId = gameMode === 'human-vs-ai' ? 0 : -1;
+		const playerId = gameMode === 'human_vs_ai' ? 0 : -1;
 		await api.connectWebSocket(gameId as string, playerId);
 		isConnected = true;
 		
@@ -78,6 +78,11 @@
 		api.onMessage('boardState', (data) => {
 			console.log('Received boardState:', data);
 			gameStore.updateBoardState(data);
+		});
+
+		api.onMessage('moveHistory', (data) => {
+			console.log('Received moveHistory:', data);
+			gameStore.loadMoveHistory(data.moves);
 		});
 
 		api.onMessage('moveResult', (data) => {
@@ -130,7 +135,7 @@
 		console.log('isHumanTurn:', isHumanTurn);
 		
 		// Handle setup phase clicks (swapping pieces)
-		if (isSetupPhase && gameMode === 'human-vs-ai') {
+		if (isSetupPhase && gameMode === 'human_vs_ai') {
 			handleSetupClick(x, y);
 			return;
 		}
@@ -303,15 +308,27 @@
 				</div>
 
 				<div class="right-panel">
-					<GameHistory
-						currentMoveIndex={gameStore.currentHistoryIndex}
-						totalMoves={gameStore.history.length}
-						isReplaying={gameStore.isReplaying}
-						onPrevious={() => gameStore.previousMove()}
-						onNext={() => gameStore.nextMove()}
-						onGoToMove={(index) => gameStore.goToMove(index)}
-						onExitReplay={() => gameStore.exitReplay()}
-					/>
+					{#if !isSetupPhase}
+						<GameHistory
+							currentMoveIndex={gameStore.currentHistoryIndex}
+							totalMoves={gameStore.history.length}
+							isReplaying={gameStore.isReplaying}
+							onPrevious={() => gameStore.previousMove()}
+							onNext={() => gameStore.nextMove()}
+							onGoToMove={(index) => gameStore.goToMove(index)}
+							onExitReplay={() => gameStore.exitReplay()}
+						/>
+					{:else}
+						<div class="setup-info">
+							<h3>Setup Phase</h3>
+							<p>Arrange your pieces in the bottom 4 rows (rows 6-9)</p>
+							<ul>
+								<li>Click two pieces to swap them</li>
+								<li>Use "Randomize" for a random setup</li>
+								<li>Click "Start Game" when ready</li>
+							</ul>
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/if}
@@ -332,7 +349,7 @@
 		{/if}
 		
 		<!-- Setup Phase Overlay -->
-		{#if isSetupPhase && gameMode === 'human-vs-ai'}
+		{#if isSetupPhase && gameMode === 'human_vs_ai'}
 			<SetupPhase
 				onSwapPieces={(pos1, pos2) => api.sendSwapPieces(pos1, pos2)}
 				onRandomize={handleRandomizeSetup}
@@ -459,6 +476,35 @@
 	.center-panel {
 		display: flex;
 		justify-content: center;
+	}
+
+	.setup-info {
+		background: #2d3748;
+		padding: 20px;
+		border-radius: 8px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+
+	.setup-info h3 {
+		margin: 0 0 15px 0;
+		color: #4299e1;
+		border-bottom: 2px solid #4a5568;
+		padding-bottom: 10px;
+	}
+
+	.setup-info p {
+		margin: 10px 0;
+		color: #e2e8f0;
+	}
+
+	.setup-info ul {
+		margin: 15px 0;
+		padding-left: 20px;
+		color: #cbd5e0;
+	}
+
+	.setup-info li {
+		margin: 8px 0;
 	}
 
 	@media (max-width: 1200px) {

@@ -10,7 +10,7 @@
 
 	let { onStartGame, onSaveGame, onLoadGame, isGameActive }: Props = $props();
 
-	let selectedMode = $state<GameMode>('human-vs-ai');
+	let selectedMode = $state<GameMode>('human_vs_ai');
 	let fileInput: HTMLInputElement;
 
 	const handleFileSelect = (event: Event) => {
@@ -30,7 +30,7 @@
 				<input 
 					type="radio" 
 					bind:group={selectedMode} 
-					value="human-vs-ai"
+					value="human_vs_ai"
 					disabled={isGameActive}
 				/>
 				Human vs AI
@@ -39,7 +39,7 @@
 				<input 
 					type="radio" 
 					bind:group={selectedMode} 
-					value="ai-vs-ai"
+					value="ai_vs_ai"
 					disabled={isGameActive}
 				/>
 				AI vs AI

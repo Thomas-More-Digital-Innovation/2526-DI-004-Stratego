@@ -123,8 +123,8 @@ func (gr *GameRunner) ExecuteTurn() bool {
 		return true
 	}
 
-	// AI controller - make move immediately
-	// Add random delay between 500ms and 1000ms for natural feel
+	// AI controller - make move
+	// Add delay between 500ms and 1000ms before AI moves (for pacing)
 	aiDelay := time.Duration(500+rand.Intn(500)) * time.Millisecond
 	time.Sleep(aiDelay)
 

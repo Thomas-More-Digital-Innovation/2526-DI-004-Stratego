@@ -59,7 +59,7 @@ export interface BoardState {
 
 export interface GameInfo {
 	gameId: string;
-	gameType: 'human-vs-ai' | 'ai-vs-ai' | 'human-vs-human';
+	gameType: 'human_vs_ai' | 'ai_vs_ai' | 'human_vs_human';
 	wsUrl: string;
 }
 
@@ -87,4 +87,4 @@ export interface CombatMessage {
 	defenderDied: boolean;
 }
 
-export type GameMode = 'human-vs-ai' | 'ai-vs-ai';
+export type GameMode = 'human_vs_ai' | 'ai_vs_ai';

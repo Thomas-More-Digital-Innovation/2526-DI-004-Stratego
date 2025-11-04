@@ -24,6 +24,7 @@ type GameSession struct {
 	waitingForAnimation   bool
 	animationCompleteChan chan bool
 	moveNotifyChan        chan bool // Signals when a move has been executed
+	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
 }
 
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
@@ -43,11 +44,14 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		doneChan:              make(chan *engine.Player, 1),
 		animationCompleteChan: make(chan bool, 1),
 		moveNotifyChan:        make(chan bool, 100), // Buffered to prevent blocking
+		moveAckChan:           make(chan bool, 1),   // For synchronization
 	}
 
 	// Set callback for move notifications
 	session.runner.SetMoveCallback(func() {
 		session.NotifyMoveExecuted()
+		// Wait for the monitor to finish processing this move before continuing
+		session.WaitForMoveAck(10 * time.Second)
 	})
 
 	return session
@@ -258,6 +262,26 @@ func (gs *GameSession) NotifyMoveExecuted() {
 func (gs *GameSession) WaitForMoveNotification(timeout time.Duration) bool {
 	select {
 	case <-gs.moveNotifyChan:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
+}
+
+// AckMoveProcessed signals that the move has been processed by the monitor
+func (gs *GameSession) AckMoveProcessed() {
+	select {
+	case gs.moveAckChan <- true:
+		// Ack sent
+	default:
+		// Channel full
+	}
+}
+
+// WaitForMoveAck waits for move to be acknowledged as processed
+func (gs *GameSession) WaitForMoveAck(timeout time.Duration) bool {
+	select {
+	case <-gs.moveAckChan:
 		return true
 	case <-time.After(timeout):
 		return false
