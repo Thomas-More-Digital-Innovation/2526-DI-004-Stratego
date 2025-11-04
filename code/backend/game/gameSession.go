@@ -37,7 +37,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 	session := &GameSession{
 		ID:                    id,
 		game:                  g,
-		runner:                NewGameRunner(g, 0, 1000),
+		runner:                NewGameRunner(g, 1*time.Nanosecond, 1000),
 		isSetupPhase:          true,
 		player1Pieces:         player1Pieces,
 		player2Pieces:         player2Pieces,

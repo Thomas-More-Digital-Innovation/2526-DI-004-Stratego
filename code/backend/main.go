@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 )
 
 func main() {
@@ -76,7 +75,7 @@ func runAIvsAI() {
 			fmt.Printf("Game %3d (Bob 1st):   ", i+1)
 		}
 
-		runner := game.NewGameRunner(g, 1*time.Nanosecond, 1000)
+		runner := game.NewGameRunner(g, 0, 1000)
 		winner := runner.RunToCompletion()
 
 		// Get game statistics

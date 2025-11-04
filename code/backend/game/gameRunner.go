@@ -125,8 +125,10 @@ func (gr *GameRunner) ExecuteTurn() bool {
 
 	// AI controller - make move
 	// Add delay between 500ms and 1000ms before AI moves (for pacing)
-	aiDelay := time.Duration(500+rand.Intn(500)) * time.Millisecond
-	time.Sleep(aiDelay)
+	if gr.turnDelay > 0 {
+		aiDelay := time.Duration(500+rand.Intn(500)) * time.Millisecond
+		time.Sleep(aiDelay)
+	}
 
 	move := controller.MakeMove(gr.game.Board)
 
@@ -173,6 +175,10 @@ func (gr *GameRunner) getOpponent(player *engine.Player) *engine.Player {
 // IsWaitingForInput returns true if the game is waiting for human input
 func (gr *GameRunner) IsWaitingForInput() bool {
 	return gr.waitingForInput
+}
+
+func (gr *GameRunner) DebugSetWaitingForInput(value bool) {
+	gr.waitingForInput = value
 }
 
 // GetGame returns the underlying game
