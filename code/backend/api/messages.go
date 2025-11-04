@@ -14,15 +14,15 @@ const (
 	MsgTypeStartGame         = "startGame"
 
 	// Server -> Client
-	MsgTypeGameState  = "gameState"
-	MsgTypeMoveResult = "moveResult"
-	MsgTypeGameOver   = "gameOver"
-	MsgTypeError      = "error"
-	MsgTypePong       = "pong"
-	MsgTypeBoardState = "boardState"
-	MsgTypeCombat     = "combat"
-	MsgTypeValidMoves = "validMoves"
-	MsgTypeSetupPhase = "setupPhase"
+	MsgTypeGameState   = "gameState"
+	MsgTypeMoveResult  = "moveResult"
+	MsgTypeGameOver    = "gameOver"
+	MsgTypeError       = "error"
+	MsgTypePong        = "pong"
+	MsgTypeBoardState  = "boardState"
+	MsgTypeCombat      = "combat"
+	MsgTypeValidMoves  = "validMoves"
+	MsgTypeSetupPhase  = "setupPhase"
 	MsgTypeMoveHistory = "moveHistory"
 )
 
