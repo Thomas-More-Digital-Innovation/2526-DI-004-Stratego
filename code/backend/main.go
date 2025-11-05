@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"time"
 )
 
 func main() {
@@ -15,6 +16,7 @@ func main() {
 	aiVsaiMode := flag.String("aivsai", "fafo:fafo", "Run AI vs AI matches instead of server")
 	matches := flag.Int("matches", 100, "Number of AI vs AI matches to run")
 	format := flag.String("format", "none", "The format used to print the results of an AI vs AI competition, either none or md")
+	logging := flag.Bool("logging", true, "Show logs in stdout")
 
 	flag.Parse()
 
@@ -31,7 +33,10 @@ func main() {
 			ai1 = "fafo"
 			ai2 = "fafo"
 		}
-		aivsai.RunAIvsAI(ai1, ai2, *matches, *format)
+		start := time.Now()
+		aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *logging)
+		elapsed := time.Since(start)
+		fmt.Printf("AI vs AI matches completed in %.2f seconds\n", elapsed.Seconds())
 	}
 }
 

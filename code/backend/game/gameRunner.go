@@ -34,21 +34,27 @@ func (gr *GameRunner) SetMoveCallback(callback func()) {
 }
 
 // RunToCompletion runs the game until it's over (for AI vs AI)
-func (gr *GameRunner) RunToCompletion() *engine.Player {
+func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 	turnCount := 0
-	log.Printf("GameRunner: Starting RunToCompletion loop")
+	if logging {
+		log.Printf("GameRunner: Starting RunToCompletion loop")
+	}
 
 	for !gr.game.IsGameOver() && turnCount < gr.maxTurns {
-		executed := gr.ExecuteTurn()
+		executed := gr.ExecuteTurn(logging)
 
 		if executed {
 			// Turn was executed, increment counter
 			turnCount++
-			log.Printf("GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
+			if logging {
+				log.Printf("GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
+			}
 		} else {
 			// ExecuteTurn returned false - check why
 			if gr.game.IsGameOver() {
-				log.Printf("GameRunner: Game ended during ExecuteTurn")
+				if logging {
+					log.Printf("GameRunner: Game ended during ExecuteTurn")
+				}
 				break
 			}
 			// Still waiting for human input, continue polling
@@ -65,28 +71,33 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 	if turnCount >= gr.maxTurns {
 		fmt.Println("Game ended: Maximum turns reached")
 		// Set winner to player with higher score, or nil for draw
-		if gr.game.Players[0].GetPieceScore() > gr.game.Players[1].GetPieceScore() {
-			gr.game.SetWinner(gr.game.Players[0], WinCauseMaxTurns)
-		} else if gr.game.Players[1].GetPieceScore() > gr.game.Players[0].GetPieceScore() {
-			gr.game.SetWinner(gr.game.Players[1], WinCauseMaxTurns)
-		}
-		// Otherwise winner remains nil (draw)
-		return gr.game.GetWinner()
+		return gr.calculateWinnerOnMaxTurnsExceeded()
 	}
 
 	return gr.game.GetWinner()
 }
 
+func (gr *GameRunner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
+	if float64(gr.game.Players[0].GetPieceScore())/float64(gr.game.Players[1].GetPieceScore()) > 1.15 {
+		gr.game.SetWinner(gr.game.Players[0], WinCauseMaxTurns)
+	} else if float64(gr.game.Players[1].GetPieceScore())/float64(gr.game.Players[0].GetPieceScore()) > 1.15 {
+		gr.game.SetWinner(gr.game.Players[1], WinCauseMaxTurns)
+	}
+	return gr.game.GetWinner()
+}
+
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
-func (gr *GameRunner) ExecuteTurn() bool {
+func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 	if gr.game.IsGameOver() {
 		log.Printf("GameRunner.ExecuteTurn: Game is over")
 		return false
 	}
 
 	controller := gr.game.GetCurrentController()
-	log.Printf("GameRunner.ExecuteTurn: Current player=%s, controllerType=%d",
-		gr.game.CurrentPlayer.GetName(), controller.GetControllerType())
+	if logging {
+		log.Printf("GameRunner.ExecuteTurn: Current player=%s, controllerType=%d",
+			gr.game.CurrentPlayer.GetName(), controller.GetControllerType())
+	}
 
 	// Check if human controller and if it has a pending move
 	if controller.GetControllerType() == engine.HumanController {
@@ -94,7 +105,9 @@ func (gr *GameRunner) ExecuteTurn() bool {
 		if !ok || !humanController.HasPendingMove() {
 			if !gr.waitingForInput {
 				// Only log once when we start waiting
-				log.Printf("GameRunner.ExecuteTurn: Waiting for human input")
+				if logging {
+					log.Printf("GameRunner.ExecuteTurn: Waiting for human input")
+				}
 				gr.waitingForInput = true
 			}
 			return false // Wait for human input
@@ -136,8 +149,10 @@ func (gr *GameRunner) ExecuteTurn() bool {
 	piece := gr.game.Board.GetPieceAt(move.GetFrom())
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
 		// No piece at from position or wrong owner = AI has no valid moves
-		log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)",
-			gr.game.CurrentPlayer.GetName(), move.GetFrom())
+		if logging {
+			log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)",
+				gr.game.CurrentPlayer.GetName(), move.GetFrom())
+		}
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
@@ -148,7 +163,9 @@ func (gr *GameRunner) ExecuteTurn() bool {
 
 	// Validate the move is legal
 	if !gr.game.Board.IsValidMove(&move) {
-		log.Printf("AI %s provided invalid move: %v", gr.game.CurrentPlayer.GetName(), move)
+		if logging {
+			log.Printf("AI %s provided invalid move: %v", gr.game.CurrentPlayer.GetName(), move)
+		}
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		opponent.SetWinner()
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
@@ -210,7 +227,7 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 	humanController.SetPendingMove(move)
 
 	// Execute the turn
-	gr.ExecuteTurn()
+	gr.ExecuteTurn(true) // TODO assuming logging is true for human moves
 
 	return nil
 }

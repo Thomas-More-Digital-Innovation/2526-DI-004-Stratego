@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-func runAIvsAI(matches int) models.GameSummary {
+func runAIvsAI(matches int, logging bool) models.GameSummary {
 	aliceWins := 0
 	bobWins := 0
 	draws := 0
@@ -47,7 +47,7 @@ func runAIvsAI(matches int) models.GameSummary {
 		}
 
 		runner := game.NewGameRunner(g, 0, 1000)
-		winner := runner.RunToCompletion()
+		winner := runner.RunToCompletion(logging)
 
 		// Get game statistics
 		rounds := g.GetRound()
@@ -60,7 +60,7 @@ func runAIvsAI(matches int) models.GameSummary {
 			flagCaptures++
 		case game.WinCauseNoMovablePieces:
 			noMovesWins++
-		case game.WinCauseMaxTurns:
+		default:
 			maxTurnsWins++
 		}
 

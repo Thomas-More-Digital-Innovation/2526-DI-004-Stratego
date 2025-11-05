@@ -5,9 +5,9 @@ import (
 	"fmt"
 )
 
-func RunAIvsAI(ai1, ai2 string, matches int, format string) {
+func RunAIvsAI(ai1, ai2 string, matches int, format string, logging bool) {
 	// currently we are only running Fafo vs Fafo
-	summary := runAIvsAI(matches)
+	summary := runAIvsAI(matches, logging)
 
 	switch format {
 	case "md":

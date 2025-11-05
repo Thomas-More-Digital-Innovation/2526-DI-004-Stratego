@@ -71,7 +71,7 @@ func (gs *GameSession) Start() error {
 	log.Printf("GameSession %s: Starting game loop", gs.ID)
 
 	go func() {
-		winner := gs.runner.RunToCompletion()
+		winner := gs.runner.RunToCompletion(true) // TODO maybe conditionally set logging?
 		log.Printf("GameSession %s: Game finished, winner=%v", gs.ID, winner)
 		gs.doneChan <- winner
 		gs.mutex.Lock()
