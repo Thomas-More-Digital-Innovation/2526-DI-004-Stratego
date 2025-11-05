@@ -42,7 +42,7 @@ func TestRunToCompletion(t *testing.T) {
 		}
 
 		runner := game.NewGameRunner(g, 0, 1000)
-		winner := runner.RunToCompletion()
+		winner := runner.RunToCompletion(false) // we don't want cluttered logging in pipeline
 		rounds := g.GetRound()
 
 		winCause := g.GetWinCause()
