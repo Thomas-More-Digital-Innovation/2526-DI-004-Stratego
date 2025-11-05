@@ -1,6 +1,6 @@
 # Different AIs for Stratego
 
-## 🎲 1. **Random**
+## 🎲 1. **FAFO (Random)**
 
 **Idea:**
 Moves are chosen randomly from all legal actions.
@@ -99,3 +99,30 @@ Yes — very trainable. You can:
 | Heuristic | Expert rules  | Fast             | Rigid, biased        | ⚙️ Partial | Good baseline         |
 | Minimax   | Deterministic | Strategic        | Hidden info kills it | ⚙️ Partial | Needs belief modeling |
 | MCTS      | Statistical   | Flexible, strong | Heavy compute        | ✅ Full     | Best long-term option |
+
+## Expected runtime difference between FAFO & MCTS
+
+* **Baseline:** 1.44 s for **1000 games total** (so **0.00144 s per game**).
+* **moves/game** = total moves (both players combined). I show 50, 100, 200.
+* Random agent = 1 “eval” per move; MCTS uses **S** simulations per decision.
+* One MCTS vs random → MCTS player makes about half the decisions.
+
+### Key results (rounded)
+
+For **S = 100 sims / decision**
+
+* **One MCTS vs random:** **72.72 s** total for 1000 games ≈ **1.21 min** (≈ **50.5×** slower than baseline).
+* **Both MCTS:** **144.0 s** ≈ **2.40 min** (≈ **100×** slower).
+
+For **S = 1,000**
+
+* **One MCTS:** **720.72 s** ≈ **12.01 min** (≈ **500.5×**).
+* **Both MCTS:** **1,440 s** = **24.00 min** (≈ **1000×**).
+
+For **S = 10,000**
+
+* **One MCTS:** **7,200.72 s** ≈ **2.00 hours** (≈ **5000.5×**).
+* **Both MCTS:** **14,400 s** = **4.00 hours** (≈ **10000×**).
+
+**TL;DR:** Even with the tiny baseline (1.44 s / 1000 games), MCTS blows up quickly. Cost scales roughly **linearly** with simulations (S) and decisions per game.
+**If runtime matters:** lower S, parallelize sims, use a learned policy/value to cut sims, or only use MCTS on high-value turns.
