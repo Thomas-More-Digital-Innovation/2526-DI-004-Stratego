@@ -36,7 +36,7 @@ func main() {
 		start := time.Now()
 		aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *logging)
 		elapsed := time.Since(start)
-		fmt.Printf("AI vs AI matches completed in %.2f seconds\n", elapsed.Seconds())
+		fmt.Printf("\nAI vs AI matches completed in %.2f seconds\n", elapsed.Seconds())
 	}
 }
 
