@@ -87,4 +87,4 @@ export interface CombatMessage {
 	defenderDied: boolean;
 }
 
-export type GameMode = 'human_vs_ai' | 'ai_vs_ai';
+export type GameMode = 'human_vs_ai' | 'ai_vs_ai' | 'human_vs_human';
