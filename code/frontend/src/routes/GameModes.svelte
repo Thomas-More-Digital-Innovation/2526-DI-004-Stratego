@@ -12,6 +12,13 @@
         isCreating = true;
         errorMessage = "";
 
+        if (selectedMode === "human_vs_human") {
+            // TODO coming soon
+            errorMessage = "Coming Soon";
+            isCreating = false;
+            return;
+        }
+
         try {
             const gameInfo = await api.createGame(selectedMode);
             // Use window.location for navigation
@@ -23,7 +30,7 @@
     }
 </script>
 
-<div class="tile">
+<div class="game-modes">
     <h2>Game Modes</h2>
 
     <div class="mode-cards">
@@ -77,9 +84,13 @@
 </div>
 
 <style>
+    .game-modes {
+        background: var(--bg);
+        padding: 32px;
+    }
     .mode-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax( 300px, 700px));
         gap: 20px;
         margin-bottom: 30px;
 
@@ -131,8 +142,9 @@
         width: 100%;
         padding: 18px;
         background: var(--primary-dark);
-        color: white;
-        border: none;
+        color: var(--text);
+        border: 4px solid var(--text);
+
         border-radius: 8px;
         font-size: 1.3rem;
         font-weight: 700;
