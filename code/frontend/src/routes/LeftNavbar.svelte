@@ -39,8 +39,10 @@
                 cursor: pointer;
                 border: 4px solid var(--text);
                 border-left: 0px;
-                border-bottom-right-radius: 50%;
-                border-top-right-radius: 50%;
+                position: relative;
+
+                border-bottom-right-radius: 100px;
+                border-top-right-radius: 100px;
 
                 &:hover {
                     transition: 400ms;
