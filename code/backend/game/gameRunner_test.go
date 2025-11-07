@@ -98,15 +98,17 @@ func TestSubmitHumanMove(t *testing.T) {
 	gameInstance := game.QuickStart(controller1, controller2)
 	runner := game.NewGameRunner(gameInstance, 0, 1000)
 	runner.DebugSetWaitingForInput(true)
-	game := runner.GetGame()
+	gameObj := runner.GetGame()
 
 	time.Sleep(1 * time.Second)
+	// Invalid move - bomb can't move
 	move := engine.NewMove(engine.NewPosition(2, 6), engine.NewPosition(2, 5), &player1)
 	err := runner.SubmitHumanMove(move)
 	if err == nil {
 		t.Errorf("Expected error when submitting invalid move")
 	}
 
+	// Valid move
 	move = engine.NewMove(engine.NewPosition(0, 6), engine.NewPosition(0, 5), &player1)
 	err = runner.SubmitHumanMove(move)
 	if err != nil {
@@ -117,8 +119,92 @@ func TestSubmitHumanMove(t *testing.T) {
 		t.Errorf("Expected not waiting for input")
 	}
 
-	if game.CurrentPlayer != &player2 {
+	if gameObj.CurrentPlayer != &player2 {
 		t.Errorf("Expected current player to be %s, got: %s",
-			player2.GetName(), game.CurrentPlayer.GetName())
+			player2.GetName(), gameObj.CurrentPlayer.GetName())
+	}
+}
+
+func TestGameRunnerIsWaitingForInput(t *testing.T) {
+	player1 := engine.NewPlayer(0, "Human", "red")
+	player2 := engine.NewPlayer(1, "AI", "blue")
+
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := fafo.NewFafoAI(&player2)
+
+	g := game.QuickStart(controller1, controller2)
+	runner := game.NewGameRunner(g, 0, 1000)
+
+	if runner.IsWaitingForInput() {
+		t.Error("Expected not waiting for input before game starts")
+	}
+
+	runner.DebugSetWaitingForInput(true)
+	if !runner.IsWaitingForInput() {
+		t.Error("Expected waiting for input after DebugSetWaitingForInput(true)")
+	}
+
+	runner.DebugSetWaitingForInput(false)
+	if runner.IsWaitingForInput() {
+		t.Error("Expected not waiting for input after DebugSetWaitingForInput(false)")
+	}
+}
+
+func TestGameRunnerGetGame(t *testing.T) {
+	player1 := engine.NewPlayer(0, "P1", "red")
+	player2 := engine.NewPlayer(1, "P2", "blue")
+
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := engine.NewHumanPlayerController(&player2)
+
+	g := game.NewGame(controller1, controller2)
+	runner := game.NewGameRunner(g, 0, 1000)
+
+	retrieved := runner.GetGame()
+	if retrieved != g {
+		t.Error("Expected GetGame to return the same game instance")
+	}
+}
+
+func TestSubmitHumanMoveWrongPlayer(t *testing.T) {
+	player1 := engine.NewPlayer(0, "Human1", "red")
+	player2 := engine.NewPlayer(1, "Human2", "blue")
+
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := engine.NewHumanPlayerController(&player2)
+
+	g := game.QuickStart(controller1, controller2)
+	runner := game.NewGameRunner(g, 0, 1000)
+	runner.DebugSetWaitingForInput(true)
+
+	// Try to submit move for player2 when it's player1's turn
+	move := engine.NewMove(engine.NewPosition(0, 3), engine.NewPosition(0, 4), &player2)
+	err := runner.SubmitHumanMove(move)
+
+	if err == nil {
+		t.Error("Expected error when submitting move for wrong player")
+	}
+}
+
+func TestGameRunnerWithDelay(t *testing.T) {
+	player1 := engine.NewPlayer(0, "AI1", "red")
+	player2 := engine.NewPlayer(1, "AI2", "blue")
+
+	controller1 := fafo.NewFafoAI(&player1)
+	controller2 := fafo.NewFafoAI(&player2)
+
+	g := game.QuickStart(controller1, controller2)
+
+	// Create runner with short delay
+	runner := game.NewGameRunner(g, 5*time.Millisecond, 10)
+
+	start := time.Now()
+	runner.RunToCompletion(false)
+	elapsed := time.Since(start)
+
+	// With 5ms delay per turn and up to 10 turns, should take at least 50ms
+	// But we set max turns to 10, so it should be relatively quick
+	if elapsed < 10*time.Millisecond {
+		t.Errorf("Expected game to take at least 10ms with delays, took: %v", elapsed)
 	}
 }

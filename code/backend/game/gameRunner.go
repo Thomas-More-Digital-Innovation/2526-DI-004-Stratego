@@ -221,6 +221,11 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 		return fmt.Errorf("invalid controller type")
 	}
 
+	// Check that the move's player matches the current player
+	if move.GetPlayer() != gr.game.CurrentPlayer {
+		return fmt.Errorf("move player does not match current player")
+	}
+
 	if !gr.game.Board.IsValidMove(&move) {
 		return fmt.Errorf("invalid move")
 	}
