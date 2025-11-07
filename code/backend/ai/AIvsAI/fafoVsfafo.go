@@ -13,7 +13,6 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 	bobWins := 0
 	draws := 0
 
-	// Track win causes
 	flagCaptures := 0
 	noMovesWins := 0
 	maxTurnsWins := 0
@@ -22,9 +21,8 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 	player1Name := ""
 	player2Name := ""
 
-	// Run 100 games - alternate who goes first for fairness
 	for i := 0; i < matches; i++ {
-		// Create FRESH players and controllers for EACH game
+		// Create FRESH players and controllers for EACH game, use same ID & name
 		playerAlice := engine.NewPlayer(0, "Alice AI", "red")
 		playerBob := engine.NewPlayer(1, "Bob AI", "blue")
 
@@ -34,27 +32,24 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 		controllerAlice := fafo.NewFafoAI(&playerAlice)
 		controllerBob := fafo.NewFafoAI(&playerBob)
 
-		// Alternate who goes first (even games: Alice first, odd games: Bob first)
+		// Alternate who goes first
+		// Without this, player 1 wins more often than the other
 		var g *game.Game
 		if i%2 == 0 {
-			// Alice goes first
 			g = game.QuickStart(controllerAlice, controllerBob)
-			fmt.Printf("Game %3d (Alice 1st): ", i+1)
+			fmt.Printf("Game %3d (Alice starts): ", i+1)
 		} else {
-			// Bob goes first (swap player order)
 			g = game.QuickStart(controllerBob, controllerAlice)
-			fmt.Printf("Game %3d (Bob 1st):   ", i+1)
+			fmt.Printf("Game %3d (Bob starts):   ", i+1)
 		}
 
 		runner := game.NewGameRunner(g, 0, 1000)
 		winner := runner.RunToCompletion(logging)
 
-		// Get game statistics
 		rounds := g.GetRound()
 		winCause := g.GetWinCause()
 		totalRounds += rounds
 
-		// Track win causes
 		switch winCause {
 		case game.WinCauseFlagCaptured:
 			flagCaptures++
@@ -78,7 +73,6 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 
 	}
 
-	// Print tournament summary
 	avgRounds := float64(totalRounds) / float64(matches)
 
 	gameSummary := models.GameSummary{

@@ -489,9 +489,10 @@ func (s *GameServer) HandleWebSocketConnection(w http.ResponseWriter, r *http.Re
 	playerIDStr := r.URL.Query().Get("player")
 	playerID := -1 // Default to spectator
 
-	if playerIDStr == "0" {
+	switch playerIDStr {
+	case "0":
 		playerID = 0
-	} else if playerIDStr == "1" {
+	case "1":
 		playerID = 1
 	}
 

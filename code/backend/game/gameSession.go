@@ -18,9 +18,10 @@ type GameSession struct {
 	mutex                 sync.RWMutex
 	running               bool
 	isSetupPhase          bool
-	player1Pieces         []*engine.Piece     // Pieces for player 1 during setup
-	player2Pieces         []*engine.Piece     // Pieces for player 2 during setup
+	player1Pieces         []*engine.Piece     
+	player2Pieces         []*engine.Piece     
 	doneChan              chan *engine.Player // Signals when game is complete
+	stopChan              chan bool           // Signals to stop the game
 	waitingForAnimation   bool
 	animationCompleteChan chan bool
 	moveNotifyChan        chan bool // Signals when a move has been executed
@@ -42,15 +43,16 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		player1Pieces:         player1Pieces,
 		player2Pieces:         player2Pieces,
 		doneChan:              make(chan *engine.Player, 1),
+		stopChan:              make(chan bool, 1),
 		animationCompleteChan: make(chan bool, 1),
-		moveNotifyChan:        make(chan bool, 100), // Buffered to prevent blocking
-		moveAckChan:           make(chan bool, 1),   // For synchronization
+		moveNotifyChan:        make(chan bool, 100),
+		moveAckChan:           make(chan bool, 1),   
 	}
 
-	// Set callback for move notifications
+	session.runner.stopChan = session.stopChan
+
 	session.runner.SetMoveCallback(func() {
 		session.NotifyMoveExecuted()
-		// Wait for the monitor to finish processing this move before continuing
 		session.WaitForMoveAck(10 * time.Second)
 	})
 
@@ -82,6 +84,25 @@ func (gs *GameSession) Start() error {
 	return nil
 }
 
+// Stop forcefully stops the game session
+func (gs *GameSession) Stop() {
+	gs.mutex.Lock()
+	if !gs.running {
+		gs.mutex.Unlock()
+		return
+	}
+	gs.mutex.Unlock()
+	
+	log.Printf("GameSession %s: Stopping game", gs.ID)
+	
+	select {
+	case gs.stopChan <- true:
+		log.Printf("GameSession %s: Stop signal sent", gs.ID)
+	default:
+		log.Printf("GameSession %s: Stop channel full or already stopped", gs.ID)
+	}
+}
+
 // SubmitMove submits a move for a human player
 // Returns error if move is invalid or not the player's turn
 func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
@@ -95,18 +116,15 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 		return errors.New("game not running")
 	}
 
-	// Verify it's the correct player's turn
 	if gs.game.CurrentPlayer.GetID() != playerID {
 		return errors.New("not your turn")
 	}
 
-	// Verify current controller is human
 	controller := gs.game.GetCurrentController()
 	if controller.GetControllerType() != engine.HumanController {
 		return errors.New("current player is not human-controlled")
 	}
 
-	// Submit move to the controller
 	humanController, ok := controller.(*engine.HumanPlayerController)
 	if !ok {
 		return errors.New("failed to cast to human controller")
@@ -251,9 +269,7 @@ func (gs *GameSession) GetGame() *Game {
 func (gs *GameSession) NotifyMoveExecuted() {
 	select {
 	case gs.moveNotifyChan <- true:
-		// Move notification sent
 	default:
-		// Channel full, skip notification
 		log.Printf("GameSession %s: Move notification channel full", gs.ID)
 	}
 }
@@ -272,7 +288,6 @@ func (gs *GameSession) WaitForMoveNotification(timeout time.Duration) bool {
 func (gs *GameSession) AckMoveProcessed() {
 	select {
 	case gs.moveAckChan <- true:
-		// Ack sent
 	default:
 		// Channel full
 	}

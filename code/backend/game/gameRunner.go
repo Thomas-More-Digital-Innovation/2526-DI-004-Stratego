@@ -11,10 +11,11 @@ import (
 // GameRunner handles the execution of a game turn-by-turn
 type GameRunner struct {
 	game            *Game
-	turnDelay       time.Duration // Optional delay between AI turns for visualization
+	turnDelay       time.Duration // Optional delay between AI turns for visualization, can be 0 to remove the delay
 	maxTurns        int           // Safety limit to prevent infinite games
 	waitingForInput bool          // True when waiting for human player input
 	onMoveExecuted  func()        // Callback when a move is executed
+	stopChan        chan bool     // Channel to signal stopping the game
 }
 
 func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunner {
@@ -41,6 +42,17 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 	}
 
 	for !gr.game.IsGameOver() && turnCount < gr.maxTurns {
+		// Check for stop signal
+		select {
+		case <-gr.stopChan:
+			if logging {
+				log.Printf("GameRunner: Stop signal received, ending game")
+			}
+			return nil
+		default:
+			// No stop signal, continue
+		}
+		
 		executed := gr.ExecuteTurn(logging)
 
 		if executed {

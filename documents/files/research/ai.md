@@ -67,7 +67,7 @@ Partly — you can train the **evaluation function** (e.g., using self-play to l
 ## 🌳 4. **MCTS (Monte Carlo Tree Search)**
 
 **Idea:**
-Simulates many random playouts from the current position to estimate move quality statistically. Expands the tree towards promising moves using exploration/exploitation balance.
+Simulates many random play outs from the current position to estimate move quality statistically. Expands the tree towards promising moves using exploration/exploitation balance.
 
 **✅ Pros:**
 
@@ -79,14 +79,14 @@ Simulates many random playouts from the current position to estimate move qualit
 **❌ Cons:**
 
 * Computationally heavy (many simulations).
-* Quality depends on playout policy (random = weak, learned = stronger).
+* Quality depends on play out policy (random = weak, learned = stronger).
 * Requires many iterations for stable results.
 
 **🧠 Trainable?**
 Yes — very trainable. You can:
 
 * Train a **policy network** to guide simulations.
-* Train a **value network** to replace random rollouts.
+* Train a **value network** to replace random roll outs.
 * Use **self-play reinforcement learning** (AlphaZero-style) to improve both.
 
 ---

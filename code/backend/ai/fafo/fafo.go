@@ -19,7 +19,6 @@ func NewFafoAI(player *engine.Player) *FafoAI {
 	}
 }
 
-// Implement PlayerController interface
 func (ai *FafoAI) GetPlayer() *engine.Player {
 	return ai.player
 }
@@ -42,6 +41,8 @@ func (ai *FafoAI) PickRandomPiece() *engine.Piece {
 }
 
 func (ai *FafoAI) MakeMove(board *engine.Board) engine.Move {
+	// Not so random huh? :-)
+
 	// 1. Try to attack a known enemy piece
 	if move, found := ai.findAttackMove(board); found {
 		return move
