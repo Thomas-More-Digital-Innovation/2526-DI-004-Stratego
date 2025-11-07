@@ -1,5 +1,7 @@
 package engine
 
+import "sync"
+
 type ControllerType int
 
 const (
@@ -12,13 +14,14 @@ const (
 type PlayerController interface {
 	GetPlayer() *Player
 	GetControllerType() ControllerType
-	MakeMove(board *Board) Move // AI makes move immediately, Human waits for input
+	MakeMove(board *Board) Move
 }
 
 // HumanPlayerController represents a human player waiting for input
 type HumanPlayerController struct {
 	player      *Player
-	pendingMove *Move // Set by external input (e.g., HTTP request)
+	pendingMove *Move
+	mutex       sync.RWMutex
 }
 
 func NewHumanPlayerController(player *Player) *HumanPlayerController {
@@ -43,11 +46,15 @@ func (h *HumanPlayerController) MakeMove(board *Board) Move {
 
 // SetPendingMove is called by external input (e.g., HTTP handler) to provide the human's move
 func (h *HumanPlayerController) SetPendingMove(move Move) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
 	h.pendingMove = &move
 }
 
 // GetPendingMove retrieves and clears the pending move
 func (h *HumanPlayerController) GetPendingMove() *Move {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
 	move := h.pendingMove
 	h.pendingMove = nil
 	return move
@@ -55,5 +62,7 @@ func (h *HumanPlayerController) GetPendingMove() *Move {
 
 // HasPendingMove checks if a move is waiting
 func (h *HumanPlayerController) HasPendingMove() bool {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
 	return h.pendingMove != nil
 }
