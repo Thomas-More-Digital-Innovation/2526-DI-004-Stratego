@@ -2,6 +2,7 @@ package game
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/models"
 	"errors"
 	"fmt"
 	"log"
@@ -18,8 +19,8 @@ type GameSession struct {
 	mutex                 sync.RWMutex
 	running               bool
 	isSetupPhase          bool
-	player1Pieces         []*engine.Piece     
-	player2Pieces         []*engine.Piece     
+	player1Pieces         []*engine.Piece
+	player2Pieces         []*engine.Piece
 	doneChan              chan *engine.Player // Signals when game is complete
 	stopChan              chan bool           // Signals to stop the game
 	waitingForAnimation   bool
@@ -46,7 +47,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		stopChan:              make(chan bool, 1),
 		animationCompleteChan: make(chan bool, 1),
 		moveNotifyChan:        make(chan bool, 100),
-		moveAckChan:           make(chan bool, 1),   
+		moveAckChan:           make(chan bool, 1),
 	}
 
 	session.runner.stopChan = session.stopChan
@@ -92,9 +93,9 @@ func (gs *GameSession) Stop() {
 		return
 	}
 	gs.mutex.Unlock()
-	
+
 	log.Printf("GameSession %s: Stopping game", gs.ID)
-	
+
 	select {
 	case gs.stopChan <- true:
 		log.Printf("GameSession %s: Stop signal sent", gs.ID)
@@ -135,11 +136,11 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 }
 
 // GetGameState returns current game state (for API responses)
-func (gs *GameSession) GetGameState() GameState {
+func (gs *GameSession) GetGameState() models.GameState {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
-	return GameState{
+	return models.GameState{
 		Round:              gs.game.GetRound(),
 		CurrentPlayerID:    gs.game.CurrentPlayer.GetID(),
 		CurrentPlayerName:  gs.game.CurrentPlayer.GetName(),
@@ -303,22 +304,6 @@ func (gs *GameSession) WaitForMoveAck(timeout time.Duration) bool {
 	}
 }
 
-// GameState represents the current state of a game (for API responses)
-type GameState struct {
-	Round              int    `json:"round"`
-	CurrentPlayerID    int    `json:"currentPlayerId"`
-	CurrentPlayerName  string `json:"currentPlayerName"`
-	IsGameOver         bool   `json:"isGameOver"`
-	WinnerID           *int   `json:"winnerId,omitempty"`
-	Player1Score       int    `json:"player1Score"`
-	Player2Score       int    `json:"player2Score"`
-	WaitingForInput    bool   `json:"waitingForInput"`
-	MoveCount          int    `json:"moveCount"`
-	Player1AlivePieces int    `json:"player1AlivePieces"`
-	Player2AlivePieces int    `json:"player2AlivePieces"`
-	IsSetupPhase       bool   `json:"isSetupPhase"`
-}
-
 func getPlayerIDOrNil(player *engine.Player) *int {
 	if player == nil {
 		return nil
@@ -353,7 +338,7 @@ func (gs *GameSession) GetSetupPieces(playerID int) []*engine.Piece {
 }
 
 // SwapPieces swaps two pieces in the setup
-func (gs *GameSession) SwapPieces(playerID int, pos1, pos2 engine.Position) error {
+func (gs *GameSession) SwapSetupPieces(playerID int, pos1, pos2 engine.Position) error {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 

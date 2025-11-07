@@ -15,7 +15,7 @@ func TestNewGame(t *testing.T) {
 	game := game.NewGame(controller1, controller2)
 
 	if game == nil {
-		t.Errorf("Expected a game to be created, but got nil")
+		t.Fatal("Expected a game to be created, but got nil")
 	}
 
 	if len(game.Players) != 2 {

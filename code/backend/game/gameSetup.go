@@ -23,10 +23,8 @@ func SetupGame(game *Game, player1Pieces, player2Pieces []*engine.Piece) error {
 		return err
 	}
 
-	// Initialize piece tracking for both players
 	game.InitializePieces()
 
-	// Initialize piece scores
 	game.Players[0].InitializePieceScore(GetPieceListStrategicValue(player1Pieces))
 	game.Players[1].InitializePieceScore(GetPieceListStrategicValue(player2Pieces))
 

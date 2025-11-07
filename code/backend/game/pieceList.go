@@ -21,7 +21,7 @@ var pieceTypes = []models.PieceType{
 }
 
 func GetPieceList(player *engine.Player) []*engine.Piece {
-	pieceList := make([]*engine.Piece, 0, 40) // Pre-allocate for 40 pieces
+	pieceList := make([]*engine.Piece, 0, 40)
 
 	for _, pieceType := range pieceTypes {
 		for range pieceType.GetCount() {

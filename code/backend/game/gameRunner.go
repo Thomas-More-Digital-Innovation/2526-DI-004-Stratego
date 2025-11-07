@@ -10,17 +10,17 @@ import (
 
 // GameRunner handles the execution of a game turn-by-turn
 type GameRunner struct {
-	game            *Game
-	turnDelay       time.Duration // Optional delay between AI turns for visualization, can be 0 to remove the delay
-	maxTurns        int           // Safety limit to prevent infinite games
-	waitingForInput bool          // True when waiting for human player input
-	onMoveExecuted  func()        // Callback when a move is executed
-	stopChan        chan bool     // Channel to signal stopping the game
+	game                 *Game
+	turnDelay            time.Duration // Optional delay between AI turns for visualization, can be 0 to remove the delay
+	maxTurns             int
+	waitingForHumanInput bool
+	onMoveExecuted       func()
+	stopChan             chan bool
 }
 
 func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunner {
 	if maxTurns <= 0 {
-		maxTurns = 1000 // Default safety limit
+		maxTurns = 1000 // Default safety limit of 1000 turns, prevents infinite loops (especially for AI vs AI)
 	}
 	return &GameRunner{
 		game:      game,
@@ -52,24 +52,21 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 		default:
 			// No stop signal, continue
 		}
-		
+
 		executed := gr.ExecuteTurn(logging)
 
 		if executed {
-			// Turn was executed, increment counter
 			turnCount++
 			if logging {
 				log.Printf("GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
 			}
 		} else {
-			// ExecuteTurn returned false - check why
 			if gr.game.IsGameOver() {
 				if logging {
 					log.Printf("GameRunner: Game ended during ExecuteTurn")
 				}
 				break
 			}
-			// Still waiting for human input, continue polling
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -82,7 +79,6 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 
 	if turnCount >= gr.maxTurns {
 		fmt.Println("Game ended: Maximum turns reached")
-		// Set winner to player with higher score, or nil for draw
 		return gr.calculateWinnerOnMaxTurnsExceeded()
 	}
 
@@ -115,23 +111,20 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 	if controller.GetControllerType() == engine.HumanController {
 		humanController, ok := controller.(*engine.HumanPlayerController)
 		if !ok || !humanController.HasPendingMove() {
-			if !gr.waitingForInput {
-				// Only log once when we start waiting
+			if !gr.waitingForHumanInput {
 				if logging {
 					log.Printf("GameRunner.ExecuteTurn: Waiting for human input")
 				}
-				gr.waitingForInput = true
+				gr.waitingForHumanInput = true
 			}
 			return false // Wait for human input
 		}
 
-		// Get the pending move
 		move := humanController.GetPendingMove()
 		if move == nil {
 			return false
 		}
 
-		// Execute the move
 		piece := gr.game.Board.GetPieceAt(move.GetFrom())
 		if piece == nil {
 			fmt.Println("Invalid move: no piece at from position")
@@ -139,9 +132,8 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 		}
 
 		gr.game.MakeMove(move, piece)
-		gr.waitingForInput = false
+		gr.waitingForHumanInput = false
 
-		// Notify that a move was executed
 		if gr.onMoveExecuted != nil {
 			gr.onMoveExecuted()
 		}
@@ -157,10 +149,8 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 
 	move := controller.MakeMove(gr.game.Board)
 
-	// Validate move - check if piece exists at from position
 	piece := gr.game.Board.GetPieceAt(move.GetFrom())
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
-		// No piece at from position or wrong owner = AI has no valid moves
 		if logging {
 			log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)",
 				gr.game.CurrentPlayer.GetName(), move.GetFrom())
@@ -173,7 +163,6 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 		return false
 	}
 
-	// Validate the move is legal
 	if !gr.game.Board.IsValidMove(&move) {
 		if logging {
 			log.Printf("AI %s provided invalid move: %v", gr.game.CurrentPlayer.GetName(), move)
@@ -186,7 +175,6 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 
 	gr.game.MakeMove(&move, piece)
 
-	// Notify that a move was executed
 	if gr.onMoveExecuted != nil {
 		gr.onMoveExecuted()
 	}
@@ -203,11 +191,13 @@ func (gr *GameRunner) getOpponent(player *engine.Player) *engine.Player {
 
 // IsWaitingForInput returns true if the game is waiting for human input
 func (gr *GameRunner) IsWaitingForInput() bool {
-	return gr.waitingForInput
+	return gr.waitingForHumanInput
 }
 
+// DebugSetWaitingForInput sets the waiting for human input flag to the given value.
+// This is for debugging (& testing) purposes only and should not be used in production code.
 func (gr *GameRunner) DebugSetWaitingForInput(value bool) {
-	gr.waitingForInput = value
+	gr.waitingForHumanInput = value
 }
 
 // GetGame returns the underlying game
@@ -217,7 +207,7 @@ func (gr *GameRunner) GetGame() *Game {
 
 // SubmitHumanMove allows external code to submit a human player's move
 func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
-	if !gr.waitingForInput {
+	if !gr.waitingForHumanInput {
 		return fmt.Errorf("not waiting for input")
 	}
 
@@ -231,14 +221,12 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 		return fmt.Errorf("invalid controller type")
 	}
 
-	// Validate the move
 	if !gr.game.Board.IsValidMove(&move) {
 		return fmt.Errorf("invalid move")
 	}
 
 	humanController.SetPendingMove(move)
 
-	// Execute the turn
 	gr.ExecuteTurn(true) // TODO assuming logging is true for human moves
 
 	return nil

@@ -100,16 +100,11 @@ func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 }
 
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {
-	// Don't clear LastCombat here - it will be cleared after broadcast
-	// This prevents race condition where AI moves immediately after player combat
-
 	target := g.Board.GetPieceAt(move.GetTo())
 	if target != nil {
-		// Combat occurred - reveal both pieces
 		piece.Reveal()
 		target.Reveal()
 
-		// Track combat result
 		g.LastCombat = &CombatResult{
 			Occurred:         true,
 			AttackerPiece:    piece,
@@ -173,8 +168,8 @@ func (g *Game) HideCombatPieces() {
 // Called at the start of each new round to reset piece visibility
 func (g *Game) HideAllRevealedPieces() {
 	field := g.Board.GetField()
-	for y := 0; y < 10; y++ {
-		for x := 0; x < 10; x++ {
+	for y := range 10 {
+		for x := range 10 {
 			piece := field[y][x]
 			if piece != nil && piece.IsAlive() && piece.IsRevealed() {
 				piece.Hide()
@@ -186,8 +181,8 @@ func (g *Game) HideAllRevealedPieces() {
 // InitializePieces scans board and tracks all pieces for both players (call once at game start)
 func (g *Game) InitializePieces() {
 	field := g.Board.GetField()
-	for y := 0; y < 10; y++ {
-		for x := 0; x < 10; x++ {
+	for y := range 10 {
+		for x := range 10 {
 			piece := field[y][x]
 			if piece != nil {
 				pos := engine.NewPosition(x, y)
