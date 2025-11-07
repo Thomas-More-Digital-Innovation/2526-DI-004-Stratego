@@ -6,8 +6,7 @@ import (
 )
 
 func RunAIvsAI(ai1, ai2 string, matches int, format string, logging bool) {
-	// TODO: currently we are only running Fafo vs Fafo
-	summary := runAIvsAI(matches, logging)
+	summary := runAIvsAI(ai1, ai2, matches, logging)
 
 	switch format {
 	case "md":

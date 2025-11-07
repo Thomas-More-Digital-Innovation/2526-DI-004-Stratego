@@ -1,4 +1,4 @@
-package fafo
+package fato
 
 import (
 	"digital-innovation/stratego/engine"
@@ -7,31 +7,31 @@ import (
 	"math/rand/v2"
 )
 
-type FafoAI struct {
+type FatoAI struct {
 	player         *engine.Player
 	memorizedField [10][10]*engine.Piece
 }
 
-func NewFafoAI(player *engine.Player) *FafoAI {
-	return &FafoAI{
+func NewFatoAI(player *engine.Player) *FatoAI {
+	return &FatoAI{
 		memorizedField: [10][10]*engine.Piece{},
 		player:         player,
 	}
 }
 
-func (ai *FafoAI) GetPlayer() *engine.Player {
+func (ai *FatoAI) GetPlayer() *engine.Player {
 	return ai.player
 }
 
-func (ai *FafoAI) GetControllerType() engine.ControllerType {
+func (ai *FatoAI) GetControllerType() engine.ControllerType {
 	return engine.AIController
 }
 
-func (ai *FafoAI) IsPieceMemorized(pos engine.Position) bool {
+func (ai *FatoAI) IsPieceMemorized(pos engine.Position) bool {
 	return ai.memorizedField[pos.Y][pos.X] != nil
 }
 
-func (ai *FafoAI) PickRandomPiece() *engine.Piece {
+func (ai *FatoAI) PickRandomPiece() *engine.Piece {
 	pieces := ai.player.GetAlivePieces()
 	if len(pieces) == 0 {
 		return nil
@@ -40,7 +40,7 @@ func (ai *FafoAI) PickRandomPiece() *engine.Piece {
 	return pieces[random]
 }
 
-func (ai *FafoAI) MakeMove(board *engine.Board) engine.Move {
+func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
 	// Not so random huh? :-)
 
 	// 1. Try to attack a known enemy piece
@@ -58,7 +58,7 @@ func (ai *FafoAI) MakeMove(board *engine.Board) engine.Move {
 }
 
 // findAttackMove looks for moves that attack known/visible enemy pieces
-func (ai *FafoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
+func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 	pieces := ai.player.GetAlivePieces()
 	for _, piece := range pieces {
 		if !piece.CanMove() {
@@ -89,7 +89,7 @@ func (ai *FafoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 }
 
 // findExplorationMove moves toward enemy side
-func (ai *FafoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
+func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 	enemyY := 0
 	if ai.player.GetID() == 1 {
 		enemyY = 9
@@ -135,7 +135,7 @@ func (ai *FafoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 }
 
 // findRandomMove picks any valid move as last resort
-func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
+func (ai *FatoAI) findRandomMove(board *engine.Board) engine.Move {
 	pieces := ai.player.GetAlivePieces()
 	shuffled := make([]*engine.Piece, len(pieces))
 	copy(shuffled, pieces)
@@ -164,27 +164,27 @@ func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
 	return engine.Move{}
 }
 
-func (ai *FafoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player) {
+func (ai *FatoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player) {
 	if math.Abs(float64(opponentMove.GetFrom().X-opponentMove.GetTo().X)) > 1 || math.Abs(float64(opponentMove.GetFrom().Y-opponentMove.GetTo().Y)) > 1 {
 		piece := engine.NewPiece(models.Scout, opponent)
 		ai.MemorizePiece(opponentMove.GetTo(), piece)
 	}
 }
 
-func (ai *FafoAI) MemorizePiece(pos engine.Position, piece *engine.Piece) {
+func (ai *FatoAI) MemorizePiece(pos engine.Position, piece *engine.Piece) {
 	ai.memorizedField[pos.Y][pos.X] = piece
 }
 
-func (ai *FafoAI) RecallPiece(pos engine.Position) *engine.Piece {
+func (ai *FatoAI) RecallPiece(pos engine.Position) *engine.Piece {
 	return ai.memorizedField[pos.Y][pos.X]
 }
 
 // small chance to forget a piece
-func (ai *FafoAI) ForgetPiece(pos engine.Position) {
+func (ai *FatoAI) ForgetPiece(pos engine.Position) {
 	ai.memorizedField[pos.Y][pos.X] = nil
 }
 
 // Reset clears the AI's memory for a new game
-func (ai *FafoAI) Reset() {
+func (ai *FatoAI) Reset() {
 	ai.memorizedField = [10][10]*engine.Piece{}
 }

@@ -1,14 +1,16 @@
 package aivsai
 
 import (
+	"digital-innovation/stratego/ai"
 	"digital-innovation/stratego/ai/fafo"
+	"digital-innovation/stratego/ai/fato"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/models"
 	"fmt"
 )
 
-func runAIvsAI(matches int, logging bool) models.GameSummary {
+func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 	aliceWins := 0
 	bobWins := 0
 	draws := 0
@@ -21,7 +23,7 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 	player1Name := ""
 	player2Name := ""
 
-	for i := 0; i < matches; i++ {
+	for i := range matches {
 		// Create FRESH players and controllers for EACH game, use same ID & name
 		playerAlice := engine.NewPlayer(0, "Alice AI", "red")
 		playerBob := engine.NewPlayer(1, "Bob AI", "blue")
@@ -29,8 +31,8 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 		player1Name = playerAlice.GetName()
 		player2Name = playerBob.GetName()
 
-		controllerAlice := fafo.NewFafoAI(&playerAlice)
-		controllerBob := fafo.NewFafoAI(&playerBob)
+		controllerAlice := createAI(ai1, &playerAlice)
+		controllerBob := createAI(ai2, &playerBob)
 
 		// Alternate who goes first
 		// Without this, player 1 wins more often than the other
@@ -90,4 +92,16 @@ func runAIvsAI(matches int, logging bool) models.GameSummary {
 	}
 
 	return gameSummary
+}
+
+func createAI(ai string, player *engine.Player) ai.AI {
+	switch ai {
+	case models.Fafo:
+		return fafo.NewFafoAI(player)
+	case models.Fato:
+		return fato.NewFatoAI(player)
+	default:
+		panic("I don't know that AI! " + ai)
+	}
+
 }

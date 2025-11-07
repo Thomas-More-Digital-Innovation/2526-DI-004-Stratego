@@ -3,9 +3,11 @@ package main
 import (
 	aivsai "digital-innovation/stratego/ai/AIvsAI"
 	"digital-innovation/stratego/api"
+	"digital-innovation/stratego/models"
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -13,7 +15,7 @@ func main() {
 	// Command line flags
 	serverMode := flag.Bool("server", false, "Run in WebSocket server mode")
 	addr := flag.String("addr", ":8080", "Server address")
-	aiVsaiMode := flag.String("aivsai", "fafo:fafo", "Run AI vs AI matches instead of server")
+	aiTypes := flag.String("ai", "fafo:fafo", "Run AI vs AI matches instead of server")
 	matches := flag.Int("matches", 100, "Number of AI vs AI matches to run")
 	format := flag.String("format", "none", "The format used to print the results of an AI vs AI competition, either none or md")
 	logging := flag.Bool("logging", true, "Show logs in stdout")
@@ -27,11 +29,11 @@ func main() {
 		runServer(*addr)
 	} else {
 		var ai1, ai2 string
-		if aiVsaiMode != nil {
-			// Not implemented yet
+		if aiTypes == nil {
+			ai1, ai2 = models.Fato, models.Fato // TODO: choose the best AI by default
 		} else {
-			ai1 = "fafo"
-			ai2 = "fafo"
+			aiTypeSplit := strings.Split(*aiTypes, ":")
+			ai1, ai2 = aiTypeSplit[0], aiTypeSplit[1]
 		}
 		start := time.Now()
 		aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *logging)
