@@ -11,25 +11,24 @@ import (
 )
 
 func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
-	aliceWins := 0
-	bobWins := 0
 	draws := 0
 
 	flagCaptures := 0
 	noMovesWins := 0
 	maxTurnsWins := 0
 	totalRounds := 0
+	leastRounds := 1000 // we start with our max rounds possible
 
-	player1Name := ""
-	player2Name := ""
+	player1Name := "Alice AI - " + ai1
+	player2Name := "Bob AI - " + ai2
+
+	player1Data := models.AiTournamentData{Name: player1Name}
+	player2Data := models.AiTournamentData{Name: player2Name}
 
 	for i := range matches {
 		// Create FRESH players and controllers for EACH game, use same ID & name
-		playerAlice := engine.NewPlayer(0, "Alice AI", "red")
-		playerBob := engine.NewPlayer(1, "Bob AI", "blue")
-
-		player1Name = playerAlice.GetName()
-		player2Name = playerBob.GetName()
+		playerAlice := engine.NewPlayer(0, player1Name, "red")
+		playerBob := engine.NewPlayer(1, player2Name, "blue")
 
 		controllerAlice := createAI(ai1, &playerAlice)
 		controllerBob := createAI(ai2, &playerBob)
@@ -47,30 +46,42 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 
 		runner := game.NewGameRunner(g, 0, 1000)
 		winner := runner.RunToCompletion(logging)
-
 		rounds := g.GetRound()
-		winCause := g.GetWinCause()
 		totalRounds += rounds
 
-		switch winCause {
-		case game.WinCauseFlagCaptured:
-			flagCaptures++
-		case game.WinCauseNoMovablePieces:
-			noMovesWins++
-		default:
-			maxTurnsWins++
+		if rounds < leastRounds {
+			leastRounds = rounds
 		}
 
-		switch {
-		case winner == nil:
+		if winner != nil {
+			var winnerData *models.AiTournamentData
+			winCause := g.GetWinCause()
+			if winner.GetName() == player1Name {
+				winnerData = &player1Data
+				fmt.Printf("%v wins - %s (%d rounds)\n", player1Name, winCause, rounds)
+
+			} else {
+				winnerData = &player2Data
+				fmt.Printf("%v wins - %s (%d rounds)\n", player2Name, winCause, rounds)
+			}
+
+			switch winCause {
+			case game.WinCauseFlagCaptured:
+				winnerData.WinCauseFlagCaptured++
+				flagCaptures++
+			case game.WinCauseNoMovablePieces:
+				winnerData.WinCauseNoMovesWin++
+				noMovesWins++
+			default:
+				winnerData.WinCauseMaxTurns++
+				maxTurnsWins++
+			}
+
+			winnerData.Wins++
+
+		} else {
 			fmt.Printf("Draw after %d rounds\n", rounds)
 			draws++
-		case winner.GetName() == "Alice AI":
-			fmt.Printf("Alice wins - %s (%d rounds)\n", winCause, rounds)
-			aliceWins++
-		default:
-			fmt.Printf("Bob wins - %s (%d rounds)\n", winCause, rounds)
-			bobWins++
 		}
 
 	}
@@ -78,17 +89,16 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 	avgRounds := float64(totalRounds) / float64(matches)
 
 	gameSummary := models.GameSummary{
-		Player1Name:          player1Name,
-		Player2Name:          player2Name,
-		Player1Wins:          aliceWins,
-		Player2Wins:          bobWins,
+		Player1data:          player1Data,
+		Player2data:          player2Data,
 		Draws:                draws,
 		TotalRounds:          totalRounds,
 		AverageRounds:        avgRounds,
+		LeastRounds:          leastRounds,
 		Matches:              matches,
-		WinCauseFlagCaptured: float64(flagCaptures),
-		WinCauseNoMovesWins:  float64(noMovesWins),
-		WinCauseMaxTurns:     float64(maxTurnsWins),
+		WinCauseFlagCaptured: flagCaptures,
+		WinCauseNoMovesWins:  noMovesWins,
+		WinCauseMaxTurns:     maxTurnsWins,
 	}
 
 	return gameSummary

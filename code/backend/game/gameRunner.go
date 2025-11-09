@@ -35,6 +35,7 @@ func (gr *GameRunner) SetMoveCallback(callback func()) {
 }
 
 // RunToCompletion runs the game until it's over (for AI vs AI)
+// Winner can be nil when max turns are reached and both AIs have a similar piece count
 func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 	turnCount := 0
 	if logging {

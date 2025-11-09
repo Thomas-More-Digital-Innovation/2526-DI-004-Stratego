@@ -1,30 +1,23 @@
 package fafo
 
 import (
+	"digital-innovation/stratego/ai"
 	"digital-innovation/stratego/engine"
 	"math/rand/v2"
 )
 
 type FafoAI struct {
-	player *engine.Player
+	ai.BaseAI
 }
 
 func NewFafoAI(player *engine.Player) *FafoAI {
 	return &FafoAI{
-		player: player,
+		*ai.NewBaseAI(player),
 	}
 }
 
-func (ai *FafoAI) GetPlayer() *engine.Player {
-	return ai.player
-}
-
-func (ai *FafoAI) GetControllerType() engine.ControllerType {
-	return engine.AIController
-}
-
 func (ai *FafoAI) PickRandomPiece() *engine.Piece {
-	pieces := ai.player.GetAlivePieces()
+	pieces := ai.GetPlayer().GetAlivePieces()
 	if len(pieces) == 0 {
 		return nil
 	}
@@ -33,12 +26,12 @@ func (ai *FafoAI) PickRandomPiece() *engine.Piece {
 }
 
 func (ai *FafoAI) MakeMove(board *engine.Board) engine.Move {
-	return ai.findRandomMove(board)
+	return ai.FindRandomMove(board)
 }
 
 // findRandomMove picks any valid move as last resort
-func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
-	pieces := ai.player.GetAlivePieces()
+func (ai *FafoAI) FindRandomMove(board *engine.Board) engine.Move {
+	pieces := ai.GetPlayer().GetAlivePieces()
 	shuffled := make([]*engine.Piece, len(pieces))
 	copy(shuffled, pieces)
 	rand.Shuffle(len(shuffled), func(i, j int) {
@@ -49,7 +42,7 @@ func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
 		if !piece.CanMove() {
 			continue
 		}
-		pos, exists := ai.player.GetPiecePosition(piece)
+		pos, exists := ai.GetPlayer().GetPiecePosition(piece)
 		if !exists {
 			continue
 		}
@@ -58,7 +51,9 @@ func (ai *FafoAI) findRandomMove(board *engine.Board) engine.Move {
 		if err != nil || len(moves) == 0 {
 			continue
 		}
-		return moves[rand.IntN(len(moves))]
+
+		chosen := moves[rand.IntN(len(moves))]
+		return engine.NewMove(chosen.GetFrom(), chosen.GetTo(), ai.GetPlayer())
 	}
 
 	// No valid moves available - player has lost (only immobile pieces left)

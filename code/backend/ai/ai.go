@@ -11,3 +11,19 @@ import "digital-innovation/stratego/engine"
 type AI interface {
 	engine.PlayerController
 }
+
+type BaseAI struct {
+	player *engine.Player
+}
+
+func NewBaseAI(player *engine.Player) *BaseAI {
+	return &BaseAI{player: player}
+}
+
+func (ai *BaseAI) GetPlayer() *engine.Player {
+	return ai.player
+}
+
+func (ai *BaseAI) GetControllerType() engine.ControllerType {
+	return engine.AIController
+}

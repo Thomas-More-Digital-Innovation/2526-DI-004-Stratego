@@ -1,6 +1,7 @@
 package fato
 
 import (
+	"digital-innovation/stratego/ai/fafo"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/models"
 	"math"
@@ -8,36 +9,24 @@ import (
 )
 
 type FatoAI struct {
-	player         *engine.Player
+	fafo.FafoAI
 	memorizedField [10][10]*engine.Piece
 }
 
 func NewFatoAI(player *engine.Player) *FatoAI {
+	fafoAI := fafo.NewFafoAI(player)
 	return &FatoAI{
+		FafoAI:         *fafoAI,
 		memorizedField: [10][10]*engine.Piece{},
-		player:         player,
 	}
 }
 
-func (ai *FatoAI) GetPlayer() *engine.Player {
-	return ai.player
-}
-
-func (ai *FatoAI) GetControllerType() engine.ControllerType {
-	return engine.AIController
+func (ai *FatoAI) GetMemorizedField() [10][10]*engine.Piece {
+	return ai.memorizedField
 }
 
 func (ai *FatoAI) IsPieceMemorized(pos engine.Position) bool {
 	return ai.memorizedField[pos.Y][pos.X] != nil
-}
-
-func (ai *FatoAI) PickRandomPiece() *engine.Piece {
-	pieces := ai.player.GetAlivePieces()
-	if len(pieces) == 0 {
-		return nil
-	}
-	random := rand.IntN(len(pieces))
-	return pieces[random]
 }
 
 func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
@@ -54,17 +43,17 @@ func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
 	}
 
 	// 3. Fallback: random valid move
-	return ai.findRandomMove(board)
+	return ai.FindRandomMove(board)
 }
 
 // findAttackMove looks for moves that attack known/visible enemy pieces
 func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
-	pieces := ai.player.GetAlivePieces()
+	pieces := ai.GetPlayer().GetAlivePieces()
 	for _, piece := range pieces {
 		if !piece.CanMove() {
 			continue
 		}
-		pos, exists := ai.player.GetPiecePosition(piece)
+		pos, exists := ai.GetPlayer().GetPiecePosition(piece)
 		if !exists {
 			continue
 		}
@@ -76,7 +65,7 @@ func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 
 		for _, move := range moves {
 			target := board.GetPieceAt(move.GetTo())
-			if target != nil && target.GetOwner() != ai.player {
+			if target != nil && target.GetOwner() != ai.GetPlayer() {
 				// Attack if we know the piece or it's worth trying
 				memorized := ai.RecallPiece(move.GetTo())
 				if memorized != nil || piece.GetRank() >= target.GetRank() {
@@ -91,11 +80,11 @@ func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 // findExplorationMove moves toward enemy side
 func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 	enemyY := 0
-	if ai.player.GetID() == 1 {
+	if ai.GetPlayer().GetID() == 1 {
 		enemyY = 9
 	}
 
-	pieces := ai.player.GetAlivePieces()
+	pieces := ai.GetPlayer().GetAlivePieces()
 	shuffled := make([]*engine.Piece, len(pieces))
 	copy(shuffled, pieces)
 	rand.Shuffle(len(shuffled), func(i, j int) {
@@ -106,7 +95,7 @@ func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 		if !piece.CanMove() {
 			continue
 		}
-		pos, exists := ai.player.GetPiecePosition(piece)
+		pos, exists := ai.GetPlayer().GetPiecePosition(piece)
 		if !exists {
 			continue
 		}
@@ -132,36 +121,6 @@ func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 		}
 	}
 	return engine.Move{}, false
-}
-
-// findRandomMove picks any valid move as last resort
-func (ai *FatoAI) findRandomMove(board *engine.Board) engine.Move {
-	pieces := ai.player.GetAlivePieces()
-	shuffled := make([]*engine.Piece, len(pieces))
-	copy(shuffled, pieces)
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
-
-	for _, piece := range shuffled {
-		if !piece.CanMove() {
-			continue
-		}
-		pos, exists := ai.player.GetPiecePosition(piece)
-		if !exists {
-			continue
-		}
-
-		moves, err := board.ListMoves(pos)
-		if err != nil || len(moves) == 0 {
-			continue
-		}
-		return moves[rand.IntN(len(moves))]
-	}
-
-	// No valid moves available - player has lost (only immobile pieces left)
-	// Return empty move to signal defeat
-	return engine.Move{}
 }
 
 func (ai *FatoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player) {
