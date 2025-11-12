@@ -1,6 +1,6 @@
 # FATO AI
 
-FATO AI is a random-move agent based AI who can remember the board & act on it. It does not have the ability to learn anything as it is still random move based. It inherits the random movement from Fafo AI with new logic that checks the board for known enemy pieces and moves toward them if found.
+FATO AI is a random-move agent based AI who can remember the board & act on it. It does not have the ability to learn anything as it is still random move based. It inherits the random movement from Fafo AI with new logic that checks the board for known enemy pieces and acts on that knowledge.
 
 > FATO means "Fuck Around & Try Out"
 
@@ -13,130 +13,102 @@ Alice and Bob, both take equal number of turns and use random board setups.
 
 ### AI vs AI Tournament Summary (10 games)
 
-**Total Matches:** 10  
-**Total Rounds:** 1523  
-**Average Rounds (per game):** 152.30  
-**Shortest Game (rounds):** 1
+**Total Matches:** 10
+**Total Rounds:** 2996
+**Average Rounds (per game):** 299.60
+**Shortest Game (rounds):** 34
 
 #### Overall Win Causes
 
-| Cause | Count | % |
-|-------:|------:|---:|
-| Flag captured | 8 | 88.9% |
-| No movable pieces | 0 | 0.0% |
-| Max turns | 1 | 11.1% |
+|             Cause | Count |     % |
+| ----------------: | ----: | ----: |
+|     Flag captured |     4 | 80.0% |
+| No movable pieces |     1 | 20.0% |
+|         Max turns |     0 |  0.0% |
 
 #### Player Results
 
-| Player | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
-|:-------|-----:|-----:|--------------:|-------------:|--------------:|
-| Alice AI - fato | 4 | 44.4% | 4 | 0 | 0 |
-| Bob AI - fato | 5 | 55.6% | 4 | 0 | 1 |
+| Player          | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
+| :-------------- | ---: | ----: | ------------: | -----------: | ------------: |
+| Alice AI - fato |    2 | 40.0% |             2 |            0 |             0 |
+| Bob AI - fato   |    3 | 60.0% |             2 |            1 |             0 |
 
-**Draws:** 1 (11.1%)
+**Draws:** 5 (100.0%)
 
-AI vs AI matches completed in 0.02 seconds
+AI vs AI matches completed in 0.06 seconds
 
 ### AI vs AI Tournament Summary (100 games)
 
-**Total Matches:** 100  
-**Total Rounds:** 18604  
-**Average Rounds (per game):** 186.04  
+**Total Matches:** 100
+**Total Rounds:** 22839
+**Average Rounds (per game):** 228.39
 **Shortest Game (rounds):** 1
 
 #### Overall Win Causes
 
-| Cause | Count | % |
-|-------:|------:|---:|
-| Flag captured | 74 | 85.1% |
-| No movable pieces | 0 | 0.0% |
-| Max turns | 13 | 14.9% |
+|             Cause | Count |     % |
+| ----------------: | ----: | ----: |
+|     Flag captured |    61 | 77.2% |
+| No movable pieces |     8 | 10.1% |
+|         Max turns |    10 | 12.7% |
 
 #### Player Results
 
-| Player | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
-|:-------|-----:|-----:|--------------:|-------------:|--------------:|
-| Alice AI - fato | 50 | 57.5% | 41 | 0 | 9 |
-| Bob AI - fato | 37 | 42.5% | 33 | 0 | 4 |
+| Player          | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
+| :-------------- | ---: | ----: | ------------: | -----------: | ------------: |
+| Alice AI - fato |   38 | 48.1% |            29 |            5 |             4 |
+| Bob AI - fato   |   41 | 51.9% |            32 |            3 |             6 |
 
-**Draws:** 13 (14.9%)
+**Draws:** 21 (26.6%)
 
-AI vs AI matches completed in 0.22 seconds
+AI vs AI matches completed in 0.55 seconds
 
 ### AI vs AI Tournament Summary (1000 games)
 
 **Total Matches:** 1000  
-**Total Rounds:** 181686  
-**Average Rounds (per game):** 181.69  
+**Total Rounds:** 244144  
+**Average Rounds (per game):** 244.14  
 **Shortest Game (rounds):** 1
 
 #### Overall Win Causes
 
 | Cause | Count | % |
 |-------:|------:|---:|
-| Flag captured | 753 | 85.6% |
-| No movable pieces | 9 | 1.0% |
-| Max turns | 118 | 13.4% |
+| Flag captured | 502 | 67.2% |
+| No movable pieces | 138 | 18.5% |
+| Max turns | 107 | 14.3% |
 
 #### Player Results
 
 | Player | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
 |:-------|-----:|-----:|--------------:|-------------:|--------------:|
-| Alice AI - fato | 425 | 48.3% | 362 | 2 | 61 |
-| Bob AI - fato | 455 | 51.7% | 391 | 7 | 57 |
+| Alice AI - fato | 372 | 49.8% | 253 | 67 | 52 |
+| Bob AI - fato | 375 | 50.2% | 249 | 71 | 55 |
 
-**Draws:** 120 (13.6%)
-
-AI vs AI matches completed in 2.95 seconds
+**Draws:** 253 (33.9%)
 
 ### AI vs AI Tournament Summary (10000 games)
 
 **Total Matches:** 10000  
-**Total Rounds:** 1823626  
-**Average Rounds (per game):** 182.36  
+**Total Rounds:** 2381773  
+**Average Rounds (per game):** 238.18  
 **Shortest Game (rounds):** 1
 
 #### Overall Win Causes
 
 | Cause | Count | % |
 |-------:|------:|---:|
-| Flag captured | 7394 | 85.1% |
-| No movable pieces | 106 | 1.2% |
-| Max turns | 1191 | 13.7% |
+| Flag captured | 5328 | 70.8% |
+| No movable pieces | 1090 | 14.5% |
+| Max turns | 1111 | 14.8% |
 
 #### Player Results
 
 | Player | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
 |:-------|-----:|-----:|--------------:|-------------:|--------------:|
-| Alice AI - fato | 4386 | 50.5% | 3738 | 54 | 594 |
-| Bob AI - fato | 4305 | 49.5% | 3656 | 52 | 597 |
+| Alice AI - fato | 3691 | 49.0% | 2610 | 550 | 531 |
+| Bob AI - fato | 3838 | 51.0% | 2718 | 540 | 580 |
 
-**Draws:** 1309 (15.1%)
+**Draws:** 2471 (32.8%)
 
-AI vs AI matches completed in 38.82 seconds
-
-### AI vs AI Tournament Summary (100000 games)
-
-**Total Matches:** 100000  
-**Total Rounds:** 18250244  
-**Average Rounds (per game):** 182.50  
-**Shortest Game (rounds):** 1
-
-#### Overall Win Causes
-
-| Cause | Count | % |
-|-------:|------:|---:|
-| Flag captured | 74139 | 85.4% |
-| No movable pieces | 1105 | 1.3% |
-| Max turns | 11527 | 13.3% |
-
-#### Player Results
-
-| Player | Wins | Win % | Flag captures | No-move wins | Max-turn wins |
-|:-------|-----:|-----:|--------------:|-------------:|--------------:|
-| Alice AI - fato | 43264 | 49.9% | 36883 | 533 | 5848 |
-| Bob AI - fato | 43507 | 50.1% | 37256 | 572 | 5679 |
-
-**Draws:** 13229 (15.2%)
-
-AI vs AI matches completed in 331.41 seconds
+AI vs AI matches completed in 57.78 seconds
