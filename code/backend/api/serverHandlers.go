@@ -21,7 +21,9 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		GameID   string `json:"gameId"`
-		GameType string `json:"gameType"` // "human-vs-ai", models.AiVsAi, models.HumanVsHuman
+		GameType string `json:"gameType"`
+		AI1      string `json:"ai1"`
+		AI2      string `json:"ai2"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -37,7 +39,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 		req.GameType = models.HumanVsAi
 	}
 
-	_, err := s.CreateGame(req.GameID, req.GameType, models.Fafo) // TODO: build logic for frontend to select AI type
+	_, err := s.CreateGame(req.GameID, req.GameType, req.AI1, req.AI2) // TODO: build logic for frontend to select AI type
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

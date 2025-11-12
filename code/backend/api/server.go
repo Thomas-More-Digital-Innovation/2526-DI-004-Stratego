@@ -31,7 +31,7 @@ func NewGameServer() *GameServer {
 }
 
 // CreateGame creates a new game session
-func (s *GameServer) CreateGame(gameID string, gameType string, ai string) (*GameSessionHandler, error) {
+func (s *GameServer) CreateGame(gameID string, gameType string, ai1 , ai2 string) (*GameSessionHandler, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -40,19 +40,18 @@ func (s *GameServer) CreateGame(gameID string, gameType string, ai string) (*Gam
 	}
 
 	var controller1, controller2 engine.PlayerController
-
 	switch gameType {
 	case models.HumanVsAi:
 		player1 := engine.NewPlayer(0, "Human Player", "red")
 		player2 := engine.NewPlayer(1, "AI Player", "blue")
 		controller1 = engine.NewHumanPlayerController(&player1)
-		controller2 = AIhandler.CreateAI(ai, &player2)
+		controller2 = AIhandler.CreateAI(ai1, &player2)
 
 	case models.AiVsAi:
 		player1 := engine.NewPlayer(0, "AI Red", "red")
 		player2 := engine.NewPlayer(1, "AI Blue", "blue")
-		controller1 = AIhandler.CreateAI(ai, &player1)
-		controller2 = AIhandler.CreateAI(ai, &player2)
+		controller1 = AIhandler.CreateAI(ai1, &player1)
+		controller2 = AIhandler.CreateAI(ai2, &player2)
 
 	case models.HumanVsHuman:
 		player1 := engine.NewPlayer(0, "Human Red", "red")

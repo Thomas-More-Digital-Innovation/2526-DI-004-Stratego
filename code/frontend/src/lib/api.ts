@@ -8,11 +8,11 @@ export class GameAPI {
 	private messageHandlers: Map<string, (data: any) => void> = new Map();
 
 	// REST API
-	async createGame(gameType: GameMode): Promise<GameInfo> {
+	async createGame(gameType: GameMode, ai1: string, ai2: string): Promise<GameInfo> {
 		const response = await fetch(`${API_BASE}/api/games`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ gameType })
+			body: JSON.stringify({ gameType, ai1, ai2 }),
 		});
 
 		if (!response.ok) {

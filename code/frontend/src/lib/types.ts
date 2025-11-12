@@ -88,3 +88,9 @@ export interface CombatMessage {
 }
 
 export type GameMode = 'human_vs_ai' | 'ai_vs_ai' | 'human_vs_human';
+
+export interface AI {
+	name: string;
+	id: string;
+	description: string;
+}

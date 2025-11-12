@@ -1,31 +1,56 @@
 <script lang="ts">
     import { GameAPI } from "$lib/api";
     import type { GameMode } from "$lib/types";
+    import SelectAI from "./SelectAI.svelte";
+
+    type StartGameState = "create" | "selectAi1" | "selectAi2" | "creating";
 
     let api = new GameAPI();
     let selectedMode = $state<GameMode>("human_vs_ai");
-    let isCreating = $state<boolean>(false);
+    let startGameState = $state<StartGameState>("create");
+    let ai1 = $state<string>("");
+    let ai2 = $state<string>("");
 
     let { errorMessage = $bindable("") } = $props();
 
     async function startNewGame() {
-        isCreating = true;
         errorMessage = "";
 
-        if (selectedMode === "human_vs_human") {
-            // TODO coming soon
-            errorMessage = "Coming Soon";
-            isCreating = false;
-            return;
-        }
+        if (startGameState === "create") {
+            return selectMode();
+        } 
 
         try {
-            const gameInfo = await api.createGame(selectedMode);
+            const gameInfo = await api.createGame(selectedMode, ai1, ai2);
             // Use window.location for navigation
             window.location.href = `/game/${gameInfo.gameId}?mode=${selectedMode}`;
         } catch (error) {
             errorMessage = `Failed to create game: ${error}`;
-            isCreating = false;
+            startGameState = "create";
+            ai1 = "";
+            ai2 = "";
+        }
+    }
+
+    function selectMode() {
+        if (selectedMode === "human_vs_human") {
+            // TODO coming soon
+            errorMessage = "Coming Soon";
+            startGameState = "create";
+            return;
+        } else {
+            startGameState = "selectAi1";
+        }
+        ai1 = "";
+        ai2 = "";
+    }
+
+    function selectAi() {
+        if (selectedMode === "human_vs_ai" || startGameState === "selectAi2") {
+            startGameState = "creating";
+            startNewGame();
+        } else {
+            startGameState = "selectAi2";
         }
     }
 </script>
@@ -38,7 +63,7 @@
             class="game-mode-card"
             class:selected={selectedMode === "human_vs_human"}
             onclick={() => (selectedMode = "human_vs_human")}
-            disabled={isCreating}
+            disabled={startGameState === "creating"}
         >
             <div class="mode-icon">🧑 vs 🧑</div>
             <h3>Human vs Human</h3>
@@ -49,7 +74,7 @@
             class="game-mode-card"
             class:selected={selectedMode === "human_vs_ai"}
             onclick={() => (selectedMode = "human_vs_ai")}
-            disabled={isCreating}
+            disabled={startGameState === "creating"}
         >
             <div class="mode-icon">🧑 vs 🤖</div>
             <h3>Human vs AI</h3>
@@ -63,7 +88,7 @@
             class="game-mode-card"
             class:selected={selectedMode === "ai_vs_ai"}
             onclick={() => (selectedMode = "ai_vs_ai")}
-            disabled={isCreating}
+            disabled={startGameState === "creating"}
         >
             <div class="mode-icon">🤖 vs 🤖</div>
             <h3>AI vs AI</h3>
@@ -74,14 +99,38 @@
         </button>
     </div>
 
-    <button class="start-btn" onclick={startNewGame} disabled={isCreating}>
-        {#if isCreating}
+    <button
+        class="start-btn"
+        onclick={startNewGame}
+        disabled={startGameState === "creating"}
+    >
+        {#if startGameState === "creating"}
             Creating game...
+        {:else if startGameState === "selectAi1" || startGameState === "selectAi2"}
+            Select AI
         {:else}
             Start Game
         {/if}
     </button>
 </div>
+
+{#if startGameState === "selectAi1"}
+    <SelectAI
+        title="Select AI 1"
+        onSelectAI={(ai) => {
+            ai1 = ai;
+            selectAi();
+        }}
+    />
+{:else if startGameState === "selectAi2"}
+    <SelectAI
+        title="Select AI 2"
+        onSelectAI={(ai) => {
+            ai2 = ai;
+            selectAi();
+        }}
+    />
+{/if}
 
 <style>
     .game-modes {
@@ -90,7 +139,7 @@
     }
     .mode-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax( 300px, 700px));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 700px));
         gap: 20px;
         margin-bottom: 30px;
 
@@ -156,7 +205,8 @@
         &:hover:not(:disabled) {
             background: var(--primary);
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px color-mix(in srgb, var(--primary-dark), transparent 50%);
+            box-shadow: 0 6px 12px
+                color-mix(in srgb, var(--primary-dark), transparent 50%);
         }
 
         &:disabled {
