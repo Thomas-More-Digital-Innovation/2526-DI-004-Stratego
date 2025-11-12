@@ -9,9 +9,11 @@ import (
 	"math/rand/v2"
 )
 
+// TODO: choose aggression on frontend
+
 type FatoAI struct {
 	fafo.FafoAI
-	aggression float64 // 0.0 = very passive, 1.0 = very aggressive
+	aggression float64
 }
 
 func NewFatoAI(player *engine.Player, hasMemory bool) *FatoAI {
@@ -21,7 +23,6 @@ func NewFatoAI(player *engine.Player, hasMemory bool) *FatoAI {
 func NewFatoAIWithAggression(player *engine.Player, hasMemory bool, aggression float64) *FatoAI {
 	fafoAI := fafo.NewFafoAI(player, hasMemory)
 
-	// Clamp aggression between 0.0 and 1.0
 	if aggression < 0.0 {
 		aggression = 0.0
 	}
@@ -130,43 +131,35 @@ func (ai *FatoAI) evaluateAttack(attacker *engine.Piece, target *engine.Piece, t
 	// Check memory for target
 	remembered := memory.Recall(targetPos)
 
-	if target.IsRevealed() {
-		// We know exactly what it is
+	switch {
+	case target.IsRevealed():
 		rankDiff := float64(attacker.GetRank() - target.GetRank())
 		score = rankDiff * 10
 
-		// Bonus for capturing flag
 		if target.GetType().GetName() == "Flag" {
 			score += 10000
 		}
-		// Penalty for attacking bomb (unless we're a miner)
 		if target.GetType().GetName() == "Bomb" && attacker.GetType().GetName() != "Miner" {
 			score -= 1000
 		}
-	} else if remembered != nil && remembered.Confidence > 0.5 {
-		// Use memory with confidence weighting
+	case remembered != nil && remembered.Confidence > 0.5:
 		rankDiff := float64(attacker.GetRank() - remembered.Piece.GetRank())
 		score = rankDiff * 10 * remembered.Confidence
 
-		// Decay old memories (less reliable)
 		if remembered.Confidence < 0.8 {
 			score *= 0.7
 		}
-	} else {
-		// Unknown piece - take calculated risk based on piece value
-		// Higher rank pieces are more willing to probe
-		if attacker.GetRank() >= 7 {
-			score = 20.0 // Strong pieces should probe
-		} else if attacker.GetRank() >= 5 {
-			score = 10.0 // Medium pieces cautiously probe
-		} else {
-			score = 5.0 // Weak pieces rarely probe
+	default:
+		switch {
+		case attacker.GetRank() >= 7:
+			score = 20.0
+		case attacker.GetRank() >= 5:
+			score = 10.0
+		case attacker.GetRank() >= 3:
+			score = 5.0
 		}
-
-		// Add randomness to avoid predictable behavior
 		score += rand.Float64()*10 - 5
 	}
-
 	return score
 }
 
