@@ -31,7 +31,7 @@ func NewGameServer() *GameServer {
 }
 
 // CreateGame creates a new game session
-func (s *GameServer) CreateGame(gameID string, gameType string, ai1 , ai2 string) (*GameSessionHandler, error) {
+func (s *GameServer) CreateGame(gameID string, gameType string, ai1, ai2 string) (*GameSessionHandler, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
