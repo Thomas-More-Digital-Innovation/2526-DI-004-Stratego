@@ -13,6 +13,12 @@
 
     let { errorMessage = $bindable("") } = $props();
 
+    function cancel() {
+        startGameState = "create";
+        ai1 = "";
+        ai2 = "";
+    }
+
     async function startNewGame() {
         errorMessage = "";
 
@@ -26,9 +32,7 @@
             window.location.href = `/game/${gameInfo.gameId}?mode=${selectedMode}`;
         } catch (error) {
             errorMessage = `Failed to create game: ${error}`;
-            startGameState = "create";
-            ai1 = "";
-            ai2 = "";
+            cancel();
         }
     }
 
@@ -121,6 +125,7 @@
             ai1 = ai;
             selectAi();
         }}
+        onClose={cancel}
     />
 {:else if startGameState === "selectAi2"}
     <SelectAI
@@ -129,6 +134,7 @@
             ai2 = ai;
             selectAi();
         }}
+        onClose={cancel}
     />
 {/if}
 

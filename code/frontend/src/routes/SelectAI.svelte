@@ -1,6 +1,6 @@
 <script lang="ts">
     import { AIs } from "$lib/components/AIs";
-    import { onMount, onDestroy, createEventDispatcher } from "svelte";
+    import { onMount, onDestroy } from "svelte";
 
     interface Props {
         title: string;
@@ -10,7 +10,6 @@
 
     let { title, onSelectAI, onClose }: Props = $props();
 
-    const dispatch = createEventDispatcher();
 
     // lazy loaders returning URLs for matched files
     const modules = import.meta.glob("/src/lib/assets/ai/*.{png,jpg}", {
@@ -47,7 +46,6 @@
 
     function close() {
         if (onClose) onClose();
-        dispatch("close");
     }
 
     function handleKeydown(e: KeyboardEvent) {
@@ -85,9 +83,7 @@
     });
 
     function selectAI(id: string) {
-        onSelectAI(id);
-        close();
-    }
+        onSelectAI(id);    }
 </script>
 
 <div class="selectAIbackdrop" role="presentation">
