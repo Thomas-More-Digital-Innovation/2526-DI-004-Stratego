@@ -1,9 +1,7 @@
 package aivsai
 
 import (
-	"digital-innovation/stratego/ai"
-	"digital-innovation/stratego/ai/fafo"
-	"digital-innovation/stratego/ai/fato"
+	AIhandler "digital-innovation/stratego/ai/handler"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/models"
@@ -30,18 +28,22 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 		playerAlice := engine.NewPlayer(0, player1Name, "red")
 		playerBob := engine.NewPlayer(1, player2Name, "blue")
 
-		controllerAlice := createAI(ai1, &playerAlice)
-		controllerBob := createAI(ai2, &playerBob)
+		controllerAlice := AIhandler.CreateAI(ai1, &playerAlice)
+		controllerBob := AIhandler.CreateAI(ai2, &playerBob)
 
 		// Alternate who goes first
 		// Without this, player 1 wins more often than the other
 		var g *game.Game
 		if i%2 == 0 {
 			g = game.QuickStart(controllerAlice, controllerBob)
-			fmt.Printf("Game %3d (Alice starts): ", i+1)
+			if logging {
+				fmt.Printf("Game %3d (Alice starts): ", i+1)
+			}
 		} else {
 			g = game.QuickStart(controllerBob, controllerAlice)
-			fmt.Printf("Game %3d (Bob starts):   ", i+1)
+			if logging {
+				fmt.Printf("Game %3d (Bob starts):   ", i+1)
+			}
 		}
 
 		runner := game.NewGameRunner(g, 0, 1000)
@@ -58,11 +60,15 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 			winCause := g.GetWinCause()
 			if winner.GetName() == player1Name {
 				winnerData = &player1Data
-				fmt.Printf("%v wins - %s (%d rounds)\n", player1Name, winCause, rounds)
+				if logging {
+					fmt.Printf("%v wins - %s (%d rounds)\n", player1Name, winCause, rounds)
+				}
 
 			} else {
 				winnerData = &player2Data
-				fmt.Printf("%v wins - %s (%d rounds)\n", player2Name, winCause, rounds)
+				if logging {
+					fmt.Printf("%v wins - %s (%d rounds)\n", player2Name, winCause, rounds)
+				}
 			}
 
 			switch winCause {
@@ -80,7 +86,9 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 			winnerData.Wins++
 
 		} else {
-			fmt.Printf("Draw after %d rounds\n", rounds)
+			if logging {
+				fmt.Printf("Draw after %d rounds\n", rounds)
+			}
 			draws++
 		}
 
@@ -102,16 +110,4 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 	}
 
 	return gameSummary
-}
-
-func createAI(ai string, player *engine.Player) ai.AI {
-	switch ai {
-	case models.Fafo:
-		return fafo.NewFafoAI(player)
-	case models.Fato:
-		return fato.NewFatoAI(player)
-	default:
-		panic("I don't know that AI! " + ai)
-	}
-
 }

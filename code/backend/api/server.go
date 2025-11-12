@@ -1,7 +1,7 @@
 package api
 
 import (
-	"digital-innovation/stratego/ai/fafo"
+	AIhandler "digital-innovation/stratego/ai/handler"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/models"
@@ -31,7 +31,7 @@ func NewGameServer() *GameServer {
 }
 
 // CreateGame creates a new game session
-func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHandler, error) {
+func (s *GameServer) CreateGame(gameID string, gameType string, ai string) (*GameSessionHandler, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -46,13 +46,13 @@ func (s *GameServer) CreateGame(gameID string, gameType string) (*GameSessionHan
 		player1 := engine.NewPlayer(0, "Human Player", "red")
 		player2 := engine.NewPlayer(1, "AI Player", "blue")
 		controller1 = engine.NewHumanPlayerController(&player1)
-		controller2 = fafo.NewFafoAI(&player2)
+		controller2 = AIhandler.CreateAI(ai, &player2)
 
 	case models.AiVsAi:
 		player1 := engine.NewPlayer(0, "AI Red", "red")
 		player2 := engine.NewPlayer(1, "AI Blue", "blue")
-		controller1 = fafo.NewFafoAI(&player1)
-		controller2 = fafo.NewFafoAI(&player2)
+		controller1 = AIhandler.CreateAI(ai, &player1)
+		controller2 = AIhandler.CreateAI(ai, &player2)
 
 	case models.HumanVsHuman:
 		player1 := engine.NewPlayer(0, "Human Red", "red")

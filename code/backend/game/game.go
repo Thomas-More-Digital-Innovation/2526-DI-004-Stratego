@@ -97,8 +97,15 @@ func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 	g.winner = player
 	g.winCause = cause
 	g.gameOver = true
+	player.SetWinner()
 }
 
+// MakeMove makes a move on the game board and resolves any combat that may occur.
+// If the move results in combat, the attacker and defender pieces are revealed.
+// The function returns a slice of two pieces: the attacker and defender pieces in the combat.
+// If no combat occurs, the slice will contain only the attacker piece.
+// The game state is updated after the move, and all observers (AI) are notified of the move.
+// The observers are given the opportunity to analyze the move and observe any combat that may have occurred.
 func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece {
 	target := g.Board.GetPieceAt(move.GetTo())
 	if target != nil {
@@ -138,6 +145,35 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 		piece.GetOwner().UpdatePiecePosition(piece, move.GetTo())
 	}
 	g.MoveHistory = append(g.MoveHistory, *move)
+
+	// Notify all observers (AI)
+	round := g.GetRound()
+	for _, ctrl := range g.PlayerControllers {
+		if ctrl.GetPlayer() == move.GetPlayer() {
+			continue
+		}
+
+		if analyzer, ok := ctrl.(interface {
+			AnalyzeMove(engine.Move, *engine.Player, int)
+		}); ok {
+			analyzer.AnalyzeMove(*move, move.GetPlayer(), round)
+		}
+
+		if g.LastCombat != nil && g.LastCombat.Occurred {
+			if observer, ok := ctrl.(interface {
+				ObserveCombat(engine.Position, engine.Position, *engine.Piece, *engine.Piece, int)
+			}); ok {
+				observer.ObserveCombat(
+					g.LastCombat.AttackerPosition,
+					g.LastCombat.DefenderPosition,
+					g.LastCombat.AttackerPiece,
+					g.LastCombat.DefenderPiece,
+					round,
+				)
+			}
+		}
+	}
+
 	g.NextTurn()
 	return []*engine.Piece{piece, target}
 }

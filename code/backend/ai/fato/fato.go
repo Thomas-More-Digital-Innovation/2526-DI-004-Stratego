@@ -1,6 +1,7 @@
 package fato
 
 import (
+	ai "digital-innovation/stratego/ai"
 	"digital-innovation/stratego/ai/fafo"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/models"
@@ -10,23 +11,44 @@ import (
 
 type FatoAI struct {
 	fafo.FafoAI
-	memorizedField [10][10]*engine.Piece
+	aggression float64 // 0.0 = very passive, 1.0 = very aggressive
 }
 
-func NewFatoAI(player *engine.Player) *FatoAI {
-	fafoAI := fafo.NewFafoAI(player)
+func NewFatoAI(player *engine.Player, hasMemory bool) *FatoAI {
+	return NewFatoAIWithAggression(player, hasMemory, 0.5)
+}
+
+func NewFatoAIWithAggression(player *engine.Player, hasMemory bool, aggression float64) *FatoAI {
+	fafoAI := fafo.NewFafoAI(player, hasMemory)
+
+	// Clamp aggression between 0.0 and 1.0
+	if aggression < 0.0 {
+		aggression = 0.0
+	}
+	if aggression > 1.0 {
+		aggression = 1.0
+	}
+
 	return &FatoAI{
-		FafoAI:         *fafoAI,
-		memorizedField: [10][10]*engine.Piece{},
+		FafoAI:     *fafoAI,
+		aggression: aggression,
 	}
 }
 
-func (ai *FatoAI) GetMemorizedField() [10][10]*engine.Piece {
-	return ai.memorizedField
+// SetAggression sets the aggression level (0.0 = passive, 1.0 = aggressive)
+func (ai *FatoAI) SetAggression(aggression float64) {
+	if aggression < 0.0 {
+		aggression = 0.0
+	}
+	if aggression > 1.0 {
+		aggression = 1.0
+	}
+	ai.aggression = aggression
 }
 
-func (ai *FatoAI) IsPieceMemorized(pos engine.Position) bool {
-	return ai.memorizedField[pos.Y][pos.X] != nil
+// GetAggression returns the current aggression level
+func (ai *FatoAI) GetAggression() float64 {
+	return ai.aggression
 }
 
 func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
@@ -48,8 +70,20 @@ func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
 
 // findAttackMove looks for moves that attack known/visible enemy pieces
 func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
+	memory := ai.GetMemory()
 	pieces := ai.GetPlayer().GetAlivePieces()
-	for _, piece := range pieces {
+
+	// Shuffle pieces to add variety
+	shuffled := make([]*engine.Piece, len(pieces))
+	copy(shuffled, pieces)
+	rand.Shuffle(len(shuffled), func(i, j int) {
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	})
+
+	var bestAttack *engine.Move
+	bestScore := -1000.0
+
+	for _, piece := range shuffled {
 		if !piece.CanMove() {
 			continue
 		}
@@ -66,15 +100,74 @@ func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 		for _, move := range moves {
 			target := board.GetPieceAt(move.GetTo())
 			if target != nil && target.GetOwner() != ai.GetPlayer() {
-				// Attack if we know the piece or it's worth trying
-				memorized := ai.RecallPiece(move.GetTo())
-				if memorized != nil || piece.GetRank() >= target.GetRank() {
-					return move, true
+				score := ai.evaluateAttack(piece, target, move.GetTo(), memory)
+
+				// Aggression determines minimum acceptable score
+				// Passive (0.0): only take very favorable trades (> 0)
+				// Moderate (0.5): take slightly unfavorable trades (> -50)
+				// Aggressive (1.0): take any trade except terrible ones (> -100)
+				minScore := -100.0*ai.aggression + 0.0*(1.0-ai.aggression)
+
+				if score > bestScore && score > minScore {
+					bestScore = score
+					m := engine.NewMove(move.GetFrom(), move.GetTo(), ai.GetPlayer())
+					bestAttack = &m
 				}
 			}
 		}
 	}
+
+	if bestAttack != nil {
+		return *bestAttack, true
+	}
 	return engine.Move{}, false
+}
+
+// evaluateAttack scores an attack opportunity
+func (ai *FatoAI) evaluateAttack(attacker *engine.Piece, target *engine.Piece, targetPos engine.Position, memory *ai.AIMemory) float64 {
+	score := 0.0
+
+	// Check memory for target
+	remembered := memory.Recall(targetPos)
+
+	if target.IsRevealed() {
+		// We know exactly what it is
+		rankDiff := float64(attacker.GetRank() - target.GetRank())
+		score = rankDiff * 10
+
+		// Bonus for capturing flag
+		if target.GetType().GetName() == "Flag" {
+			score += 10000
+		}
+		// Penalty for attacking bomb (unless we're a miner)
+		if target.GetType().GetName() == "Bomb" && attacker.GetType().GetName() != "Miner" {
+			score -= 1000
+		}
+	} else if remembered != nil && remembered.Confidence > 0.5 {
+		// Use memory with confidence weighting
+		rankDiff := float64(attacker.GetRank() - remembered.Piece.GetRank())
+		score = rankDiff * 10 * remembered.Confidence
+
+		// Decay old memories (less reliable)
+		if remembered.Confidence < 0.8 {
+			score *= 0.7
+		}
+	} else {
+		// Unknown piece - take calculated risk based on piece value
+		// Higher rank pieces are more willing to probe
+		if attacker.GetRank() >= 7 {
+			score = 20.0 // Strong pieces should probe
+		} else if attacker.GetRank() >= 5 {
+			score = 10.0 // Medium pieces cautiously probe
+		} else {
+			score = 5.0 // Weak pieces rarely probe
+		}
+
+		// Add randomness to avoid predictable behavior
+		score += rand.Float64()*10 - 5
+	}
+
+	return score
 }
 
 // findExplorationMove moves toward enemy side
@@ -112,7 +205,8 @@ func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 				dist := int(math.Abs(float64(move.GetTo().Y - enemyY)))
 				if dist < bestDist {
 					bestDist = dist
-					bestMove = &move
+					m := engine.NewMove(move.GetFrom(), move.GetTo(), ai.GetPlayer())
+					bestMove = &m
 				}
 			}
 		}
@@ -123,27 +217,24 @@ func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 	return engine.Move{}, false
 }
 
-func (ai *FatoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player) {
-	if math.Abs(float64(opponentMove.GetFrom().X-opponentMove.GetTo().X)) > 1 || math.Abs(float64(opponentMove.GetFrom().Y-opponentMove.GetTo().Y)) > 1 {
-		piece := engine.NewPiece(models.Scout, opponent)
-		ai.MemorizePiece(opponentMove.GetTo(), piece)
+// AnalyzeMove observes opponent moves and updates memory
+// Overrides BaseAI to add scout detection
+func (ai *FatoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player, round int) {
+	memory := ai.GetMemory()
+	from := opponentMove.GetFrom()
+	to := opponentMove.GetTo()
+
+	// First, apply default memory updates (move tracking)
+	if memory.Recall(from) != nil {
+		memory.MovePiece(from, to)
 	}
-}
 
-func (ai *FatoAI) MemorizePiece(pos engine.Position, piece *engine.Piece) {
-	ai.memorizedField[pos.Y][pos.X] = piece
-}
+	// Detect scout moves (moving >1 square in straight line)
+	deltaX := int(math.Abs(float64(from.X - to.X)))
+	deltaY := int(math.Abs(float64(from.Y - to.Y)))
 
-func (ai *FatoAI) RecallPiece(pos engine.Position) *engine.Piece {
-	return ai.memorizedField[pos.Y][pos.X]
-}
-
-// small chance to forget a piece
-func (ai *FatoAI) ForgetPiece(pos engine.Position) {
-	ai.memorizedField[pos.Y][pos.X] = nil
-}
-
-// Reset clears the AI's memory for a new game
-func (ai *FatoAI) Reset() {
-	ai.memorizedField = [10][10]*engine.Piece{}
+	if deltaX > 1 || deltaY > 1 {
+		scoutPiece := engine.NewPiece(models.Scout, opponent)
+		memory.Remember(to, scoutPiece, 1.0, round)
+	}
 }

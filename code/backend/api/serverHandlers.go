@@ -37,13 +37,13 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 		req.GameType = models.HumanVsAi
 	}
 
-	_, err := s.CreateGame(req.GameID, req.GameType)
+	_, err := s.CreateGame(req.GameID, req.GameType, models.Fafo) // TODO: build logic for frontend to select AI type
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"gameId":   req.GameID,
 		"gameType": req.GameType,
 		"wsUrl":    fmt.Sprintf("/ws/game/%s", req.GameID),

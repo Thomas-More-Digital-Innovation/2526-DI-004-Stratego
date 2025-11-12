@@ -37,3 +37,24 @@ func TestGetPlayer(t *testing.T) {
 		t.Errorf("Expected move player ID to be %d, got %d", player.GetID(), movePlayer.GetID())
 	}
 }
+
+func TestIsEmpty(t *testing.T) {
+	move := engine.NewMove(engine.NewPosition(1, 2), engine.NewPosition(3, 4), nil)
+
+	if !move.IsEmpty() {
+		t.Errorf("Expected move to be empty")
+	}
+
+	move2 := engine.Move{}
+
+	if !move2.IsEmpty() {
+		t.Errorf("Expected empty move to be empty")
+	}
+
+	player := engine.NewPlayer(1, "player1", "avatar1")
+	move3 := engine.NewMove(engine.NewPosition(1, 2), engine.NewPosition(3, 4), &player)
+
+	if move3.IsEmpty() {
+		t.Errorf("Expected move with player to not be empty")
+	}
+}

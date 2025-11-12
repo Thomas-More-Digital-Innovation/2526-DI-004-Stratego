@@ -10,9 +10,9 @@ type FafoAI struct {
 	ai.BaseAI
 }
 
-func NewFafoAI(player *engine.Player) *FafoAI {
+func NewFafoAI(player *engine.Player, hasMemory bool) *FafoAI {
 	return &FafoAI{
-		*ai.NewBaseAI(player),
+		*ai.NewBaseAI(player, hasMemory),
 	}
 }
 

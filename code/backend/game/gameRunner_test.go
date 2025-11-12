@@ -1,9 +1,10 @@
 package game_test
 
 import (
-	"digital-innovation/stratego/ai/fafo"
+	AIhandler "digital-innovation/stratego/ai/handler"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/models"
 	"testing"
 	"time"
 )
@@ -31,8 +32,8 @@ func TestRunToCompletion(t *testing.T) {
 		player1 := engine.NewPlayer(0, p1, "red")
 		player2 := engine.NewPlayer(1, p2, "blue")
 
-		controller1 := fafo.NewFafoAI(&player1)
-		controller2 := fafo.NewFafoAI(&player2)
+		controller1 := AIhandler.CreateAI(models.Fafo, &player1)
+		controller2 := AIhandler.CreateAI(models.Fafo, &player2)
 
 		var g *game.Game
 		if i%2 == 0 {
@@ -93,7 +94,7 @@ func TestSubmitHumanMove(t *testing.T) {
 	player2 := engine.NewPlayer(2, "realAI", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
-	controller2 := fafo.NewFafoAI(&player2)
+	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
 
 	gameInstance := game.QuickStart(controller1, controller2)
 	runner := game.NewGameRunner(gameInstance, 0, 1000)
@@ -130,7 +131,7 @@ func TestGameRunnerIsWaitingForInput(t *testing.T) {
 	player2 := engine.NewPlayer(1, "AI", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
-	controller2 := fafo.NewFafoAI(&player2)
+	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
 
 	g := game.QuickStart(controller1, controller2)
 	runner := game.NewGameRunner(g, 0, 1000)
@@ -190,8 +191,8 @@ func TestGameRunnerWithDelay(t *testing.T) {
 	player1 := engine.NewPlayer(0, "AI1", "red")
 	player2 := engine.NewPlayer(1, "AI2", "blue")
 
-	controller1 := fafo.NewFafoAI(&player1)
-	controller2 := fafo.NewFafoAI(&player2)
+	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
+	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
 
 	g := game.QuickStart(controller1, controller2)
 
