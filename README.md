@@ -4,12 +4,20 @@
 
 ## AI training
 
-One of the goals is to create an AI test suite. 
+One of the goals is to create an AI test suite.
 
 ### AIs to be tested
 
 - FAFO (random AI)
-  - <a href="documents/files/ai-data/fafo.md">Results</a>
+
+  - `<a href="documents/files/ai-data/fafo.md">`Results `</a>`
+- FATO (random AI with memory)
+
+  - - `<a href="documents/files/ai-data/fato.md">`Results `</a>`
 - Heuristic
 - MiniMax
 - Montecarlo Tree Search
+
+```
+    path := filepath.Join(os.TempDir(), "dat")
+```
