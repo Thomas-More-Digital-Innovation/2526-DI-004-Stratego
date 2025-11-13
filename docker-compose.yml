@@ -1,0 +1,50 @@
+services:
+  backend:
+    build:
+      context: ./code/backend
+      dockerfile: Dockerfile
+    image: stratego-backend:local
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    volumes:
+      - ./code/backend:/src
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    build:
+      context: ./code/frontend
+      dockerfile: Dockerfile
+    image: stratego-frontend:local
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: stratego
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: stratego
+    ports:
+      - "5432:5432"
+    volumes:
+      - stratego-pg-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - stratego-redis-data:/data
+
+volumes:
+  stratego-pg-data:
+  stratego-redis-data:

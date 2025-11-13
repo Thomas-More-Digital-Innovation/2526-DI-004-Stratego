@@ -1,0 +1,23 @@
+# Dev Dockerfile for backend: includes Go, reflex watcher and netcat
+FROM golang:1.25-alpine
+
+# Install small extras
+RUN apk add --no-cache bash ca-certificates netcat-openbsd
+
+WORKDIR /src
+
+# Install reflex (file watcher) during image build so runtime has it
+RUN go install github.com/cespare/reflex@latest
+
+# Ensure go-bin in PATH
+ENV PATH="/go/bin:${PATH}"
+
+# Ensure module cache directory exists and is writable (named volume will be mounted at runtime)
+RUN mkdir -p /go/pkg/mod && chmod -R a+rwX /go
+
+# Copy entrypoint script and make executable
+COPY entrypoint.dev.sh /usr/local/bin/entrypoint.dev.sh
+RUN chmod +x /usr/local/bin/entrypoint.dev.sh
+
+# Default command: run entrypoint which waits for DB then reflex
+CMD ["/usr/local/bin/entrypoint.dev.sh"]
