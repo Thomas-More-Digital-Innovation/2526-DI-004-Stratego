@@ -3,6 +3,14 @@
     import type { GameMode } from "$lib/types";
     import SelectAI from "./SelectAI.svelte";
 
+    interface User {
+        id: number;
+        username: string;
+        profile_picture?: string;
+        created_at: string;
+        updated_at: string;
+    }
+
     type StartGameState = "create" | "selectAi1" | "selectAi2" | "creating";
 
     let api = new GameAPI();
@@ -11,7 +19,7 @@
     let ai1 = $state<string>("");
     let ai2 = $state<string>("");
 
-    let { errorMessage = $bindable("") } = $props();
+    let { errorMessage = $bindable(""), user }: { errorMessage: string; user: User } = $props();
 
     function cancel() {
         startGameState = "create";
@@ -42,9 +50,9 @@
             errorMessage = "Coming Soon";
             startGameState = "create";
             return;
-        } else {
-            startGameState = "selectAi1";
         }
+        
+        startGameState = "selectAi1";
         ai1 = "";
         ai2 = "";
     }

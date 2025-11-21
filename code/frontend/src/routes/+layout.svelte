@@ -19,4 +19,8 @@
 		margin: 16px;
         box-shadow: 0 0 48px var(--bg-accent);
     }
+
+    :global(*) {
+        box-sizing: border-box;
+    }
 </style>

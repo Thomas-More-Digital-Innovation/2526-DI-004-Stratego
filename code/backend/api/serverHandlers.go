@@ -1,6 +1,8 @@
 package api
 
 import (
+	"digital-innovation/stratego/auth"
+	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/models"
 	"encoding/json"
@@ -88,6 +90,18 @@ func (s *GameServer) HandleWebSocketConnection(w http.ResponseWriter, r *http.Re
 		playerID = 1
 	}
 
+	// Try to get user from session cookie and associate with game
+	user := auth.GetCurrentUser(r)
+	if user != nil && handler.Session.Player1UserID == nil && playerID == 0 {
+		// First player connecting with a logged-in account
+		handler.Session.Player1UserID = &user.ID
+		log.Printf("Associated game %s player 0 with user ID %d (%s)", gameID, user.ID, user.Username)
+	} else if user != nil && handler.Session.Player2UserID == nil && playerID == 1 {
+		// Second player connecting with a logged-in account
+		handler.Session.Player2UserID = &user.ID
+		log.Printf("Associated game %s player 1 with user ID %d (%s)", gameID, user.ID, user.Username)
+	}
+
 	log.Printf("WebSocket connection for game %s (player %d)", gameID, playerID)
 
 	HandleWebSocket(w, r, handler.Session, handler.Hub, playerID)
@@ -121,7 +135,7 @@ func (s *GameServer) HandleListGames(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleGameOver broadcasts final game state
+// handleGameOver broadcasts final game state and saves stats
 func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	state := session.GetGameState()
 	winner := session.GetWinner()
@@ -145,6 +159,39 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	// Broadcast final board state with all pieces revealed
 	s.broadcastBoardStateRevealed(hub)
 
+	// Save game stats to database
+	go s.saveGameStats(session, winnerID)
+
 	// Wait longer before stopping monitoring so users can see results
 	time.Sleep(30 * time.Second)
+}
+
+// saveGameStats saves game statistics to the database
+func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int) {
+	duration := time.Since(session.StartTime).Seconds()
+	state := session.GetGameState()
+
+	// Track stats for player 1 if they have a user ID
+	if session.Player1UserID != nil {
+		userID := *session.Player1UserID
+		won := winnerID != nil && *winnerID == 0
+
+		if err := db.UpdateUserStats(userID, won, state.MoveCount, duration); err != nil {
+			log.Printf("Failed to update stats for user %d: %v", userID, err)
+		} else {
+			log.Printf("Updated stats for user %d (won=%v)", userID, won)
+		}
+	}
+
+	// Track stats for player 2 if they have a user ID
+	if session.Player2UserID != nil {
+		userID := *session.Player2UserID
+		won := winnerID != nil && *winnerID == 1
+
+		if err := db.UpdateUserStats(userID, won, state.MoveCount, duration); err != nil {
+			log.Printf("Failed to update stats for user %d: %v", userID, err)
+		} else {
+			log.Printf("Updated stats for user %d (won=%v)", userID, won)
+		}
+	}
 }

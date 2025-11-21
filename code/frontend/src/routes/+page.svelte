@@ -1,32 +1,16 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import logoUrl from "$lib/assets/favicon.png";
     import tmUrl from "$lib/assets/tm_logo.png";
     import ErrorMessage from "$lib/components/ErrorMessage.svelte";
-    import GameModes from "./GameModes.svelte";
-    import LeftNavbar from "./LeftNavbar.svelte";
+    import GameModes from "./components/GameModes.svelte";
+    import LeftNavbar from "./components/LeftNavbar.svelte";
+    import type { PageData } from './$types';
+    import AuthPanel from './components/AuthPanel.svelte';
 
+    let { data }: { data: PageData } = $props();
+    
     let errorMessage = $state<string>("");
-    let loadedGameData = $state<string | null>(null);
-    let fileInput: HTMLInputElement;
-
-    function handleFileSelect(event: Event) {
-        const target = event.target as HTMLInputElement;
-        const file = target.files?.[0];
-
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const content = e.target?.result as string;
-                    loadedGameData = content;
-                    alert("Game loaded! (Replay feature coming soon)");
-                } catch (error) {
-                    errorMessage = "Failed to load game file";
-                }
-            };
-            reader.readAsText(file);
-        }
-    }
 </script>
 
 <svelte:head>
@@ -36,24 +20,6 @@
 <ErrorMessage {errorMessage} />
 
 <main>
-    <!-- <div class="saved-games">
-        <h2>Load Saved Game</h2>
-        <p class="description">
-            Load a previously saved game to review the moves and strategy.
-        </p>
-
-        <button class="load-btn" onclick={() => fileInput.click()}>
-            📂 Load Game File
-        </button>
-
-        <input
-            bind:this={fileInput}
-            type="file"
-            accept=".json"
-            onchange={handleFileSelect}
-            style="display: none;"
-        />
-    </div> -->
     <div class="left-side">
         <header>
             <span>
@@ -61,12 +27,17 @@
                 <h1>StrateGO</h1>
             </span>
         </header>
-		<LeftNavbar />
+        <LeftNavbar isLoggedIn={!!data.user} />
         <footer>
             <img src={tmUrl} alt="Logo Thomas More" width="256" />
         </footer>
     </div>
-    <GameModes bind:errorMessage />
+    
+    {#if data.user}
+        <GameModes bind:errorMessage user={data.user} />
+    {:else}
+        <AuthPanel />
+    {/if}
 </main>
 
 <style>
@@ -119,4 +90,6 @@
             font-size: 2.5rem;
         }
     }
+
+    
 </style>
