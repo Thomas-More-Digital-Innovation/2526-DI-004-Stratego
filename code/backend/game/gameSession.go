@@ -27,6 +27,10 @@ type GameSession struct {
 	animationCompleteChan chan bool
 	moveNotifyChan        chan bool // Signals when a move has been executed
 	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
+	 // User ID for players (nil if guest/AI)
+	Player1UserID *int
+	Player2UserID *int  
+	StartTime     time.Time
 }
 
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
@@ -48,6 +52,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		animationCompleteChan: make(chan bool, 1),
 		moveNotifyChan:        make(chan bool, 100),
 		moveAckChan:           make(chan bool, 1),
+		StartTime:             time.Now(),
 	}
 
 	session.runner.stopChan = session.stopChan

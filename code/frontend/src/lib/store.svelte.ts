@@ -2,6 +2,29 @@
 
 import type { GameState, BoardState, HistoryMove, Piece, CombatAnimation } from './types';
 
+interface User {
+	id: number;
+	username: string;
+	profile_picture?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export class UserStore {
+	value = $state<User | null>(null);
+
+	set(userData: User | null) {
+		this.value = userData;
+	}
+
+	clear() {
+		this.value = null;
+		localStorage.removeItem('user');
+	}
+}
+
+export const user = new UserStore();
+
 export class GameStore {
 	gameState = $state<GameState | null>(null);
 	boardState = $state<BoardState | null>(null);

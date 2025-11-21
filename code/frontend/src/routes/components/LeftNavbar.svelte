@@ -1,14 +1,15 @@
 <script lang="ts">
+    let { isLoggedIn = false }: { isLoggedIn?: boolean } = $props();
 </script>
 
 <nav class="left-navbar">
     <div>
-        <a href="/profile">Profile</a>
-        <a href="/board-setup">Board Setup</a>
+        <a href="/profile" class:disabled={!isLoggedIn} onclick={(e) => !isLoggedIn && e.preventDefault()}>Profile</a>
+        <a href="/board-setups" class:disabled={!isLoggedIn} onclick={(e) => !isLoggedIn && e.preventDefault()}>Board Setups</a>
     </div>
     <div>
-        <a href="/replays">Replays</a>
-        <a href="/settings">Settings</a>
+        <a href="/replays" class:disabled={!isLoggedIn} onclick={(e) => !isLoggedIn && e.preventDefault()}>Replays</a>
+        <a href="/settings" class:disabled={!isLoggedIn} onclick={(e) => !isLoggedIn && e.preventDefault()}>Settings</a>
     </div>
 </nav>
 
@@ -44,10 +45,16 @@
                 border-bottom-right-radius: 100px;
                 border-top-right-radius: 100px;
 
-                &:hover {
+                &:hover:not(.disabled) {
                     transition: 400ms;
                     margin-right: 0px;
                     background-color: var(--primary);
+                }
+
+                &.disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                    background-color: var(--bg-accent);
                 }
             }
         }

@@ -30,6 +30,23 @@ func NewGameServer() *GameServer {
 	}
 }
 
+// setCORSHeaders sets appropriate CORS headers for API requests
+func setCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	// Allow requests from frontend dev server and localhost
+	if origin == "http://localhost:5173" || origin == "http://127.0.0.1:5173" || origin == "" {
+		if origin == "" {
+			origin = "http://localhost:5173"
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	} else {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
 // CreateGame creates a new game session
 func (s *GameServer) CreateGame(gameID string, gameType string, ai1, ai2 string) (*GameSessionHandler, error) {
 	s.mutex.Lock()
@@ -118,12 +135,89 @@ func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
 
 // StartServer starts the HTTP server
 func (s *GameServer) StartServer(addr string) error {
-	http.HandleFunc("/api/games", func(w http.ResponseWriter, r *http.Request) {
-		// Enable CORS
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// User & Auth endpoints
+	http.HandleFunc("/api/users/register", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.RegisterUserHandler(w, r)
+	})
 
+	http.HandleFunc("/api/users/login", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.LoginHandler(w, r)
+	})
+
+	http.HandleFunc("/api/users/logout", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.LogoutHandler(w, r)
+	})
+
+	http.HandleFunc("/api/users/me", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.GetCurrentUserHandler(w, r)
+	})
+
+	http.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.GetUserHandler(w, r)
+	})
+
+	http.HandleFunc("/api/users/stats", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.GetUserStatsHandler(w, r)
+	})
+
+	// Board setup endpoints
+	http.HandleFunc("/api/board-setups", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			if r.URL.Query().Get("id") != "" {
+				s.GetBoardSetupHandler(w, r)
+			} else {
+				s.GetUserBoardSetupsHandler(w, r)
+			}
+		case http.MethodPost:
+			s.CreateBoardSetupHandler(w, r)
+		case http.MethodPut:
+			s.UpdateBoardSetupHandler(w, r)
+		case http.MethodDelete:
+			s.DeleteBoardSetupHandler(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Existing game endpoints
+	http.HandleFunc("/api/games", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return

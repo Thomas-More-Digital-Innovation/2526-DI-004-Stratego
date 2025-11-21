@@ -3,6 +3,8 @@ package main
 import (
 	aivsai "digital-innovation/stratego/ai/AIvsAI"
 	"digital-innovation/stratego/api"
+	"digital-innovation/stratego/auth"
+	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/models"
 	"flag"
 	"fmt"
@@ -25,6 +27,15 @@ func main() {
 	fmt.Println("=== Stratego Backend Running ===")
 
 	if *serverMode {
+		// Initialize database connection
+		if err := db.InitDB(); err != nil {
+			log.Fatalf("Failed to initialize database: %v", err)
+		}
+		defer db.CloseDB()
+
+		 // Start session cleanup routine
+		auth.Store.StartCleanupRoutine()
+
 		// Run WebSocket server
 		runServer(*addr)
 	} else {
@@ -46,6 +57,14 @@ func main() {
 func runServer(addr string) {
 	fmt.Printf("Starting Stratego WebSocket Server on %s\n", addr)
 	fmt.Println("Endpoints:")
+	fmt.Println("  POST /api/users/register - Register a new user")
+	fmt.Println("  POST /api/users/login - Login")
+	fmt.Println("  GET  /api/users - Get user by ID")
+	fmt.Println("  GET  /api/users/stats - Get user statistics")
+	fmt.Println("  GET  /api/board-setups - Get board setups for user")
+	fmt.Println("  POST /api/board-setups - Create board setup")
+	fmt.Println("  PUT  /api/board-setups - Update board setup")
+	fmt.Println("  DELETE /api/board-setups - Delete board setup")
 	fmt.Println("  POST /api/games - Create a new game")
 	fmt.Println("  GET  /api/games - List all games")
 	fmt.Println("  WS   /ws/game/{gameID}?player={0|1|spectator} - Connect to game")

@@ -8,6 +8,8 @@ if [ -n "$DB_HOST" ]; then
   until nc -z $(echo ${DB_HOST} | cut -d: -f1) 5432; do
     sleep 0.5
   done
+  echo "Database is ready!"
 fi
 
-exec /go/bin/reflex -r '\\.go$' -s -- sh -c 'exec go run . --server'
+# Run with server flag for dev mode
+exec /go/bin/reflex -r '\\.go$' -s -- sh -c 'exec go run . -server'

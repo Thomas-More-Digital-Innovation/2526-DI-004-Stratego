@@ -13,7 +13,11 @@ services:
     environment:
       - PORT=8080
       - DB_HOST=db
-    # Use the image's built-in CMD (installs reflex during image build and runs it).
+      - DB_PORT=5432
+      - DB_USER=stratego
+      - DB_PASSWORD=pass
+      - DB_NAME=stratego
+      - DB_SSLMODE=disable
     depends_on:
       - db
       - redis
