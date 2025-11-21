@@ -6,12 +6,12 @@ concurrency:
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ '*']
     paths:
       - 'code/frontend/**'
       - '.github/workflows/frontend-ci.yml'
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ '*' ]
     paths:
       - 'code/frontend/**'
       - '.github/workflows/frontend-ci.yml'
