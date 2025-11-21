@@ -33,7 +33,7 @@ func main() {
 		}
 		defer db.CloseDB()
 
-		 // Start session cleanup routine
+		// Start session cleanup routine
 		auth.Store.StartCleanupRoutine()
 
 		// Run WebSocket server

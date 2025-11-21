@@ -27,9 +27,9 @@ type GameSession struct {
 	animationCompleteChan chan bool
 	moveNotifyChan        chan bool // Signals when a move has been executed
 	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
-	 // User ID for players (nil if guest/AI)
+	// User ID for players (nil if guest/AI)
 	Player1UserID *int
-	Player2UserID *int  
+	Player2UserID *int
 	StartTime     time.Time
 }
 
