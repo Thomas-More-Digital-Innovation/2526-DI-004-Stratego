@@ -14,16 +14,16 @@ type User struct {
 
 // UserStats represents game statistics for a user
 type UserStats struct {
-	ID                   int       `json:"id"`
-	UserID               int       `json:"user_id"`
-	TotalGames           int       `json:"total_games"`
-	Wins                 int       `json:"wins"`
-	Losses               int       `json:"losses"`
-	Draws                int       `json:"draws"`
-	TotalMoves           int       `json:"total_moves"`
-	AvgGameDurationSecs  float64   `json:"avg_game_duration_seconds"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
+	ID                  int       `json:"id"`
+	UserID              int       `json:"user_id"`
+	TotalGames          int       `json:"total_games"`
+	Wins                int       `json:"wins"`
+	Losses              int       `json:"losses"`
+	Draws               int       `json:"draws"`
+	TotalMoves          int       `json:"total_moves"`
+	AvgGameDurationSecs float64   `json:"avg_game_duration_seconds"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
 // BoardSetup represents a saved board configuration
