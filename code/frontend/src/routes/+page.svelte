@@ -51,16 +51,17 @@
 
     main {
         height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
         width: 100%;
         justify-content: space-between;
         display: flex;
-        background: #1a202c4f;
+        background-image: url("$lib/assets/background.png");
 
         .left-side {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            background-image: url("$lib/assets/background.png");
             width: 100%;
         }
         header {
