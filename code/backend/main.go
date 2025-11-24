@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-	// Command line flags
 	serverMode := flag.Bool("server", false, "Run in WebSocket server mode")
 	addr := flag.String("addr", ":8080", "Server address")
 	aiTypes := flag.String("ai", "fafo:fafo", "Run AI vs AI matches instead of server")
@@ -27,17 +26,14 @@ func main() {
 	fmt.Println("=== Stratego Backend Running ===")
 
 	if *serverMode {
-		// Initialize database connection
 		if err := db.InitDB(); err != nil {
 			log.Fatalf("Failed to initialize database: %v", err)
 		}
 		defer db.CloseDB()
 
-		// Start session cleanup routine
 		auth.Store.StartCleanupRoutine()
 
-		// Run WebSocket server
-		runServer(*addr)
+		runServer(*addr) // websocket server
 	} else {
 		var ai1, ai2 string
 		if aiTypes == nil {
