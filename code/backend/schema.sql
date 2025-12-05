@@ -30,7 +30,7 @@ CREATE TABLE board_setups (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   description TEXT,
-  setup_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  setup_data VARCHAR(40) NOT NULL,
   is_default BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

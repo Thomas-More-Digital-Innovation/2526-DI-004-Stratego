@@ -20,7 +20,13 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 		}
 
 		const setups = await response.json();
-
+		if (setups === null) {
+			return {
+				user,
+				setups: [],
+				error: null
+			};
+		}
 		return {
 			user,
 			setups,
