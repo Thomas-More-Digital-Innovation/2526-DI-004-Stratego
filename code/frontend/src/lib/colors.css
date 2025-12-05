@@ -1,6 +1,8 @@
 :root {
     --bg: #2F1F14;
+    --bg-t: #2f1f149a;
     --bg-accent: #5C310E;
+    --bg-accent-t: #5c310e9a;
     --accent: #A36418;
     --primary: #4FAFD6;
     --primary-dark: #3086B5;

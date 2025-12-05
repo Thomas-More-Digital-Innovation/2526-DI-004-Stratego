@@ -31,6 +31,7 @@ func NewGameServer() *GameServer {
 }
 
 // setCORSHeaders sets appropriate CORS headers for API requests
+// TODO change in prod
 func setCORSHeaders(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
 	// Allow requests from frontend dev server and localhost
