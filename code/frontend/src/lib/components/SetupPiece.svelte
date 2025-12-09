@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PieceInfo } from '$lib/types/boardSetup';
+	import type { PieceInfo } from '$lib/types/boardSetup.type';
 
 	interface Props {
 		pieceChar: string;

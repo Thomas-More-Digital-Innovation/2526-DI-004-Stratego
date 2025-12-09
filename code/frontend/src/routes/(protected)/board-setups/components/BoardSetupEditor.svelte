@@ -1,7 +1,7 @@
 <script lang="ts">
     import PieceBank from "../../../../lib/components/PieceBank.svelte";
     import BoardGrid from "../../../../lib/components/BoardGrid.svelte";
-    import { PIECE_INVENTORY, type BoardSetup } from "$lib/types/boardSetup";
+    import { PIECE_INVENTORY, type BoardSetup } from "$lib/types/boardSetup.type";
     import { createBoardSetupState } from "./BoardSetupEditorState.svelte";
     import BoardSetupNamer from "./BoardSetupNamer.svelte";
 

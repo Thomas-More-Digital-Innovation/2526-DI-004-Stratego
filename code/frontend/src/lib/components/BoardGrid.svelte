@@ -1,6 +1,6 @@
 <script lang="ts">
 	// TODO right mouse click menu not working
-	import { PIECE_INVENTORY } from '$lib/types/boardSetup';
+	import { PIECE_INVENTORY } from '$lib/types/boardSetup.type';
 	import SetupPiece from './SetupPiece.svelte';
 
 	interface Props {

@@ -1,4 +1,4 @@
-import { PIECE_INVENTORY, type BoardSetup } from "$lib/types/boardSetup";
+import { PIECE_INVENTORY, type BoardSetup } from "$lib/types/boardSetup.type";
 
 export function createBoardSetupState(
     initialSetup: string | undefined,

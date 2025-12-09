@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PIECE_INVENTORY, type BoardSetup } from '$lib/types/boardSetup';
+	import { PIECE_INVENTORY, type BoardSetup } from '$lib/types/boardSetup.type';
 
 	interface Props {
 		setup: BoardSetup;
