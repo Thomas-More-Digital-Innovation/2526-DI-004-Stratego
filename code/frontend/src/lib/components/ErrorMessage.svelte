@@ -1,7 +1,7 @@
 <script lang="ts">
     let { errorMessage } = $props();
 
-    let timeOutId: number | null = null;
+    let timeOutId: ReturnType<typeof setTimeout> | null = null;
 
     $effect(() => {
         if (errorMessage) {
