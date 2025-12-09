@@ -2,7 +2,7 @@
     import type { PageData } from "./$types";
     import BoardSetupEditor from "./components/BoardSetupEditor.svelte";
     import SetupCard from "$lib/components/SetupCard.svelte";
-    import { MAX_BOARD_SETUPS, type BoardSetup } from "$lib/types/boardSetup";
+    import { MAX_BOARD_SETUPS, type BoardSetup } from "$lib/types/boardSetup.type";
     import { invalidateAll } from "$app/navigation";
 
     let { data }: { data: PageData } = $props();
