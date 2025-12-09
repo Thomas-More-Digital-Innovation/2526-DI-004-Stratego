@@ -1,8 +1,12 @@
 export interface BoardSetup {
 	name: string,
 	description: string,
-	isDefault: boolean,
-	setupData: string
+	created_at: string,
+	updated_at: string,
+	id: number,
+	is_default: boolean,
+	setup_data: string
+
 }
 export interface PieceInfo {
 	name: string;

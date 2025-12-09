@@ -11,7 +11,7 @@
 
 	// Preview first few pieces
 	function getPreviewPieces(): string[] {
-		const data = setup.setup_data;
+		const data = setup.setup_data; 
 		if (data.length >= 10) {
 			return data.slice(0, 10).split('');
 		}
@@ -46,7 +46,7 @@
 
 	<div class="card-actions">
 		<button class="btn-edit" onclick={() => onEdit(setup)}>Edit</button>
-		<button class="btn-delete" onclick={() => onDelete(setup.id)}>Delete</button>
+		<button class="btn-delete" onclick={() => onDelete(setup.id)}>Delete</button> 
 	</div>
 </div>
 
