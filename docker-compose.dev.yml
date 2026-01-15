@@ -16,7 +16,6 @@ services:
     # Use the image's built-in CMD (installs reflex during image build and runs it).
     depends_on:
       - db
-      - redis
     stdin_open: true
     tty: true
 
@@ -52,5 +51,4 @@ services:
 
 volumes:
   stratego-pg-data:
-  stratego-redis-data:
   go-mod-cache:
