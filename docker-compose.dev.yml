@@ -50,13 +50,6 @@ services:
     volumes:
       - stratego-pg-data:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    volumes:
-      - stratego-redis-data:/data
-
 volumes:
   stratego-pg-data:
   stratego-redis-data:
