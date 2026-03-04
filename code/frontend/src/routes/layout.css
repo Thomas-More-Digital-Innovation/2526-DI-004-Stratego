@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-primary: oklch(0.6 0.25 260);
-  --color-brand-secondary: oklch(0.6 0.25 320);
-  --color-brand-accent: oklch(0.7 0.2 150);
-  
-  --color-surface-base: oklch(0.15 0.02 260);
-  --color-surface-elevated: oklch(0.2 0.03 260);
-  --color-surface-glass: rgba(255, 255, 255, 0.05);
-  
+  --color-brand-primary: oklch(0.7113 0.1044 226.48);
+  --color-brand-secondary: oklch(0.6688 0.1971 39.15);
+  --color-brand-accent: oklch(0.7539 0.0945 78.33);
+
+  /* Deep Slate/Parchment for the game board feel */
+  --color-surface-base: oklch(0.15 0.02 250);
+  --color-surface-elevated: oklch(0.20 0.02 250);
+  --color-surface-glass: rgba(15, 20, 25, 0.4);
+
   --font-sans: "Inter", "Outfit", sans-serif;
 }
 
@@ -23,8 +24,8 @@
   .glass {
     @apply bg-surface-glass backdrop-blur-md border border-white/10;
   }
-  
+
   .glow-primary {
-    @apply shadow-[0_0_20px_rgba(var(--color-brand-primary),0.3)];
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary), transparent 70%);
   }
 }

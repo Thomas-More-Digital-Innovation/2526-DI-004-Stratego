@@ -20,7 +20,10 @@
 
 <div class="flex flex-col gap-1.5 {className}">
     {#if label}
-        <label for={id} class="text-sm font-medium text-white/60 ml-1">
+        <label
+            for={id}
+            class="text-xs font-bold text-brand-accent uppercase tracking-widest ml-1"
+        >
             {label}
         </label>
     {/if}

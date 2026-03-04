@@ -8,28 +8,34 @@
 
 <div class="space-y-12">
     <header>
-        <h1 class="text-4xl font-bold text-white mb-2">Frontend Foundations</h1>
-        <p class="text-white/40 text-lg">
-            A premium, functional foundation for the new Stratego experience.
+        <h1
+            class="text-4xl font-extrabold text-white mb-2 uppercase tracking-wider text-brand-accent"
+        >
+            Stratego Command Center
+        </h1>
+        <p class="text-white/60 text-lg">
+            A premium, adventurous foundation for the battlefield.
         </p>
     </header>
 
     <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card class="space-y-6">
             <div>
-                <h2 class="text-xl font-semibold text-white mb-1">
-                    Interactive Elements
+                <h2
+                    class="text-xl font-semibold text-brand-accent mb-1 uppercase tracking-wide"
+                >
+                    Tactical Controls
                 </h2>
-                <p class="text-white/40 text-sm">
-                    Buttons with micro-animations and variant support.
+                <p class="text-white/60 text-sm">
+                    Command buttons with micro-animations and variant support.
                 </p>
             </div>
 
             <div class="flex flex-wrap gap-4">
-                <Button variant="primary">Primary Button</Button>
-                <Button variant="secondary">Secondary</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
+                <Button variant="primary">Deploy Units</Button>
+                <Button variant="secondary">Scout Ahead</Button>
+                <Button variant="outline">Hold Position</Button>
+                <Button variant="ghost">Retreat</Button>
             </div>
 
             <div class="flex flex-wrap gap-4">
@@ -41,26 +47,28 @@
 
         <Card class="space-y-6">
             <div>
-                <h2 class="text-xl font-semibold text-white mb-1">
-                    Form Controls
+                <h2
+                    class="text-xl font-semibold text-brand-accent mb-1 uppercase tracking-wide"
+                >
+                    Intelligence Briefing
                 </h2>
-                <p class="text-white/40 text-sm">
-                    Standardized input fields with focus states.
+                <p class="text-white/60 text-sm">
+                    Standardized input fields to gather enemy intel.
                 </p>
             </div>
 
             <div class="space-y-4">
                 <Input
-                    label="Your Name"
-                    placeholder="Enter your name..."
+                    label="Commander Name"
+                    placeholder="Enter your rank & name..."
                     bind:value={name}
                 />
                 {#if name}
                     <p
-                        class="text-brand-primary text-sm animate-in fade-in slide-in-from-left-2 transition-all"
+                        class="text-brand-accent text-sm animate-in fade-in slide-in-from-left-2 transition-all border-l-2 border-brand-accent pl-2"
                     >
-                        Hello, <span class="font-bold">{name}</span>! Welcome to
-                        the new foundation.
+                        Intel received, <span class="font-bold">{name}</span>.
+                        Awaiting deployment orders.
                     </p>
                 {/if}
                 <Input
@@ -72,13 +80,15 @@
         </Card>
 
         <Card class="col-span-full space-y-4">
-            <h2 class="text-xl font-semibold text-white">
-                Glassmorphism & Layout
+            <h2
+                class="text-xl font-semibold text-brand-accent uppercase tracking-wide"
+            >
+                Thematic Atmosphere
             </h2>
-            <p class="text-white/40">
-                The entire interface uses a refined glassmorphism aesthetic with
-                high-quality blur and subtle border highlights. This creates a
-                depth-heavy, premium feel that modern users expect.
+            <p class="text-white/60">
+                The interface utilizes deep crimsons, navy blues, and brass
+                accents to evoke the classic Stratego board game, modernized
+                with high-quality blur and subtle lighting effects.
             </p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
                 <div
@@ -103,6 +113,6 @@
                     >
                 </div>
             </div>
-        </Card>Section
+        </Card>
     </section>
 </div>

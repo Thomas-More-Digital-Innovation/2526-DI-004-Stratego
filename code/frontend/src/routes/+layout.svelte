@@ -5,10 +5,10 @@
     let { children } = $props();
 
     const navItems = [
-        { name: "Dashboard", href: "/" },
-        { name: "Games", href: "/games" },
-        { name: "Leaderboard", href: "/leaderboard" },
-        { name: "Settings", href: "/settings" },
+        { name: "Command Center", href: "/" },
+        { name: "Battlefields", href: "/games" },
+        { name: "Hall of Fame", href: "/leaderboard" },
+        { name: "War Room", href: "/settings" },
     ];
 </script>
 
@@ -19,12 +19,19 @@
     >
         <div class="p-8">
             <h1
-                class="text-2xl font-bold tracking-tight text-white flex items-center gap-2"
+                class="text-2xl font-extrabold tracking-widest uppercase text-white flex items-center gap-3 drop-shadow-md"
             >
-                <span
-                    class="w-8 h-8 rounded-lg bg-brand-primary glow-primary flex items-center justify-center text-sm"
-                    >S</span
+                <div
+                    class="relative w-8 h-8 rounded-md bg-brand-primary border-2 border-brand-accent flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(var(--color-brand-primary),0.5)]"
                 >
+                    <span
+                        class="relative z-10 text-brand-accent font-black text-lg"
+                        >S</span
+                    >
+                    <div
+                        class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"
+                    ></div>
+                </div>
                 Stratego
             </h1>
         </div>
@@ -43,16 +50,21 @@
             {/each}
         </nav>
 
-        <div class="p-4 border-t border-white/5">
+        <div class="p-4 border-t border-brand-accent/20 bg-black/20">
             <div class="flex items-center gap-3 px-4 py-2">
                 <div
-                    class="w-8 h-8 rounded-full bg-brand-secondary/20 border border-brand-secondary/30"
-                ></div>
+                    class="w-8 h-8 rounded-full bg-brand-secondary/30 border border-brand-accent/50 flex items-center justify-center text-brand-accent text-xs font-bold"
+                >
+                    ?
+                </div>
                 <div class="flex flex-col">
-                    <span class="text-xs font-semibold text-white"
-                        >Guest User</span
+                    <span
+                        class="text-xs font-bold text-white uppercase tracking-wider"
+                        >Unknown Scout</span
                     >
-                    <span class="text-[10px] text-white/40">Not logged in</span>
+                    <span class="text-[10px] text-white/50"
+                        >Awaiting Orders</span
+                    >
                 </div>
             </div>
         </div>
