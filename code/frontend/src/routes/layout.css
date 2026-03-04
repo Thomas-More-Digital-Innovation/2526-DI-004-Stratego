@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: oklch(0.6 0.25 260);
+  --color-brand-secondary: oklch(0.6 0.25 320);
+  --color-brand-accent: oklch(0.7 0.2 150);
+  
+  --color-surface-base: oklch(0.15 0.02 260);
+  --color-surface-elevated: oklch(0.2 0.03 260);
+  --color-surface-glass: rgba(255, 255, 255, 0.05);
+  
+  --font-sans: "Inter", "Outfit", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-base text-white antialiased selection:bg-brand-primary/30;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface-glass backdrop-blur-md border border-white/10;
+  }
+  
+  .glow-primary {
+    @apply shadow-[0_0_20px_rgba(var(--color-brand-primary),0.3)];
+  }
+}

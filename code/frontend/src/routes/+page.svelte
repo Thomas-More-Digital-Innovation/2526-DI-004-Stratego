@@ -1,96 +1,108 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import logoUrl from "$lib/assets/favicon.png";
-    import tmUrl from "$lib/assets/tm_logo.png";
-    import ErrorMessage from "$lib/components/ErrorMessage.svelte";
-    import GameModes from "./components/GameModes.svelte";
-    import LeftNavbar from "./components/LeftNavbar.svelte";
-    import type { PageData } from './$types';
-    import AuthPanel from './components/AuthPanel.svelte';
+    import Button from "$lib/components/ui/Button.svelte";
+    import Card from "$lib/components/ui/Card.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
 
-    let { data }: { data: PageData } = $props();
-    
-    let errorMessage = $state<string>("");
+    let name = $state("");
 </script>
 
-<svelte:head>
-    <title>Stratego - Menu</title>
-</svelte:head>
+<div class="space-y-12">
+    <header>
+        <h1 class="text-4xl font-bold text-white mb-2">Frontend Foundations</h1>
+        <p class="text-white/40 text-lg">
+            A premium, functional foundation for the new Stratego experience.
+        </p>
+    </header>
 
-<ErrorMessage {errorMessage} />
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card class="space-y-6">
+            <div>
+                <h2 class="text-xl font-semibold text-white mb-1">
+                    Interactive Elements
+                </h2>
+                <p class="text-white/40 text-sm">
+                    Buttons with micro-animations and variant support.
+                </p>
+            </div>
 
-<main>
-    <div class="left-side">
-        <header>
-            <span>
-                <img src={logoUrl} alt="logo" width="64" />
-                <h1>StrateGO</h1>
-            </span>
-        </header>
-        <LeftNavbar isLoggedIn={!!data.user} />
-        <footer>
-            <img src={tmUrl} alt="Logo Thomas More" width="256" />
-        </footer>
-    </div>
-    
-    {#if data.user}
-        <GameModes bind:errorMessage user={data.user} />
-    {:else}
-        <AuthPanel />
-    {/if}
-</main>
+            <div class="flex flex-wrap gap-4">
+                <Button variant="primary">Primary Button</Button>
+                <Button variant="secondary">Secondary</Button>
+                <Button variant="outline">Outline</Button>
+                <Button variant="ghost">Ghost</Button>
+            </div>
 
-<style>
-    :global(body) {
-        margin: 0;
-        padding: 0;
-        color: #e2e8f0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            sans-serif;
-    }
+            <div class="flex flex-wrap gap-4">
+                <Button size="sm">Small</Button>
+                <Button size="md">Medium</Button>
+                <Button size="lg">Large Scale</Button>
+            </div>
+        </Card>
 
-    main {
-        height: 100vh;
-        max-height: 100vh;
-        overflow: hidden;
-        width: 100%;
-        justify-content: space-between;
-        display: flex;
-        background-image: url("$lib/assets/background.png");
+        <Card class="space-y-6">
+            <div>
+                <h2 class="text-xl font-semibold text-white mb-1">
+                    Form Controls
+                </h2>
+                <p class="text-white/40 text-sm">
+                    Standardized input fields with focus states.
+                </p>
+            </div>
 
-        .left-side {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            width: 100%;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 50px;
+            <div class="space-y-4">
+                <Input
+                    label="Your Name"
+                    placeholder="Enter your name..."
+                    bind:value={name}
+                />
+                {#if name}
+                    <p
+                        class="text-brand-primary text-sm animate-in fade-in slide-in-from-left-2 transition-all"
+                    >
+                        Hello, <span class="font-bold">{name}</span>! Welcome to
+                        the new foundation.
+                    </p>
+                {/if}
+                <Input
+                    label="Email Address"
+                    type="email"
+                    placeholder="name@example.com"
+                />
+            </div>
+        </Card>
 
-            span {
-                display: flex;
-            }
-
-            h1 {
-                margin: 0;
-                font-size: 3.5rem;
-                color: #e2e8f0;
-                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            }
-        }
-
-        header,
-        footer {
-            padding: 8px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        header h1 {
-            font-size: 2.5rem;
-        }
-    }
-
-    
-</style>
+        <Card class="col-span-full space-y-4">
+            <h2 class="text-xl font-semibold text-white">
+                Glassmorphism & Layout
+            </h2>
+            <p class="text-white/40">
+                The entire interface uses a refined glassmorphism aesthetic with
+                high-quality blur and subtle border highlights. This creates a
+                depth-heavy, premium feel that modern users expect.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                <div
+                    class="h-24 rounded-xl bg-brand-primary/20 border border-brand-primary/30 flex items-center justify-center"
+                >
+                    <span class="text-brand-primary font-bold"
+                        >Primary Accent</span
+                    >
+                </div>
+                <div
+                    class="h-24 rounded-xl bg-brand-secondary/20 border border-brand-secondary/30 flex items-center justify-center"
+                >
+                    <span class="text-brand-secondary font-bold"
+                        >Secondary Accent</span
+                    >
+                </div>
+                <div
+                    class="h-24 rounded-xl bg-brand-accent/20 border border-brand-accent/30 flex items-center justify-center"
+                >
+                    <span class="text-brand-accent font-bold"
+                        >Tertiary Accent</span
+                    >
+                </div>
+            </div>
+        </Card>Section
+    </section>
+</div>
