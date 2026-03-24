@@ -21,15 +21,19 @@
         class: className = "",
     }: Props = $props();
 
+    const shared = `inline-flex items-center justify-center rounded-xl 
+    transition-all duration-200 active:scale-95 cursor-pointer 
+    disabled:opacity-50 disabled:pointer-events-none`;
+
     const variants = {
-        primary: `bg-brand-primary border-b-4 border-black/30 hover:border-brand-primary hover:translate-y-1 
-            text-white shadow-lg glow-primary uppercase tracking-wider font-bold`,
-        secondary: `bg-brand-secondary border-b-4 border-black/30 hover:border-brand-secondary hover:translate-y-1 
-            text-white shadow-md uppercase tracking-wider font-bold`,
-        outline: `border-2 border-brand-accent/50 hover:translate-y-1 hover:border-brand-accent/50 shadow-xs hover:shadow-none shadow-brand-accent/50 text-brand-accent hover:bg-brand-accent/10 
-            uppercase tracking-wider font-bold focus:ring-2 focus:ring-brand-accent`,
+        primary: `bg-brand-primary border-b-4 border-black/30 hover:border-brand-primary 
+            text-white shadow-lg glow-primary uppercase tracking-wider font-bold hover:translate-y-1`,
+        secondary: `bg-brand-secondary border-b-4 border-black/30 hover:border-brand-secondary 
+            text-white shadow-md uppercase tracking-wider font-bold hover:translate-y-1`,
+        outline: `border-2 border-brand-accent/50 hover:border-brand-accent/50 shadow-xs hover:shadow-none shadow-brand-accent/50 text-brand-accent hover:bg-brand-accent/10 
+            uppercase tracking-wider font-bold focus:ring-2 focus:ring-brand-accent hover:translate-y-0.5`,
         ghost: `hover:bg-brand-accent/10 text-brand-accent/80 hover:text-brand-accent 
-            uppercase tracking-wider font-bold`,
+            uppercase tracking-wider font-bold hover:translate-y-0.5`,
     };
 
     const sizes = {
@@ -43,9 +47,7 @@
     {type}
     {disabled}
     {onclick}
-    class="inline-flex items-center justify-center rounded-xl transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none {variants[
-        variant
-    ]} {sizes[size]} {className}"
+    class="{shared} {variants[variant]} {sizes[size]} {className}"
 >
     {@render children()}
 </button>
