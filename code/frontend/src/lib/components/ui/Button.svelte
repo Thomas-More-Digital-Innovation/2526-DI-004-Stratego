@@ -22,13 +22,14 @@
     }: Props = $props();
 
     const variants = {
-        primary:
-            "bg-brand-primary border-b-4 border-black/30 hover:border-brand-primary hover:translate-y-1 text-white shadow-lg glow-primary uppercase tracking-wider font-bold",
-        secondary:
-            "bg-brand-secondary border-b-4 border-black/30 hover:border-brand-secondary hover:translate-y-1 text-white shadow-md uppercase tracking-wider font-bold",
-        outline:
-            "border-2 border-brand-accent/50 text-brand-accent hover:bg-brand-accent/10 uppercase tracking-wider font-bold focus:ring-2 focus:ring-brand-accent",
-        ghost: "hover:bg-brand-accent/10 text-brand-accent/80 hover:text-brand-accent uppercase tracking-wider font-bold",
+        primary: `bg-brand-primary border-b-4 border-black/30 hover:border-brand-primary hover:translate-y-1 
+            text-white shadow-lg glow-primary uppercase tracking-wider font-bold`,
+        secondary: `bg-brand-secondary border-b-4 border-black/30 hover:border-brand-secondary hover:translate-y-1 
+            text-white shadow-md uppercase tracking-wider font-bold`,
+        outline: `border-2 border-brand-accent/50 hover:translate-y-1 hover:border-brand-accent/50 shadow-xs hover:shadow-none shadow-brand-accent/50 text-brand-accent hover:bg-brand-accent/10 
+            uppercase tracking-wider font-bold focus:ring-2 focus:ring-brand-accent`,
+        ghost: `hover:bg-brand-accent/10 text-brand-accent/80 hover:text-brand-accent 
+            uppercase tracking-wider font-bold`,
     };
 
     const sizes = {
