@@ -6,8 +6,8 @@
   --color-brand-accent: oklch(0.7539 0.0945 78.33);
 
   /* Deep Slate/Parchment for the game board feel */
-  --color-surface-base: oklch(0.15 0.02 250);
-  --color-surface-elevated: oklch(0.20 0.02 250);
+  --color-surface-base: oklch(0.25 0.02 250);
+  --color-surface-elevated: oklch(0.30 0.02 250);
   --color-surface-glass: rgba(15, 20, 25, 0.4);
 
   --font-sans: "Inter", "Outfit", sans-serif;

@@ -1,118 +1,197 @@
 <script lang="ts">
-    import Button from "$lib/components/ui/Button.svelte";
+    import { goto } from "$app/navigation";
+    import { authStore } from "$lib/state/auth.svelte";
+    import { games } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
-    import Input from "$lib/components/ui/Input.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import type { GameMode, AI } from "$lib/types/game";
 
-    let name = $state("");
+    const AIs: AI[] = [
+        {
+            name: "FAFO",
+            id: "fafo",
+            description:
+                "The Fuck Around & Find Out AI is a simple random-move AI.",
+        },
+        {
+            name: "FATO",
+            id: "fato",
+            description:
+                "The Fuck Around & Try Out AI is a random-move AI that can remember the board and act on it.",
+        },
+    ];
+
+    let selectedMode = $state<GameMode>("human_vs_ai");
+    let error = $state("");
+    let creating = $state(false);
+
+    // AI selection flow
+    let selectingAi = $state<null | "ai1" | "ai2">(null);
+    let ai1 = $state("");
+    let ai2 = $state("");
+
+    function startFlow() {
+        error = "";
+        if (selectedMode === "human_vs_human") {
+            error = "Coming Soon";
+            return;
+        }
+        selectingAi = "ai1";
+        ai1 = "";
+        ai2 = "";
+    }
+
+    function selectAi(aiId: string) {
+        if (selectingAi === "ai1") {
+            ai1 = aiId;
+            if (selectedMode === "human_vs_ai") {
+                createGame();
+            } else {
+                selectingAi = "ai2";
+            }
+        } else {
+            ai2 = aiId;
+            createGame();
+        }
+    }
+
+    async function createGame() {
+        creating = true;
+        selectingAi = null;
+        try {
+            const info = await games.create(selectedMode, ai1, ai2);
+            goto(`/game/${info.gameId}?mode=${selectedMode}`);
+        } catch (e: any) {
+            error = e.message || "Failed to create game";
+            creating = false;
+        }
+    }
+
+    function cancel() {
+        selectingAi = null;
+        ai1 = "";
+        ai2 = "";
+    }
+
+    const modes: {
+        mode: GameMode;
+        icon: string;
+        title: string;
+        desc: string;
+    }[] = [
+        {
+            mode: "human_vs_ai",
+            icon: "🧑 vs 🤖",
+            title: "Human vs AI",
+            desc: "Play against the computer.",
+        },
+        {
+            mode: "ai_vs_ai",
+            icon: "🤖 vs 🤖",
+            title: "AI vs AI",
+            desc: "Watch two AIs battle it out.",
+        },
+        {
+            mode: "human_vs_human",
+            icon: "🧑 vs 🧑",
+            title: "Human vs Human",
+            desc: "Coming soon.",
+        },
+    ];
 </script>
 
-<div class="space-y-12">
+<svelte:head>
+    <title>Stratego — Command Center</title>
+</svelte:head>
+
+<div class="space-y-8">
     <header>
         <h1
-            class="text-4xl font-extrabold text-white mb-2 uppercase tracking-wider text-brand-accent"
+            class="text-3xl font-extrabold text-white uppercase tracking-widest"
         >
-            Stratego Command Center
+            Command Center
         </h1>
-        <p class="text-white/60 text-lg">
-            A premium, adventurous foundation for the battlefield.
+        <p class="text-white/50 mt-1">
+            {#if authStore.user}
+                Welcome back, <span class="text-brand-accent font-semibold"
+                    >{authStore.user.username}</span
+                >.
+            {:else}
+                <a href="/login" class="text-brand-primary hover:underline"
+                    >Sign in</a
+                > to start playing.
+            {/if}
         </p>
     </header>
 
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card class="space-y-6">
-            <div>
+    {#if error}
+        <div
+            class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center"
+        >
+            {error}
+        </div>
+    {/if}
+
+    <!-- AI Selector Dialog -->
+    {#if selectingAi}
+        <Card class="space-y-4">
+            <div class="flex justify-between items-center">
                 <h2
-                    class="text-xl font-semibold text-brand-accent mb-1 uppercase tracking-wide"
+                    class="text-lg font-bold text-brand-accent uppercase tracking-wider"
                 >
-                    Tactical Controls
+                    Select {selectingAi === "ai1" ? "AI Opponent" : "Second AI"}
                 </h2>
-                <p class="text-white/60 text-sm">
-                    Command buttons with micro-animations and variant support.
-                </p>
+                <Button variant="ghost" size="sm" onclick={cancel}
+                    >✕ Cancel</Button
+                >
             </div>
-
-            <div class="flex flex-wrap gap-4">
-                <Button variant="primary">Deploy Units</Button>
-                <Button variant="secondary">Scout Ahead</Button>
-                <Button variant="outline">Hold Position</Button>
-                <Button variant="ghost">Retreat</Button>
-            </div>
-
-            <div class="flex flex-wrap gap-4">
-                <Button size="sm">Small</Button>
-                <Button size="md">Medium</Button>
-                <Button size="lg">Large Scale</Button>
+            <div class="grid gap-3">
+                {#each AIs as ai}
+                    <button
+                        class="text-left p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-brand-primary/10 hover:border-brand-primary/30 transition-all"
+                        onclick={() => selectAi(ai.id)}
+                    >
+                        <h3 class="font-bold text-white">{ai.name}</h3>
+                        <p class="text-white/50 text-sm mt-1">
+                            {ai.description}
+                        </p>
+                    </button>
+                {/each}
             </div>
         </Card>
+    {:else}
+        <!-- Game Mode Selection -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {#each modes as m}
+                <button
+                    class="text-left rounded-2xl p-6 border-2 transition-all duration-200 {selectedMode ===
+                    m.mode
+                        ? 'border-brand-primary bg-brand-primary/10'
+                        : 'border-white/10 bg-surface-glass hover:border-white/20 hover:bg-white/5'}"
+                    onclick={() => (selectedMode = m.mode)}
+                    disabled={creating}
+                >
+                    <div class="text-3xl mb-3">{m.icon}</div>
+                    <h3 class="font-bold text-white text-lg">{m.title}</h3>
+                    <p class="text-white/50 text-sm mt-1">{m.desc}</p>
+                </button>
+            {/each}
+        </div>
 
-        <Card class="space-y-6">
-            <div>
-                <h2
-                    class="text-xl font-semibold text-brand-accent mb-1 uppercase tracking-wide"
-                >
-                    Intelligence Briefing
-                </h2>
-                <p class="text-white/60 text-sm">
-                    Standardized input fields to gather enemy intel.
-                </p>
-            </div>
-
-            <div class="space-y-4">
-                <Input
-                    label="Commander Name"
-                    placeholder="Enter your rank & name..."
-                    bind:value={name}
-                />
-                {#if name}
-                    <p
-                        class="text-brand-accent text-sm animate-in fade-in slide-in-from-left-2 transition-all border-l-2 border-brand-accent pl-2"
-                    >
-                        Intel received, <span class="font-bold">{name}</span>.
-                        Awaiting deployment orders.
-                    </p>
-                {/if}
-                <Input
-                    label="Email Address"
-                    type="email"
-                    placeholder="name@example.com"
-                />
-            </div>
-        </Card>
-
-        <Card class="col-span-full space-y-4">
-            <h2
-                class="text-xl font-semibold text-brand-accent uppercase tracking-wide"
-            >
-                Thematic Atmosphere
-            </h2>
-            <p class="text-white/60">
-                The interface utilizes deep crimsons, navy blues, and brass
-                accents to evoke the classic Stratego board game, modernized
-                with high-quality blur and subtle lighting effects.
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                <div
-                    class="h-24 rounded-xl bg-brand-primary/20 border border-brand-primary/30 flex items-center justify-center"
-                >
-                    <span class="text-brand-primary font-bold"
-                        >Primary Accent</span
-                    >
-                </div>
-                <div
-                    class="h-24 rounded-xl bg-brand-secondary/20 border border-brand-secondary/30 flex items-center justify-center"
-                >
-                    <span class="text-brand-secondary font-bold"
-                        >Secondary Accent</span
-                    >
-                </div>
-                <div
-                    class="h-24 rounded-xl bg-brand-accent/20 border border-brand-accent/30 flex items-center justify-center"
-                >
-                    <span class="text-brand-accent font-bold"
-                        >Tertiary Accent</span
-                    >
-                </div>
-            </div>
-        </Card>
-    </section>
+        <Button
+            variant="primary"
+            size="lg"
+            class="w-full"
+            onclick={startFlow}
+            disabled={creating || !authStore.user}
+        >
+            {#if creating}
+                Creating Game...
+            {:else if !authStore.user}
+                Sign In to Play
+            {:else}
+                Start Game
+            {/if}
+        </Button>
+    {/if}
 </div>
