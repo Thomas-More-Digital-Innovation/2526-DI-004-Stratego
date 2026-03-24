@@ -11,6 +11,8 @@
   --color-surface-glass: rgba(15, 20, 25, 0.4);
 
   --font-sans: "Inter", "Outfit", sans-serif;
+
+  --color-overlay-dark: rgba(0, 0, 0, 0.4);
 }
 
 @layer base {
@@ -22,7 +24,18 @@
 
 @layer utilities {
   .glass {
-    @apply bg-surface-glass backdrop-blur-md border border-white/10;
+    @apply bg-surface-glass backdrop-blur-xl border border-white/10;
+  }
+
+  .app-background {
+    @apply fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-image: var(--bg-image);
+  }
+
+  .app-background-overlay {
+    @apply absolute inset-0 bg-black/40 backdrop-blur-[2px];
   }
 
   .glow-primary {

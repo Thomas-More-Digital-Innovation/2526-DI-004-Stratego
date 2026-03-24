@@ -4,6 +4,9 @@
     import { onMount } from "svelte";
     import { authStore } from "$lib/state/auth.svelte";
     import logo from "$lib/assets/favicon.png";
+    import baseBg from "$lib/assets/background.png";
+    import profileBg from "$lib/assets/background-profile.png";
+    import boardBg from "$lib/assets/background-board-setup.png";
 
     let { children } = $props();
 
@@ -18,13 +21,27 @@
     ];
 
     const isFullPage = $derived($page.url.pathname.startsWith("/game/"));
+
+    const backgroundImage = $derived(() => {
+        if ($page.url.pathname.startsWith("/profile")) return profileBg;
+        if ($page.url.pathname.startsWith("/board-setups")) return boardBg;
+        return baseBg;
+    });
 </script>
 
 <svelte:head>
     <link rel="icon" href={logo} />
 </svelte:head>
 
-<div class="min-h-screen flex bg-surface-base">
+<div
+    class="min-h-screen flex bg-surface-base/20 relative overflow-hidden"
+    style:--bg-image="url({backgroundImage()})"
+>
+    <!-- Dynamic Background Layer -->
+    <div class="app-background">
+        <div class="app-background-overlay"></div>
+    </div>
+
     {#if !isFullPage}
         <aside
             class="w-64 border-r border-white/5 bg-surface-elevated/30 backdrop-blur-xl flex flex-col fixed inset-y-0"
