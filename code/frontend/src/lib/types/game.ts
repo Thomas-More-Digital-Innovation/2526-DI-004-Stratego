@@ -67,6 +67,7 @@ export interface AI {
     name: string;
     id: string;
     description: string;
+    image?: string;
 }
 
 export interface User {
