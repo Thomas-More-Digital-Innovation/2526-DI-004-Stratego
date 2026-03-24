@@ -64,6 +64,10 @@ export class GameSocket {
         this.send('animationComplete');
     }
 
+    sendLoadSetup(setupData: string) {
+        this.send('loadSetup', { setupData });
+    }
+
     disconnect() {
         this.ws?.close();
         this.ws = null;

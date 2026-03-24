@@ -33,7 +33,7 @@
     const viewerId = $derived(gameMode === "human_vs_ai" ? 0 : -1);
 
     onMount(async () => {
-        gameId = $page.params.id;
+        gameId = $page.params.id || "";
         const params = new URLSearchParams(window.location.search);
         gameMode = params.get("mode") || "human_vs_ai";
 
@@ -162,6 +162,11 @@
         setupSwapPos1 = null;
     }
 
+    function handleLoadSetup(setupData: string) {
+        socket.sendLoadSetup(setupData);
+        setupSwapPos1 = null;
+    }
+
     function saveGame() {
         try {
             const data = gameStore.exportGame();
@@ -231,6 +236,7 @@
                     (isHumanTurn || isSetupPhase)}
                 {viewerId}
                 {validMoves}
+                disabledRows={isSetupPhase ? [0, 1, 2, 3, 4, 5] : []}
             />
         </div>
 
@@ -279,5 +285,9 @@
 {/if}
 
 {#if isSetupPhase && gameMode === "human_vs_ai"}
-    <SetupBanner onRandomize={handleRandomize} onStart={handleStartGame} />
+    <SetupBanner
+        onRandomize={handleRandomize}
+        onStart={handleStartGame}
+        onLoadSetup={handleLoadSetup}
+    />
 {/if}

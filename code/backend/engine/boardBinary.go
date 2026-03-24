@@ -59,6 +59,23 @@ var idToPieceType = map[byte]*models.PieceType{
 	PieceIDColonel: &models.Colonel, PieceIDGeneral: &models.General, PieceIDMarshal: &models.Marshal,
 }
 
+// GetPieceIDFromRank returns the internal piece ID for a rank character (0, B, 1-9, M)
+func GetPieceIDFromRank(rank byte) (byte, bool) {
+	id, ok := rankToPieceID[rank]
+	return id, ok
+}
+
+// GetPieceTypeFromID returns the PieceType model for an internal piece ID
+func GetPieceTypeFromID(id byte) *models.PieceType {
+	return idToPieceType[id]
+}
+
+// GetPieceTypeFromCell extracts the PieceType from a binary cell byte
+func GetPieceTypeFromCell(cell byte) *models.PieceType {
+	pieceID := (cell & MaskPieceType) >> ShiftPieceType
+	return idToPieceType[pieceID]
+}
+
 // Encode full 10x10 board to 100 bytes
 func EncodeBoard(board *Board, movedPositions map[Position]bool) []byte {
 	data := make([]byte, 100)

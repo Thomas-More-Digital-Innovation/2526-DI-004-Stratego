@@ -2,7 +2,9 @@ package game
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/models"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 )
 
@@ -66,6 +68,58 @@ func CustomSetup(player *engine.Player, piecePositions map[engine.Position]*engi
 	pieces := make([]*engine.Piece, 0, 40)
 	for _, piece := range piecePositions {
 		pieces = append(pieces, piece)
+	}
+
+	return pieces, nil
+}
+
+// ParseSetup converts 40-byte binary setup data (bitpacked) or 40-character rank strings
+// into an ordered piece list for the player.
+func ParseSetup(player *engine.Player, data []byte) ([]*engine.Piece, error) {
+	if len(data) != 40 {
+		return nil, fmt.Errorf("setup data must be 40 bytes, got %d", len(data))
+	}
+
+	// Detect format: bitpacked vs rank characters
+	isBitpacked := false
+	for _, b := range data {
+		if b&engine.BitOccupied != 0 {
+			isBitpacked = true
+			break
+		}
+	}
+
+	pieces := make([]*engine.Piece, 0, 40)
+	for i := 0; i < 40; i++ {
+		cell := data[i]
+		var pieceType *models.PieceType
+
+		if isBitpacked {
+			if cell&engine.BitOccupied == 0 {
+				return nil, fmt.Errorf("cell %d is empty, all 40 cells must be occupied", i)
+			}
+			pieceType = engine.GetPieceTypeFromCell(cell)
+		} else {
+			// Rank character format
+			if cell == '.' || cell == ' ' {
+				return nil, fmt.Errorf("cell %d is empty in rank string, all 40 cells must be occupied", i)
+			}
+			pieceID, ok := engine.GetPieceIDFromRank(cell)
+			if !ok {
+				return nil, fmt.Errorf("invalid piece rank '%c' at position %d", cell, i)
+			}
+			pieceType = engine.GetPieceTypeFromID(pieceID)
+		}
+
+		if pieceType == nil {
+			return nil, fmt.Errorf("unknown piece type at index %d", i)
+		}
+
+		pieces = append(pieces, engine.NewPiece(*pieceType, player))
+	}
+
+	if len(pieces) != 40 {
+		return nil, fmt.Errorf("expected 40 pieces, got %d", len(pieces))
 	}
 
 	return pieces, nil

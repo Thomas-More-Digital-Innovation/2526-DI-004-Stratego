@@ -2,6 +2,7 @@ package api
 
 import (
 	"digital-innovation/stratego/engine"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -30,6 +31,8 @@ func (c *WSClient) handleMessage(message []byte) {
 		c.handleRandomizeSetup()
 	case MsgTypeStartGame:
 		c.handleStartGame()
+	case MsgTypeLoadSetup:
+		c.handleLoadSetup(baseMsg.Data)
 	default:
 		c.sendError("Unknown message type")
 	}
@@ -189,4 +192,45 @@ func (c *WSClient) handleStartGame() {
 	log.Printf("Game started by player %d", c.seatIndex)
 
 	c.hub.BroadcastGameTransition()
+}
+
+// handleLoadSetup processes a load setup message from saved board setups
+func (c *WSClient) handleLoadSetup(data interface{}) {
+	if c.seatIndex < 0 {
+		c.sendError("Spectators cannot load setups")
+		return
+	}
+
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		c.sendError("Invalid load setup message format")
+		return
+	}
+
+	var loadMsg LoadSetupMessage
+	if err := json.Unmarshal(dataBytes, &loadMsg); err != nil {
+		c.sendError("Invalid load setup message")
+		return
+	}
+
+	var setupData []byte
+	if len(loadMsg.SetupData) == 40 {
+		setupData = []byte(loadMsg.SetupData)
+	} else {
+		var err error
+		setupData, err = base64.StdEncoding.DecodeString(loadMsg.SetupData)
+		if err != nil {
+			c.sendError(fmt.Sprintf("Invalid setup data (expected 40 chars or base64): %v", err))
+			return
+		}
+	}
+
+	if err := c.session.LoadSetup(c.seatIndex, setupData); err != nil {
+		c.sendError(fmt.Sprintf("Failed to load setup: %v", err))
+		return
+	}
+
+	log.Printf("Setup loaded for player %d", c.seatIndex)
+
+	c.hub.BroadcastSetupBoard()
 }

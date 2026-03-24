@@ -5,8 +5,11 @@
     import { boardSetups } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import Board from "$lib/components/game/Board.svelte";
     import type { BoardSetup } from "$lib/types/board-setup";
-    import { MAX_BOARD_SETUPS } from "$lib/types/board-setup";
+    import { PIECE_INVENTORY, MAX_BOARD_SETUPS } from "$lib/types/board-setup";
+    import { decodeSetup } from "$lib/utils/board-binary";
+    import type { Piece as PieceType } from "$lib/types/game";
 
     let setups = $state<BoardSetup[]>([]);
     let error = $state("");
@@ -41,6 +44,23 @@
             error = "Failed to delete: " + e.message;
         }
     }
+
+    function getDecodedBoard(setupData: string): (PieceType | null)[][] {
+        const decoded = decodeSetup(setupData);
+        return decoded.map((row, y) =>
+            row.split("").map((char, x) => {
+                if (char === "." || char === " ") return null;
+                const info = PIECE_INVENTORY[char];
+                if (!info) return null;
+                return {
+                    rank: info.rank,
+                    ownerId: 1,
+                    revealed: true,
+                    position: { x, y },
+                } as PieceType;
+            }),
+        );
+    }
 </script>
 
 <svelte:head>
@@ -59,7 +79,11 @@
                 {setups.length}/{MAX_BOARD_SETUPS} setups saved
             </p>
         </div>
-        <Button variant="primary" disabled={setups.length >= MAX_BOARD_SETUPS}>
+        <Button
+            variant="primary"
+            disabled={setups.length >= MAX_BOARD_SETUPS}
+            onclick={() => goto("/board-setups/new")}
+        >
             + Create New
         </Button>
     </div>
@@ -81,14 +105,20 @@
             </p>
         </Card>
     {:else}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {#each setups as setup}
-                <Card class="space-y-3">
-                    <div class="flex justify-between items-start">
+                <Card
+                    class="flex flex-col h-full bg-white/5 border-white/5 hover:border-white/10 transition-colors"
+                >
+                    <div class="flex justify-between items-start mb-4">
                         <div>
-                            <h3 class="font-bold text-white">{setup.name}</h3>
+                            <h3 class="font-bold text-white text-lg">
+                                {setup.name}
+                            </h3>
                             {#if setup.description}
-                                <p class="text-white/40 text-sm mt-1">
+                                <p
+                                    class="text-white/40 text-xs mt-1 line-clamp-1"
+                                >
                                     {setup.description}
                                 </p>
                             {/if}
@@ -101,24 +131,47 @@
                             </span>
                         {/if}
                     </div>
-                    <div class="text-white/20 text-xs">
-                        Updated {new Date(
-                            setup.updated_at,
-                        ).toLocaleDateString()}
+
+                    <div
+                        class="flex-1 bg-black/20 rounded-2xl p-3 scale-[0.6] origin-top-left -mr-[40%] -mb-[80px]"
+                    >
+                        <Board
+                            board={getDecodedBoard(setup.setup_data)}
+                            rows={4}
+                            cols={10}
+                            scale={1}
+                            isInteractive={false}
+                        />
                     </div>
-                    <div class="flex gap-2">
-                        <Button variant="outline" size="sm" class="flex-1">
-                            Edit
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onclick={() => deleteSetup(setup.id)}
+
+                    <div class="mt-auto space-y-3">
+                        <div
+                            class="text-white/20 text-[10px] uppercase font-bold tracking-wider"
                         >
-                            Delete
-                        </Button>
-                    </div>
-                </Card>
+                            Updated {new Date(
+                                setup.updated_at,
+                            ).toLocaleDateString()}
+                        </div>
+                        <div class="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="flex-1"
+                                onclick={() =>
+                                    goto(`/board-setups/${setup.id}`)}
+                            >
+                                Edit
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onclick={() => deleteSetup(setup.id)}
+                            >
+                                Delete
+                            </Button>
+                        </div>
+                    </div></Card
+                >
             {/each}
         </div>
     {/if}
