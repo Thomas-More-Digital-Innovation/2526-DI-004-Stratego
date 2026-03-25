@@ -17,7 +17,7 @@ import (
 // HandleCreateGame handles POST /api/games
 func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -29,7 +29,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		sendError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 
 	_, err := s.CreateGame(req.GameID, req.GameType, req.AI1, req.AI2) // TODO: build logic for frontend to select AI type
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -53,12 +53,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 		"wsUrl":    fmt.Sprintf("/ws/game/%s", req.GameID),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendJSON(w, response, http.StatusOK)
 
 	log.Printf("Created game %s (type: %s)", req.GameID, req.GameType)
 }
@@ -69,13 +64,13 @@ func (s *GameServer) HandleWebSocketConnection(w http.ResponseWriter, r *http.Re
 	// Extract game ID from path
 	gameID := r.URL.Path[len("/ws/game/"):]
 	if gameID == "" {
-		http.Error(w, "Game ID required", http.StatusBadRequest)
+		sendError(w, "Game ID required", http.StatusBadRequest)
 		return
 	}
 
 	handler, exists := s.GetSession(gameID)
 	if !exists {
-		http.Error(w, "Game not found", http.StatusNotFound)
+		sendError(w, "Game not found", http.StatusNotFound)
 		return
 	}
 
@@ -110,7 +105,7 @@ func (s *GameServer) HandleWebSocketConnection(w http.ResponseWriter, r *http.Re
 // HandleListGames handles GET /api/games
 func (s *GameServer) HandleListGames(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -128,11 +123,7 @@ func (s *GameServer) HandleListGames(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(games); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	sendJSON(w, games, http.StatusOK)
 }
 
 // handleGameOver broadcasts final game state and saves stats

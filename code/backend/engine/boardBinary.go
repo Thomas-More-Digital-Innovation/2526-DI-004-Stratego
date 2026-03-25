@@ -45,13 +45,6 @@ var pieceIDToRank = func() [32]byte {
 	return a
 }()
 
-var pieceTypeToID = map[*models.PieceType]byte{
-	&models.Flag: PieceIDFlag, &models.Bomb: PieceIDBomb, &models.Spy: PieceIDSpy,
-	&models.Scout: PieceIDScout, &models.Miner: PieceIDMiner, &models.Sergeant: PieceIDSergeant,
-	&models.Lieutenant: PieceIDLieutenant, &models.Captain: PieceIDCaptain, &models.Major: PieceIDMajor,
-	&models.Colonel: PieceIDColonel, &models.General: PieceIDGeneral, &models.Marshal: PieceIDMarshal,
-}
-
 var idToPieceType = map[byte]*models.PieceType{
 	PieceIDFlag: &models.Flag, PieceIDBomb: &models.Bomb, PieceIDSpy: &models.Spy,
 	PieceIDScout: &models.Scout, PieceIDMiner: &models.Miner, PieceIDSergeant: &models.Sergeant,
