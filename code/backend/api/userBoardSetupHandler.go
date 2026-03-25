@@ -42,7 +42,11 @@ func (s *GameServer) CreateBoardSetupHandler(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(setup)
+	err = json.NewEncoder(w).Encode(setup)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode board setup: %v", err), http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetUserBoardSetupsHandler retrieves all setups for a user
@@ -65,7 +69,11 @@ func (s *GameServer) GetUserBoardSetupsHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(setups)
+	err = json.NewEncoder(w).Encode(setups)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode board setups: %v", err), http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetBoardSetupHandler retrieves a single board setup
@@ -94,7 +102,11 @@ func (s *GameServer) GetBoardSetupHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(setup)
+	err = json.NewEncoder(w).Encode(setup)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode board setup: %v", err), http.StatusInternalServerError)
+		return
+	}
 }
 
 // UpdateBoardSetupHandler updates an existing board setup

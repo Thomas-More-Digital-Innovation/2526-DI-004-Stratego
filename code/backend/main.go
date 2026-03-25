@@ -29,7 +29,11 @@ func main() {
 		if err := db.InitDB(); err != nil {
 			log.Fatalf("Failed to initialize database: %v", err)
 		}
-		defer db.CloseDB()
+		defer func() {
+			if err := db.CloseDB(); err != nil {
+				log.Printf("Error closing database: %v", err)
+			}
+		}()
 
 		auth.Store.StartCleanupRoutine()
 
