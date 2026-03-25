@@ -34,18 +34,29 @@ func NewGameServer() *GameServer {
 // TODO change in prod
 func setCORSHeaders(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
-	// Allow requests from frontend dev server and localhost
-	if origin == "http://localhost:5173" || origin == "http://127.0.0.1:5173" || origin == "" {
-		if origin == "" {
-			origin = "http://localhost:5173"
-		}
+	if origin != "" {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 	} else {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+// CORSMiddleware wraps a handler with mandatory CORS headers
+func CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // CreateGame creates a new game session
@@ -185,10 +196,17 @@ func (s *GameServer) StartServer(addr string) error {
 	http.HandleFunc("/api/users/stats", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
 			return
 		}
 		s.GetUserStatsHandler(w, r)
+	})
+
+	http.HandleFunc("/api/users/me/stats", func(w http.ResponseWriter, r *http.Request) {
+		setCORSHeaders(w, r)
+		if r.Method == http.MethodOptions {
+			return
+		}
+		s.GetCurrentUserStatsHandler(w, r)
 	})
 
 	// Board setup endpoints
@@ -236,5 +254,5 @@ func (s *GameServer) StartServer(addr string) error {
 	})
 
 	log.Printf("Starting game server on %s", addr)
-	return http.ListenAndServe(addr, nil)
+	return http.ListenAndServe(addr, CORSMiddleware(http.DefaultServeMux))
 }

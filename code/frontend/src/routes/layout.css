@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: oklch(0.7113 0.1044 226.48);
+  --color-brand-secondary: oklch(0.6688 0.1971 39.15);
+  --color-brand-accent: oklch(0.7539 0.0945 78.33);
+
+  /* Deep Slate/Parchment for the game board feel */
+  --color-surface-base: oklch(0.25 0.02 250);
+  --color-surface-elevated: oklch(0.30 0.02 250);
+  --color-surface-glass: rgba(15, 20, 25, 0.4);
+
+  --font-sans: "Inter", "Outfit", sans-serif;
+
+  --color-overlay-dark: rgba(0, 0, 0, 0.4);
+}
+
+@layer base {
+  body {
+    @apply bg-surface-base text-white antialiased selection:bg-brand-primary/30;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface-glass backdrop-blur-xl border border-white/10;
+  }
+
+  .app-background {
+    @apply fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-image: var(--bg-image);
+  }
+
+  .app-background-overlay {
+    @apply absolute inset-0 bg-black/40 backdrop-blur-[2px];
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary), transparent 70%);
+  }
+}

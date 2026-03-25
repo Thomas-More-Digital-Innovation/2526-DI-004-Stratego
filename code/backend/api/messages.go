@@ -12,6 +12,7 @@ const (
 	MsgTypeSwapPieces        = "swapPieces"
 	MsgTypeRandomizeSetup    = "randomizeSetup"
 	MsgTypeStartGame         = "startGame"
+	MsgTypeLoadSetup         = "loadSetup"
 
 	// Server -> Client
 	MsgTypeGameState   = "gameState"
@@ -45,6 +46,10 @@ type GetValidMovesMessage struct {
 type SwapPiecesMessage struct {
 	Pos1 PositionDTO `json:"pos1"`
 	Pos2 PositionDTO `json:"pos2"`
+}
+
+type LoadSetupMessage struct {
+	SetupData string `json:"setupData"` // Base64 encoded 40 bytes
 }
 
 // Server messages

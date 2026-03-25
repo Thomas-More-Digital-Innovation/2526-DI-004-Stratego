@@ -397,6 +397,41 @@ func (gs *GameSession) positionToIndex(pos engine.Position, playerID int) int {
 	return rowOffset*10 + pos.X
 }
 
+// LoadSetup loads a predefined setup from binary data (40 bytes)
+func (gs *GameSession) LoadSetup(playerID int, data []byte) error {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+
+	if !gs.isSetupPhase {
+		return errors.New("not in setup phase")
+	}
+
+	var player *engine.Player
+	switch playerID {
+	case 0:
+		player = gs.game.Players[0]
+	case 1:
+		player = gs.game.Players[1]
+	default:
+		return errors.New("invalid player ID")
+	}
+
+	pieces, err := ParseSetup(player, data)
+	if err != nil {
+		return fmt.Errorf("invalid setup data: %v", err)
+	}
+
+	switch playerID {
+	case 0:
+		gs.player1Pieces = pieces
+	case 1:
+		gs.player2Pieces = pieces
+	}
+
+	log.Printf("Loaded custom setup for player %d", playerID)
+	return nil
+}
+
 // RandomizeSetup randomizes the setup for a player
 func (gs *GameSession) RandomizeSetup(playerID int) error {
 	gs.mutex.Lock()

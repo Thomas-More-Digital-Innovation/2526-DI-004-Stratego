@@ -1,6 +1,7 @@
 package api
 
 import (
+	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"encoding/json"
 	"net/http"
@@ -27,6 +28,29 @@ func (s *GameServer) GetUserStatsHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	stats, err := db.GetUserStats(userID)
+	if err != nil {
+		http.Error(w, "Stats not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
+// GetCurrentUserStatsHandler retrieves statistics for the currently authenticated user
+func (s *GameServer) GetCurrentUserStatsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	user := auth.GetCurrentUser(r)
+	if user == nil {
+		http.Error(w, "Unauthorized: Please login", http.StatusUnauthorized)
+		return
+	}
+
+	stats, err := db.GetUserStats(user.ID)
 	if err != nil {
 		http.Error(w, "Stats not found", http.StatusNotFound)
 		return

@@ -1,96 +1,94 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import logoUrl from "$lib/assets/favicon.png";
-    import tmUrl from "$lib/assets/tm_logo.png";
-    import ErrorMessage from "$lib/components/ErrorMessage.svelte";
-    import GameModes from "./components/GameModes.svelte";
-    import LeftNavbar from "./components/LeftNavbar.svelte";
-    import type { PageData } from './$types';
-    import AuthPanel from './components/AuthPanel.svelte';
+    import { goto } from "$app/navigation";
+    import { authStore } from "$lib/state/auth.svelte";
+    import Card from "$lib/components/ui/Card.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import type { GameMode } from "$lib/types/game";
+    import { gamemodes } from "$lib/data/gamemodes.data";
 
-    let { data }: { data: PageData } = $props();
-    
-    let errorMessage = $state<string>("");
+    let selectedMode = $state<GameMode>("human_vs_ai");
+    let error = $state("");
+
+    function startFlow() {
+        error = "";
+        if (selectedMode === "human_vs_human") {
+            error = "Coming Soon";
+            return;
+        }
+        goto(`/select-ai?mode=${selectedMode}`);
+    }
 </script>
 
 <svelte:head>
-    <title>Stratego - Menu</title>
+    <title>Stratego — Command Center</title>
 </svelte:head>
 
-<ErrorMessage {errorMessage} />
+<div class="space-y-8">
+    <header>
+        <h1
+            class="text-3xl font-extrabold text-white uppercase tracking-widest"
+        >
+            Command Center
+        </h1>
+        <p class="text-white/50 mt-1">
+            {#if authStore.user}
+                Welcome back, <span class="text-brand-accent font-semibold"
+                    >{authStore.user.username}</span
+                >.
+            {:else}
+                <a href="/login" class="text-brand-primary hover:underline"
+                    >Sign in</a
+                > to start playing.
+            {/if}
+        </p>
+    </header>
 
-<main>
-    <div class="left-side">
-        <header>
-            <span>
-                <img src={logoUrl} alt="logo" width="64" />
-                <h1>StrateGO</h1>
-            </span>
-        </header>
-        <LeftNavbar isLoggedIn={!!data.user} />
-        <footer>
-            <img src={tmUrl} alt="Logo Thomas More" width="256" />
-        </footer>
-    </div>
-    
-    {#if data.user}
-        <GameModes bind:errorMessage user={data.user} />
-    {:else}
-        <AuthPanel />
+    {#if error}
+        <div
+            class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center"
+        >
+            {error}
+        </div>
     {/if}
-</main>
 
-<style>
-    :global(body) {
-        margin: 0;
-        padding: 0;
-        color: #e2e8f0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            sans-serif;
-    }
+    {#if selectedMode}
+        <!-- Game Mode Selection -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {#each gamemodes as m}
+                <button
+                    class="text-left rounded-2xl p-6 border-2 transition-all duration-200 {selectedMode ===
+                    m.mode
+                        ? 'border-brand-primary bg-brand-primary/10 scale-102 shadow-glow'
+                        : 'border-white/5 bg-surface-elevated/20 hover:border-white/20 hover:bg-white/5'}"
+                    onclick={() => (selectedMode = m.mode)}
+                >
+                    <div class="text-3xl mb-3">{m.icon}</div>
+                    <h3
+                        class="font-bold text-white text-lg lowercase tracking-widest"
+                    >
+                        {m.title}
+                    </h3>
+                    <p
+                        class="text-white/50 text-xs mt-1 leading-relaxed italic"
+                    >
+                        {m.desc}
+                    </p>
+                </button>
+            {/each}
+        </div>
 
-    main {
-        height: 100vh;
-        max-height: 100vh;
-        overflow: hidden;
-        width: 100%;
-        justify-content: space-between;
-        display: flex;
-        background-image: url("$lib/assets/background.png");
-
-        .left-side {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            width: 100%;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-
-            span {
-                display: flex;
-            }
-
-            h1 {
-                margin: 0;
-                font-size: 3.5rem;
-                color: #e2e8f0;
-                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            }
-        }
-
-        header,
-        footer {
-            padding: 8px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        header h1 {
-            font-size: 2.5rem;
-        }
-    }
-
-    
-</style>
+        <Button
+            variant="primary"
+            size="lg"
+            class="w-full"
+            onclick={startFlow}
+            disabled={!authStore.user}
+        >
+            {#if !authStore.user}
+                Sign In to Play
+            {:else}
+                Proceed to Intelligence Selection
+            {/if}
+        </Button>
+    {/if}
+</div>

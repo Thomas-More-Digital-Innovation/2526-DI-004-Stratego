@@ -24,7 +24,7 @@ services:
     tty: true
 
   frontend-dev:
-    image: node:20-alpine
+    image: oven/bun:1-alpine
     container_name: stratego-frontend-dev
     working_dir: /app
     volumes:
@@ -35,7 +35,7 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
     command: >
-      sh -lc "npm ci --legacy-peer-deps && npm run dev -- --host 0.0.0.0"
+      sh -lc "bun install && bun run dev -- --host 0.0.0.0"
     depends_on:
       - backend-dev
     stdin_open: true
