@@ -152,6 +152,25 @@
         }
     }
 
+    function handleCellDragStart(e: DragEvent, x: number, y: number) {
+        if (!isSetupPhase) return;
+        e.dataTransfer?.setData("text/plain", JSON.stringify({ x, y }));
+    }
+
+    function handleCellDrop(e: DragEvent, x: number, y: number) {
+        if (!isSetupPhase) return;
+        const data = e.dataTransfer?.getData("text/plain");
+        if (!data) return;
+
+        try {
+            const from = JSON.parse(data) as Position;
+            if (from.x === x && from.y === y) return;
+            socket.sendSwapPieces(from, { x, y });
+        } catch (e) {
+            console.error("Failed to parse drop data", e);
+        }
+    }
+
     function handleRandomize() {
         socket.sendRandomizeSetup();
         setupSwapPos1 = null;
@@ -232,6 +251,8 @@
                     ? setupSwapPos1
                     : gameStore.selectedPosition}
                 onCellClick={handleCellClick}
+                onCellDragStart={handleCellDragStart}
+                onCellDrop={handleCellDrop}
                 isInteractive={!gameStore.isReplaying &&
                     (isHumanTurn || isSetupPhase)}
                 {viewerId}
@@ -289,5 +310,6 @@
         onRandomize={handleRandomize}
         onStart={handleStartGame}
         onLoadSetup={handleLoadSetup}
+        {viewerId}
     />
 {/if}

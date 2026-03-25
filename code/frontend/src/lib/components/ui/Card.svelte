@@ -5,9 +5,15 @@
         children: Snippet;
         class?: string;
         padding?: "none" | "sm" | "md" | "lg";
+        onclick?: () => void;
     }
 
-    let { children, class: className = "", padding = "md" }: Props = $props();
+    let {
+        children,
+        class: className = "",
+        padding = "md",
+        onclick,
+    }: Props = $props();
 
     const paddings = {
         none: "",
@@ -17,6 +23,11 @@
     };
 </script>
 
-<div class="glass rounded-2xl overflow-hidden {paddings[padding]} {className}">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+    class="glass rounded-2xl overflow-hidden {paddings[padding]} {className}"
+    {onclick}
+>
     {@render children()}
 </div>

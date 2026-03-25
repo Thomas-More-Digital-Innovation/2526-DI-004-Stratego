@@ -8,8 +8,7 @@
     import Board from "$lib/components/game/Board.svelte";
     import type { BoardSetup } from "$lib/types/board-setup";
     import { PIECE_INVENTORY, MAX_BOARD_SETUPS } from "$lib/types/board-setup";
-    import { decodeSetup } from "$lib/utils/board-binary";
-    import type { Piece as PieceType } from "$lib/types/game";
+    import BoardSetupCard from "$lib/components/setup/BoardSetupCard.svelte";
 
     let setups = $state<BoardSetup[]>([]);
     let error = $state("");
@@ -43,23 +42,6 @@
         } catch (e: any) {
             error = "Failed to delete: " + e.message;
         }
-    }
-
-    function getDecodedBoard(setupData: string): (PieceType | null)[][] {
-        const decoded = decodeSetup(setupData);
-        return decoded.map((row, y) =>
-            row.split("").map((char, x) => {
-                if (char === "." || char === " ") return null;
-                const info = PIECE_INVENTORY[char];
-                if (!info) return null;
-                return {
-                    rank: info.rank,
-                    ownerId: 1,
-                    revealed: true,
-                    position: { x, y },
-                } as PieceType;
-            }),
-        );
     }
 </script>
 
@@ -105,53 +87,10 @@
             </p>
         </Card>
     {:else}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="flex flex-wrap gap-6">
             {#each setups as setup}
-                <Card
-                    class="flex flex-col h-full bg-white/5 border-white/5 hover:border-white/10 transition-colors"
-                >
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="font-bold text-white text-lg">
-                                {setup.name}
-                            </h3>
-                            {#if setup.description}
-                                <p
-                                    class="text-white/40 text-xs mt-1 line-clamp-1"
-                                >
-                                    {setup.description}
-                                </p>
-                            {/if}
-                        </div>
-                        {#if setup.is_default}
-                            <span
-                                class="text-[10px] font-bold bg-brand-accent/20 text-brand-accent px-2 py-0.5 rounded-full uppercase"
-                            >
-                                Default
-                            </span>
-                        {/if}
-                    </div>
-
-                    <div
-                        class="flex-1 bg-black/20 rounded-2xl p-3 scale-[0.6] origin-top-left -mr-[40%] -mb-[80px]"
-                    >
-                        <Board
-                            board={getDecodedBoard(setup.setup_data)}
-                            rows={4}
-                            cols={10}
-                            scale={1}
-                            isInteractive={false}
-                        />
-                    </div>
-
-                    <div class="mt-auto space-y-3">
-                        <div
-                            class="text-white/20 text-[10px] uppercase font-bold tracking-wider"
-                        >
-                            Updated {new Date(
-                                setup.updated_at,
-                            ).toLocaleDateString()}
-                        </div>
+                <BoardSetupCard {setup} ownerId={1}>
+                    {#snippet actions()}
                         <div class="flex gap-2">
                             <Button
                                 variant="outline"
@@ -170,8 +109,8 @@
                                 Delete
                             </Button>
                         </div>
-                    </div></Card
-                >
+                    {/snippet}
+                </BoardSetupCard>
             {/each}
         </div>
     {/if}

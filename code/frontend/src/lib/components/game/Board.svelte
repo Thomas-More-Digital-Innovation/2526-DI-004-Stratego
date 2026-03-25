@@ -23,6 +23,7 @@
         onCellDragLeave?: (e: DragEvent, x: number, y: number) => void;
         onCellDrop?: (e: DragEvent, x: number, y: number) => void;
         isLakeCell?: (x: number, y: number) => boolean;
+        responsive?: boolean;
     }
 
     let {
@@ -42,6 +43,7 @@
         onCellDragLeave,
         onCellDrop,
         isLakeCell,
+        responsive = false,
     }: Props = $props();
 
     const displayBoard = $derived(board || boardState?.board || []);
@@ -73,10 +75,11 @@
 
 <div
     class="board-wrapper"
-    style="--cell-size: {cellSize}px; --cols: {cols}; --rows: {rows}"
+    style="--cell-size: {cellSize}px; --cols: {cols}; --rows: {rows}; --scale: {scale}"
+    class:non-interactive={!isInteractive}
 >
     {#if displayBoard.length > 0}
-        <div class="board glass rounded-2xl p-3">
+        <div class="board glass rounded-2xl p-3" class:responsive>
             {#each Array(rows) as _, y}
                 {#each Array(cols) as _, x}
                     {@const piece = displayBoard[y]?.[x]}
@@ -126,11 +129,28 @@
         align-items: center;
     }
 
+    .board-wrapper.non-interactive {
+        pointer-events: none;
+    }
+
     .board {
         display: grid;
         grid-template-columns: repeat(var(--cols), var(--cell-size));
         grid-template-rows: repeat(var(--rows), var(--cell-size));
+        gap: calc(2px * var(--scale, 1));
+    }
+
+    .board.responsive {
+        grid-template-columns: repeat(var(--cols), 1fr);
+        grid-template-rows: auto;
+        width: 100%;
         gap: 2px;
+    }
+
+    .board.responsive .cell {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1;
     }
 
     .cell {
