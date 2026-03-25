@@ -53,7 +53,11 @@ func (s *GameServer) RegisterUserHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }
 
 // LoginHandler handles user login
@@ -84,7 +88,11 @@ func (s *GameServer) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	auth.SetSessionCookie(w, session.ID)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }
 
 // LogoutHandler handles user logout
@@ -102,7 +110,11 @@ func (s *GameServer) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	auth.ClearSessionCookie(w)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+	err = json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetCurrentUserHandler returns the currently logged-in user
@@ -125,7 +137,11 @@ func (s *GameServer) GetCurrentUserHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(fullUser)
+	err = json.NewEncoder(w).Encode(fullUser)
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetUserHandler retrieves user information
@@ -154,5 +170,9 @@ func (s *GameServer) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }

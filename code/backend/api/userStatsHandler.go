@@ -34,7 +34,11 @@ func (s *GameServer) GetUserStatsHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	err = json.NewEncoder(w).Encode(stats)
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetCurrentUserStatsHandler retrieves statistics for the currently authenticated user
@@ -57,5 +61,9 @@ func (s *GameServer) GetCurrentUserStatsHandler(w http.ResponseWriter, r *http.R
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	err = json.NewEncoder(w).Encode(stats)
+	if err != nil {
+		http.Error(w, "Failed to encode user", http.StatusInternalServerError)
+		return
+	}
 }
