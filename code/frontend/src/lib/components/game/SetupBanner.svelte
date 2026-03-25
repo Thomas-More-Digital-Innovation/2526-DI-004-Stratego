@@ -41,15 +41,24 @@
     <div
         class="glass pointer-events-auto flex items-center justify-between gap-6 px-8 py-4 border-b border-white/10"
     >
-        <div>
-            <h2
-                class="text-lg font-bold text-brand-accent uppercase tracking-wider"
+        <div class="flex items-center gap-3">
+            <Button
+                variant="outline"
+                onclick={() => (window.location.href = "/")}
             >
-                ⚔️ Setup Phase
-            </h2>
-            <p class="text-white/50 text-sm">
-                Arrange your pieces or load a saved configuration
-            </p>
+                ◀️ Back To Menu
+            </Button>
+
+            <div>
+                <h2
+                    class="text-lg font-bold text-brand-accent uppercase tracking-wider"
+                >
+                    ⚔️ Setup Phase
+                </h2>
+                <p class="text-white/50 text-sm">
+                    Arrange your pieces or load a saved configuration
+                </p>
+            </div>
         </div>
 
         <div class="flex gap-3 items-center">
