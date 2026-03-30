@@ -66,7 +66,7 @@
     class="piece unselectable"
     class:selected={isSelected}
     class:highlighted={isHighlighted}
-    class:empty={!piece}
+    class:empty={!pieceRank() && !isLake}
     class:lake={isLake}
     class:player1={piece && piece.ownerId === 1}
     class:player2={piece && piece.ownerId === 2}
@@ -85,9 +85,13 @@
                         alt={pieceRank()}
                         class="w-full h-full object-fill pointer-events-none"
                     />
-                    <span class="piece-rank">
-                        {pieceRank()}
-                    </span>
+                    {#if pieceRank() === "0"}
+                        <span class="piece-rank border-2 border-green-400"
+                            >F</span
+                        >
+                    {:else}
+                        <span class="piece-rank">{pieceRank()}</span>
+                    {/if}
                 {:else if pieceRank()}
                     <span
                         class="font-bold text-white"
@@ -123,7 +127,7 @@
 
         .piece-rank {
             position: absolute;
-            top: calc(2px * var(--scale));
+            bottom: calc(2px * var(--scale));
             right: calc(2px * var(--scale));
             width: calc(28px * var(--scale));
             height: calc(28px * var(--scale));
@@ -140,7 +144,7 @@
         }
 
         &:hover .piece-rank {
-            top: 0;
+            bottom: 0;
             right: 0;
             width: 100%;
             height: 100%;
@@ -151,6 +155,8 @@
     }
 
     .piece.empty {
+        border: 1px solid rgba(255, 255, 255, 0.05);
+
         background: rgba(255, 255, 255, 0.05);
     }
 
