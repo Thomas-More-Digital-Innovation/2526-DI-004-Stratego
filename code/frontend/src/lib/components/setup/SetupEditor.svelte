@@ -69,6 +69,8 @@
                     rank: info.rank,
                     ownerId: 1,
                     revealed: true,
+                    iconBlue: info.icon_blue,
+                    iconRed: info.icon_red,
                     position: { x, y: y + 1 },
                 } as PieceType;
             }),

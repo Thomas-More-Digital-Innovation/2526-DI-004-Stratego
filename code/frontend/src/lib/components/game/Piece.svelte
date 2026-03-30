@@ -26,18 +26,27 @@
         return piece.ownerId === viewerId || piece.revealed;
     });
 
-    const pieceIcon = $derived(() => {
+    const pieceRank = $derived(() => {
         if (!piece || !piece.rank) return null;
+        return piece.rank;
+    });
+
+    const pieceIcon = $derived(() => {
+        if (!piece) return null;
+
+        const directIcon = piece.ownerId === 1 ? piece.iconBlue : piece.iconRed;
+        if (directIcon) return directIcon;
+
+        if (!piece.rank) return null;
 
         let inventoryItem: any = PIECE_INVENTORY[piece.rank];
-
         if (!inventoryItem) {
             inventoryItem = Object.values(PIECE_INVENTORY).find(
                 (item) => item.rank === piece.rank,
             );
         }
 
-        if (!inventoryItem) return piece.icon;
+        if (!inventoryItem) return null;
 
         return piece.ownerId === 1
             ? inventoryItem.icon_blue
@@ -68,25 +77,24 @@
     {:else if piece}
         {#if canSeePiece()}
             <div
-                class="flex flex-col items-center justify-center w-full h-full p-1 overflow-hidden"
+                class="flex flex-col items-center justify-center w-full h-full overflow-hidden relative"
             >
-                {#if pieceIcon()}
-                    {#if isAsset()}
-                        <img
-                            src={pieceIcon()}
-                            alt={piece.rank}
-                            class="w-full h-full object-contain pointer-events-none"
-                        />
-                    {:else}
-                        <span style="font-size: {fontSize}px; line-height: 1"
-                            >{pieceIcon()}</span
-                        >
-                    {/if}
-                {/if}
-                {#if !isAsset() && piece.rank}
-                    <span class="rank-label" style="font-size: {subFontSize}px"
-                        >{piece.rank}</span
+                {#if isAsset()}
+                    <img
+                        src={pieceIcon()}
+                        alt={pieceRank()}
+                        class="w-full h-full object-fill pointer-events-none"
+                    />
+                    <span class="piece-rank">
+                        {pieceRank()}
+                    </span>
+                {:else if pieceRank()}
+                    <span
+                        class="font-bold text-white"
+                        style="font-size: {fontSize}px"
                     >
+                        {pieceRank()}
+                    </span>
                 {/if}
             </div>
         {:else}
@@ -106,9 +114,40 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: calc(6px * var(--scale));
         transition: all 0.15s;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: calc(6px * var(--scale));
+
+        img {
+            border-radius: calc(6px * var(--scale));
+        }
+
+        .piece-rank {
+            position: absolute;
+            top: calc(2px * var(--scale));
+            right: calc(2px * var(--scale));
+            width: calc(28px * var(--scale));
+            height: calc(28px * var(--scale));
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(14px * var(--scale));
+            font-weight: bold;
+            color: white;
+            transition: all 0.15s;
+            z-index: 2;
+        }
+
+        &:hover .piece-rank {
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: calc(6px * var(--scale));
+            background: rgba(0, 0, 0, 0.6);
+            font-size: calc(20px * var(--scale));
+        }
     }
 
     .piece.empty {
