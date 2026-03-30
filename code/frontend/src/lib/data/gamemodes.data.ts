@@ -5,6 +5,7 @@ export const gamemodes: {
     icon: string;
     title: string;
     desc: string;
+    disabled?: boolean;
 }[] = [
         {
             mode: "human_vs_ai",
@@ -23,5 +24,6 @@ export const gamemodes: {
             icon: "🧑 vs 🧑",
             title: "Human vs Human",
             desc: "Coming soon.",
+            disabled: true,
         },
     ];
