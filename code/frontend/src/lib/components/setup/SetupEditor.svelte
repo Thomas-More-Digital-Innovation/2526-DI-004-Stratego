@@ -216,6 +216,7 @@
                 rows={5}
                 cols={10}
                 disabledRows={[0]}
+                visualDisabledRows={[0]}
                 isLakeCell={isSetupLake}
                 selectedPosition={selectedGridCell}
                 onCellClick={handleCellClick}

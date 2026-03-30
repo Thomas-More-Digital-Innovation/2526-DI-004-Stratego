@@ -24,6 +24,7 @@
         onCellDrop?: (e: DragEvent, x: number, y: number) => void;
         isLakeCell?: (x: number, y: number) => boolean;
         responsive?: boolean;
+        visualDisabledRows?: number[];
     }
 
     let {
@@ -44,6 +45,7 @@
         onCellDrop,
         isLakeCell,
         responsive = false,
+        visualDisabledRows = [],
     }: Props = $props();
 
     const displayBoard = $derived(board || boardState?.board || []);
@@ -88,6 +90,7 @@
                         class:lake={isLake(x, y)}
                         class:interactive={isInteractive && !isLake(x, y)}
                         class:valid-move={isValidMove(x, y)}
+                        class:visual-disabled={visualDisabledRows.includes(y)}
                         onclick={() => onCellClick?.(x, y)}
                         disabled={!isInteractive ||
                             isLake(x, y) ||
@@ -168,11 +171,11 @@
         cursor: pointer;
     }
 
-    .cell:disabled {
+    .cell.visual-disabled {
         background-color: rgba(255, 0, 0, 0.1);
     }
 
-    .cell:not(.lake):disabled::before {
+    .cell.visual-disabled:not(.lake)::before {
         content: "";
         position: absolute;
         inset: 0;

@@ -54,7 +54,7 @@
 </script>
 
 <div
-    class="piece"
+    class="piece unselectable"
     class:selected={isSelected}
     class:highlighted={isHighlighted}
     class:empty={!piece}
