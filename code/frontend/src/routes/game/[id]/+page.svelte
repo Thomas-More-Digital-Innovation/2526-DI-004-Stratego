@@ -259,6 +259,7 @@
                 {validMoves}
                 disabledRows={isSetupPhase ? [0, 1, 2, 3, 4, 5] : []}
                 visualDisabledRows={isSetupPhase ? [4, 5] : []}
+                scale={1.3}
             />
         </div>
 

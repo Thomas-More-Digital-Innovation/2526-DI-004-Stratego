@@ -225,6 +225,7 @@
                 onCellDragStart={handleBoardDragStart}
                 onCellDrop={handleBoardDrop}
                 isInteractive={true}
+                scale={1.3}
             />
         </div>
 
