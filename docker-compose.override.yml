@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./code/backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./code/backend:/src:rw
+      - go-mod-cache:/go/pkg/mod
+    command: ./entrypoint.dev.sh
+
+  frontend:
+    build:
+      context: ./code/frontend
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    volumes:
+      - ./code/frontend:/app:rw
+      - /app/node_modules
+    environment:
+      - FRONTEND_INTERNAL_PORT=5173
+    ports:
+      - "${FRONTEND_PORT}:5173"
+    command: sh -lc "bun install && bun run dev -- --host 0.0.0.0"
+
+volumes:
+  go-mod-cache:
