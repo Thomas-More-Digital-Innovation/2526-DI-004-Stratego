@@ -56,7 +56,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             {#each gamemodes as m}
                 <button
-                    class="text-left disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl p-6 border-2 transition-all duration-200 {selectedMode ===
+                    class="text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl p-6 border-2 transition-all duration-200 {selectedMode ===
                     m.mode
                         ? 'border-brand-primary bg-brand-primary/10 scale-102 shadow-glow'
                         : 'border-white/5 bg-surface-elevated/20 hover:border-white/20 hover:bg-white/5'}"
