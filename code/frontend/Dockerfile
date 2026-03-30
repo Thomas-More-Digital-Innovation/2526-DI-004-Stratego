@@ -10,6 +10,10 @@ FROM oven/bun:1-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG VITE_API_BASE
+ARG VITE_WS_BASE
+ENV VITE_API_BASE=$VITE_API_BASE
+ENV VITE_WS_BASE=$VITE_WS_BASE
 RUN bun run build
 
 FROM nginx:stable-alpine AS runtime
