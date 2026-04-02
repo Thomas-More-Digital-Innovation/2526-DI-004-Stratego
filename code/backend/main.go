@@ -6,6 +6,7 @@ import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"flag"
 	"fmt"
 	"log"
@@ -15,7 +16,8 @@ import (
 
 func main() {
 	serverMode := flag.Bool("server", false, "Run in WebSocket server mode")
-	addr := flag.String("addr", ":8080", "Server address")
+	defaultAddr := fmt.Sprintf(":%s", utils.GetEnv("PORT", "8080"))
+	addr := flag.String("addr", defaultAddr, "Server address")
 	aiTypes := flag.String("ai", "fafo:fafo", "Run AI vs AI matches instead of server")
 	matches := flag.Int("matches", 100, "Number of AI vs AI matches to run")
 	format := flag.String("format", "none", "The format used to print the results of an AI vs AI competition, either none or md")

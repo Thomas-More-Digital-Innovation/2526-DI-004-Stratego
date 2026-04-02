@@ -41,4 +41,13 @@
   .glow-primary {
     box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary), transparent 70%);
   }
+
+  .unselectable {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
 }

@@ -1,58 +1,43 @@
 services:
-  backend-dev:
-    build:
-      context: ./code/backend
-      dockerfile: Dockerfile.dev
-    container_name: stratego-backend-dev
-    working_dir: /src
-    volumes:
-      - ./code/backend:/src:rw
-      - go-mod-cache:/go/pkg/mod
+  backend:
+    container_name: stratego-backend
     ports:
       - "${BACKEND_PORT}:8080"
     environment:
-      - PORT=${BACKEND_PORT}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=stratego
-      - DB_PASSWORD=pass
-      - DB_NAME=stratego
+      - PORT=8080
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-stratego}
       - DB_SSLMODE=disable
     depends_on:
-      - db
-    stdin_open: true
-    tty: true
+      stratego:
+        condition: service_healthy
 
-  frontend-dev:
-    image: oven/bun:1-alpine
-    container_name: stratego-frontend-dev
-    working_dir: /app
-    volumes:
-      - ./code/frontend:/app:rw
-      - /app/node_modules
-    ports:
-      - "${FRONTEND_PORT}:5173"
+  frontend:
+    container_name: stratego-frontend
     environment:
-      - VITE_API_URL=${VITE_API_URL}
-    command: >
-      sh -lc "bun install && bun run dev -- --host 0.0.0.0"
+      - VITE_API_BASE=${VITE_API_BASE}
+      - VITE_WS_BASE=${VITE_WS_BASE}
     depends_on:
-      - backend-dev
-    stdin_open: true
-    tty: true
+      - backend
 
-  db:
+  stratego:
     image: postgres:15
-    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_DB: ${DB_NAME:-stratego}
     ports:
       - "${DB_PORT}:5432"
     volumes:
       - stratego-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   stratego-pg-data:
-  go-mod-cache:

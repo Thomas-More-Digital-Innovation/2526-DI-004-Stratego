@@ -69,6 +69,8 @@
                     rank: info.rank,
                     ownerId: 1,
                     revealed: true,
+                    iconBlue: info.icon_blue,
+                    iconRed: info.icon_red,
                     position: { x, y: y + 1 },
                 } as PieceType;
             }),
@@ -216,12 +218,14 @@
                 rows={5}
                 cols={10}
                 disabledRows={[0]}
+                visualDisabledRows={[0]}
                 isLakeCell={isSetupLake}
                 selectedPosition={selectedGridCell}
                 onCellClick={handleCellClick}
                 onCellDragStart={handleBoardDragStart}
                 onCellDrop={handleBoardDrop}
                 isInteractive={true}
+                scale={1.3}
             />
         </div>
 

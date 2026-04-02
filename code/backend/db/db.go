@@ -2,9 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"digital-innovation/stratego/utils"
 	"fmt"
 	"log"
-	"os"
 
 	_ "github.com/lib/pq"
 )
@@ -13,12 +13,12 @@ var DB *sql.DB
 
 // InitDB initializes the database connection
 func InitDB() error {
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "stratego")
-	dbPassword := getEnv("DB_PASSWORD", "pass")
-	dbName := getEnv("DB_NAME", "stratego")
-	sslMode := getEnv("DB_SSLMODE", "disable")
+	dbHost := utils.GetEnv("DB_HOST", "localhost")
+	dbPort := utils.GetEnv("DB_PORT", "5432")
+	dbUser := utils.GetEnv("DB_USER", "stratego")
+	dbPassword := utils.GetEnv("DB_PASSWORD", "pass")
+	dbName := utils.GetEnv("DB_NAME", "stratego")
+	sslMode := utils.GetEnv("DB_SSLMODE", "disable")
 
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
@@ -46,11 +46,4 @@ func CloseDB() error {
 		return DB.Close()
 	}
 	return nil
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

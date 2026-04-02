@@ -9,7 +9,8 @@ export interface Piece {
     ownerId: number;
     ownerName?: string;
     revealed: boolean;
-    icon?: string;
+    iconBlue?: string;
+    iconRed?: string;
     position: Position;
 }
 

@@ -1,6 +1,6 @@
 import type { Position } from '$lib/types/game';
 
-const WS_BASE = 'ws://localhost:8080';
+const WS_BASE = import.meta.env.VITE_WS_BASE || 'ws://localhost:8080';
 
 type MessageHandler = (data: any) => void;
 
