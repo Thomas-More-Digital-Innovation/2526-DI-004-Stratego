@@ -26,19 +26,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase repo name
+        id: prep
+        run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
       - name: Build and push Backend
         uses: docker/build-push-action@v5
         with:
           context: ./code/backend
           push: true
-          tags: ghcr.io/${{ github.repository }}/backend:${{ github.ref_name }},ghcr.io/${{ github.repository }}/backend:latest
+          tags: ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:${{ github.ref_name }},ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./code/frontend
           push: true
-          tags: ghcr.io/${{ github.repository }}/frontend:${{ github.ref_name }},ghcr.io/${{ github.repository }}/frontend:latest
+          tags: ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:${{ github.ref_name }},ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:latest
           build-args: |
             VITE_API_BASE=${{ vars.VITE_API_BASE }}
             VITE_WS_BASE=${{ vars.VITE_WS_BASE }}
@@ -58,8 +62,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ vars.DEPLOY_PATH }}
-            # Create .env file from secrets and vars if needed
-            echo "BACKEND_PORT=${{ vars.BACKEND_PORT }}" > .env
+            echo "REPO_LOWER=${{ steps.prep.outputs.repo_lower }}" > .env
+            echo "BACKEND_PORT=${{ vars.BACKEND_PORT }}" >> .env
             echo "FRONTEND_PORT=${{ vars.FRONTEND_PORT }}" >> .env
             echo "VITE_API_BASE=${{ vars.VITE_API_BASE }}" >> .env
             echo "VITE_WS_BASE=${{ vars.VITE_WS_BASE }}" >> .env
@@ -69,5 +73,5 @@ jobs:
             echo "DB_HOST=${{ vars.DB_HOST }}" >> .env
             echo "DB_PORT=${{ vars.DB_PORT }}" >> .env
             # Pull and restart
-            docker compose pull
-            docker compose up -d
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d

@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: ./code/backend
-      dockerfile: Dockerfile
+    image: ghcr.io/${REPO_LOWER}/backend:latest
     restart: unless-stopped
     deploy:
       resources:
@@ -17,12 +15,7 @@ services:
       start_period: 10s
 
   frontend:
-    build:
-      context: ./code/frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE: ${VITE_API_BASE}
-        VITE_WS_BASE: ${VITE_WS_BASE}
+    image: ghcr.io/${REPO_LOWER}/frontend:latest
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT}:80"
