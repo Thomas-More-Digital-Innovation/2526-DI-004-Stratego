@@ -4,9 +4,16 @@ import type { BoardSetup } from '$lib/types/board-setup';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': '1',
+        ...options?.headers,
+    };
+
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         ...options,
+        headers,
     });
 
     if (!response.ok) {
@@ -18,9 +25,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function requestVoid(path: string, options?: RequestInit): Promise<void> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': '1',
+        ...options?.headers,
+    };
+
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         ...options,
+        headers,
     });
 
     if (!response.ok) {

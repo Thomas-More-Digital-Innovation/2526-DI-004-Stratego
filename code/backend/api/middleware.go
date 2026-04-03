@@ -1,0 +1,81 @@
+package api
+
+import (
+	"digital-innovation/stratego/utils"
+	"net/http"
+	"sync"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
+)
+
+// CSRFMiddleware requires a custom header for non-safe methods
+func CSRFMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Skip for safe methods
+		if c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead || c.Request.Method == http.MethodOptions {
+			c.Next()
+			return
+		}
+
+		// Allow skipping in development
+		if utils.GetEnv("APP_ENV", "development") != "production" || utils.GetEnv("SKIP_CSRF", "false") == "true" {
+			c.Next()
+			return
+		}
+
+		// Require X-XSRF-TOKEN header
+		if c.GetHeader("X-XSRF-TOKEN") == "" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF token missing"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// IPRateLimiter manages rate limiters for different IP addresses
+type IPRateLimiter struct {
+	ips map[string]*rate.Limiter
+	mu  *sync.RWMutex
+	r   rate.Limit
+	b   int
+}
+
+func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
+	return &IPRateLimiter{
+		ips: make(map[string]*rate.Limiter),
+		mu:  &sync.RWMutex{},
+		r:   r,
+		b:   b,
+	}
+}
+
+func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
+	i.mu.RLock()
+	limiter, exists := i.ips[ip]
+	i.mu.RUnlock()
+
+	if !exists {
+		i.mu.Lock()
+		limiter = rate.NewLimiter(i.r, i.b)
+		i.ips[ip] = limiter
+		i.mu.Unlock()
+	}
+
+	return limiter
+}
+
+// RateLimitMiddleware limits requests per IP
+func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		if !limiter.GetLimiter(ip).Allow() {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}

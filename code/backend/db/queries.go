@@ -151,15 +151,15 @@ func CreateBoardSetup(userID int, name, description, setupData string, isDefault
 	return &setup, nil
 }
 
-// GetBoardSetup retrieves a board setup by ID
-func GetBoardSetup(setupID int) (*models.BoardSetup, error) {
+// GetBoardSetup retrieves a board setup by ID and verifying ownership
+func GetBoardSetup(setupID, userID int) (*models.BoardSetup, error) {
 	var setup models.BoardSetup
 	query := `
 		SELECT id, user_id, name, description, setup_data, is_default, created_at, updated_at
 		FROM board_setups
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
-	err := DB.QueryRow(query, setupID).Scan(
+	err := DB.QueryRow(query, setupID, userID).Scan(
 		&setup.ID, &setup.UserID, &setup.Name, &setup.Description,
 		&setup.SetupData, &setup.IsDefault, &setup.CreatedAt, &setup.UpdatedAt,
 	)
@@ -198,8 +198,8 @@ func GetUserBoardSetups(userID int) ([]models.BoardSetup, error) {
 	return setups, nil
 }
 
-// UpdateBoardSetup updates an existing board setup
-func UpdateBoardSetup(setupID int, name, description, setupData string, isDefault bool) error {
+// UpdateBoardSetup updates an existing board setup and verifying ownership
+func UpdateBoardSetup(setupID, userID int, name, description, setupData string, isDefault bool) error {
 	query := `
 		UPDATE board_setups
 		SET name = COALESCE(NULLIF($1, ''), name),
@@ -207,12 +207,22 @@ func UpdateBoardSetup(setupID int, name, description, setupData string, isDefaul
 		    setup_data = COALESCE(NULLIF($3, ''), setup_data),
 		    is_default = $4,
 		    updated_at = $5
-		WHERE id = $6
+		WHERE id = $6 AND user_id = $7
 	`
-	_, err := DB.Exec(query, name, description, setupData, isDefault, time.Now(), setupID)
+	result, err := DB.Exec(query, name, description, setupData, isDefault, time.Now(), setupID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to update board setup: %w", err)
 	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("board setup not found or not owned by user")
+	}
+
 	return nil
 }
 
