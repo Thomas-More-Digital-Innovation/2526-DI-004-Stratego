@@ -9,6 +9,11 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
+var isProd bool
+
+func init() {
+	isProd = os.Getenv("APP_ENV") == "production"
+}
 func IsProduction() bool {
-	return GetEnv("APP_ENV", "development") == "production"
+	return isProd
 }

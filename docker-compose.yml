@@ -6,6 +6,7 @@ services:
     environment:
       - PORT=8080
       - DB_HOST=${DB_HOST}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - DB_PORT=5432
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
