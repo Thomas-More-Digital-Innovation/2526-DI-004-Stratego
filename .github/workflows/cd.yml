@@ -54,14 +54,14 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Copy docker-compose.prod.yml to VM
+      - name: Copy deployment files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.SSH_HOST }}
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,code/backend/schema.sql"
           target: ${{ vars.DEPLOY_PATH }}
 
       - name: Deploy to VM
@@ -87,3 +87,5 @@ jobs:
             # Pull and restart
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
+            # Apply database schema
+            docker compose -f docker-compose.prod.yml exec -T stratego psql -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }} < code/backend/schema.sql
