@@ -54,6 +54,16 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+      - name: Copy docker-compose.prod.yml to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.SSH_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          source: "docker-compose.prod.yml"
+          target: ${{ vars.DEPLOY_PATH }}
+
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -62,6 +72,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            mkdir -p ${{ vars.DEPLOY_PATH }}
             cd ${{ vars.DEPLOY_PATH }}
             echo "REPO_LOWER=${{ steps.prep.outputs.repo_lower }}" > .env
             echo "BACKEND_PORT=${{ vars.BACKEND_PORT }}" >> .env
