@@ -60,6 +60,7 @@ jobs:
           host: ${{ vars.SSH_HOST }}
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             cd ${{ vars.DEPLOY_PATH }}
             echo "REPO_LOWER=${{ steps.prep.outputs.repo_lower }}" > .env
