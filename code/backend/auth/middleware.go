@@ -2,6 +2,7 @@ package auth
 
 import (
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -69,7 +70,8 @@ func GetCurrentUser(c *gin.Context) *models.User {
 }
 
 const cookieMaxAge = 7 * 24 * 60 * 60
-const cookieSecure = false
+
+var cookieSecure = utils.IsProduction()
 
 // SetSessionCookie sets the session cookie in response
 func SetSessionCookie(c *gin.Context, sessionID string) {

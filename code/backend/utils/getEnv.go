@@ -8,3 +8,7 @@ func GetEnv(key, fallback string) string {
 	}
 	return fallback
 }
+
+func IsProduction() bool {
+	return GetEnv("APP_ENV", "development") == "production"
+}

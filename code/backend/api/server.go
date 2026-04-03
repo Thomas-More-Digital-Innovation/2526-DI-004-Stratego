@@ -34,7 +34,7 @@ type GameSessionHandler struct {
 
 func NewGameServer() *GameServer {
 	// Set Gin mode based on environment
-	if utils.GetEnv("APP_ENV", "development") == "production" {
+	if utils.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 

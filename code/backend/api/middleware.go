@@ -19,7 +19,7 @@ func CSRFMiddleware() gin.HandlerFunc {
 		}
 
 		// Allow skipping in development
-		if utils.GetEnv("APP_ENV", "development") != "production" || utils.GetEnv("SKIP_CSRF", "false") == "true" {
+		if !utils.IsProduction() {
 			c.Next()
 			return
 		}
