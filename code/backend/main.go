@@ -58,22 +58,6 @@ func main() {
 // runServer starts the WebSocket server
 func runServer(addr string) {
 	fmt.Printf("Starting Stratego Game Server on %s\n", addr)
-	fmt.Println("Endpoints:")
-	fmt.Println("  POST /users/register - Register a new user")
-	fmt.Println("  POST /users/login - Login")
-	fmt.Println("  POST /users/logout - Logout")
-	fmt.Println("  GET  /users/me - Get current user info")
-	fmt.Println("  GET  /users/:id - Get user by ID")
-	fmt.Println("  GET  /users/stats - Get user statistics")
-	fmt.Println("  GET  /board-setups - Get all board setups for user")
-	fmt.Println("  POST /board-setups - Create board setup")
-	fmt.Println("  GET  /board-setups/:id - Get a single board setup")
-	fmt.Println("  PUT  /board-setups/:id - Update board setup")
-	fmt.Println("  DELETE /board-setups/:id - Delete board setup")
-	fmt.Println("  POST /games - Create a new game")
-	fmt.Println("  GET  /games - List all games")
-	fmt.Println("  GET  /health - Health check")
-	fmt.Println("  WS   /game/:gameID?player={0|1|spectator} - Connect to game (WebSocket)")
 
 	server := api.NewGameServer()
 	if err := server.StartServer(addr); err != nil {

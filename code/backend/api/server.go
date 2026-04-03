@@ -128,6 +128,17 @@ func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
 	return handler, exists
 }
 
+// PrintRoutes prints an overview of all registered routes
+func (s *GameServer) PrintRoutes() {
+	fmt.Println("\n=== Registered Endpoints ===")
+	for _, route := range s.router.Routes() {
+		fmt.Printf("  %-8s %-30s %s\n", route.Method, route.Path, route.Handler)
+	}
+	fmt.Printf("  %-8s %-30s %s\n", "WS", "/game/:gameID?player={0|1|spec}", "WebSocket connection")
+	fmt.Println("============================")
+	fmt.Println()
+}
+
 // StartServer starts the HTTP server
 func (s *GameServer) StartServer(addr string) error {
 	// Configure CORS
@@ -195,6 +206,8 @@ func (s *GameServer) StartServer(addr string) error {
 
 	// WebSocket endpoint
 	s.router.GET("/game/:gameID", s.HandleWebSocketConnection)
+
+	s.PrintRoutes()
 
 	log.Printf("Starting game server on %s", addr)
 	return s.router.Run(addr)
