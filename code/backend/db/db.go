@@ -5,6 +5,7 @@ import (
 	"digital-innovation/stratego/utils"
 	"fmt"
 	"log"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -31,13 +32,19 @@ func InitDB() error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Test the connection
-	if err = DB.Ping(); err != nil {
-		return fmt.Errorf("failed to ping database: %w", err)
+	// Test the connection with retries
+	maxRetries := 10
+	for i := 0; i < maxRetries; i++ {
+		err = DB.Ping()
+		if err == nil {
+			log.Println("Database connection established")
+			return nil
+		}
+		log.Printf("Failed to connect to database (attempt %d/%d): %v. Retrying in 2 seconds...", i+1, maxRetries, err)
+		time.Sleep(2 * time.Second)
 	}
 
-	log.Println("Database connection established")
-	return nil
+	return fmt.Errorf("failed to ping database after %d attempts: %w", maxRetries, err)
 }
 
 // CloseDB closes the database connection

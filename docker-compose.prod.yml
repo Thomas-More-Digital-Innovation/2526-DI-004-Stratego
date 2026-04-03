@@ -6,6 +6,8 @@ services:
       - "${BACKEND_PORT}:8080"
     environment:
       - PORT=8080
+      - APP_ENV=${APP_ENV}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - DB_HOST=${DB_HOST}
       - DB_PORT=5432
       - DB_USER=${DB_USER}
