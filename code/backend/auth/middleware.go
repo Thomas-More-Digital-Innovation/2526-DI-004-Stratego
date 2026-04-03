@@ -75,8 +75,6 @@ var cookieSecure = utils.IsProduction()
 
 // SetSessionCookie sets the session cookie in response
 func SetSessionCookie(c *gin.Context, sessionID string) {
-	// Secure should be true in production, but for now we'll keep it as is or or make it configurable
-	// Gin's SetCookie: name, value string, maxAge int, path, domain string, secure, httpOnly bool
 	c.SetCookie("session_id", sessionID, cookieMaxAge, "/", "", cookieSecure, true)
 }
 
