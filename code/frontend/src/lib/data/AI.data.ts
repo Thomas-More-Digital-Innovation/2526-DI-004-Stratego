@@ -1,6 +1,6 @@
 import type { AI } from "$lib/types/game";
-import fafoImage from "$lib/assets/ai/fafo.png";
-import fatoImage from "$lib/assets/ai/fato.png";
+import fafoImage from "$lib/assets/ai/fafo.webp";
+import fatoImage from "$lib/assets/ai/fato.webp";
 
 export const AIs: AI[] = [
     {

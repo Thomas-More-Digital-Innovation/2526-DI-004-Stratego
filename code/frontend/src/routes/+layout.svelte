@@ -4,9 +4,10 @@
     import { onMount } from "svelte";
     import { authStore } from "$lib/state/auth.svelte";
     import logo from "$lib/assets/favicon.png";
-    import baseBg from "$lib/assets/background.png";
-    import profileBg from "$lib/assets/background-profile.png";
-    import boardBg from "$lib/assets/background-board-setup.png";
+    import logoWebp from "$lib/assets/favicon.webp";
+    import baseBg from "$lib/assets/background.webp";
+    import profileBg from "$lib/assets/background-profile.webp";
+    import boardBg from "$lib/assets/background-board-setup.webp";
 
     let { children } = $props();
 
@@ -50,7 +51,7 @@
                 <h1
                     class="text-2xl font-extrabold tracking-widest uppercase text-white flex items-center gap-3 drop-shadow-md"
                 >
-                    <img src={logo} alt="Logo" class="w-12 h-12" />Stratego
+                    <img src={logoWebp} alt="Logo" class="w-12 h-12" />Stratego
                 </h1>
             </div>
 

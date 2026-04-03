@@ -1,8 +1,8 @@
-const blueIcons = import.meta.glob('$lib/assets/pieces/blue/*.png', { eager: true, import: 'default' });
-const redIcons = import.meta.glob('$lib/assets/pieces/red/*.png', { eager: true, import: 'default' });
+const blueIcons = import.meta.glob('$lib/assets/pieces/blue/*.webp', { eager: true, import: 'default' });
+const redIcons = import.meta.glob('$lib/assets/pieces/red/*.webp', { eager: true, import: 'default' });
 
 const getIcon = (icons: Record<string, any>, name: string) => {
-    const key = Object.keys(icons).find(k => k.toLowerCase().endsWith(`/${name.toLowerCase()}.png`));
+    const key = Object.keys(icons).find(k => k.toLowerCase().endsWith(`/${name.toLowerCase()}.webp`));
     return (key ? icons[key] : '') as string;
 };
 
