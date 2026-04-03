@@ -2,19 +2,27 @@ package api
 
 import (
 	AIhandler "digital-innovation/stratego/ai/handler"
+	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 // GameServer manages HTTP and WebSocket connections
 type GameServer struct {
 	sessions map[string]*GameSessionHandler
 	mutex    sync.RWMutex
+	router   *gin.Engine
 }
 
 // GameSessionHandler wraps a game session with its WebSocket hub
@@ -25,38 +33,15 @@ type GameSessionHandler struct {
 }
 
 func NewGameServer() *GameServer {
+	// Set Gin mode based on environment
+	if utils.IsProduction() {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	return &GameServer{
 		sessions: make(map[string]*GameSessionHandler),
+		router:   gin.Default(),
 	}
-}
-
-// setCORSHeaders sets appropriate CORS headers for API requests
-// TODO change in prod
-func setCORSHeaders(w http.ResponseWriter, r *http.Request) {
-	origin := r.Header.Get("Origin")
-	if origin != "" {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-	} else {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-	}
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-// CORSMiddleware wraps a handler with mandatory CORS headers
-func CORSMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 // CreateGame creates a new game session
@@ -108,8 +93,6 @@ func (s *GameServer) CreateGame(gameID string, gameType string, ai1, ai2 string)
 		// Exit setup phase for AI vs AI
 		session.SetSetupPhaseComplete()
 	}
-	// For human vs AI, pieces are already generated in NewGameSession
-	// Game will stay in setup phase until human confirms
 
 	hub := NewWSHub(session, gameType)
 
@@ -147,112 +130,69 @@ func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
 
 // StartServer starts the HTTP server
 func (s *GameServer) StartServer(addr string) error {
+	// Configure CORS
+	corsConfig := cors.DefaultConfig()
+	// Whitelist allowed origins
+	allowedOrigins := utils.GetEnv("ALLOWED_ORIGINS", "")
+	corsConfig.AllowOrigins = strings.Split(allowedOrigins, ",")
+	corsConfig.AllowCredentials = true
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Content-Type", "Authorization", "X-Requested-With", "X-XSRF-TOKEN"}
+	s.router.Use(cors.New(corsConfig))
+
+	// CSRF Protection
+	s.router.Use(CSRFMiddleware())
+
+	// Rate Limiting (5 requests per second per IP, burst of 10)
+	limiter := NewIPRateLimiter(rate.Limit(5), 10)
+	s.router.Use(RateLimitMiddleware(limiter))
+
+	// Health check
+	s.router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	// User & Auth endpoints
-	http.HandleFunc("/users/register", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		s.RegisterUserHandler(w, r)
-	})
+	users := s.router.Group("/users")
+	{
+		users.POST("/register", s.RegisterUserHandler)
+		users.POST("/login", s.LoginHandler)
+		users.POST("/logout", s.LogoutHandler)
 
-	http.HandleFunc("/users/login", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		s.LoginHandler(w, r)
-	})
-
-	http.HandleFunc("/users/logout", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		s.LogoutHandler(w, r)
-	})
-
-	http.HandleFunc("/users/me", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		s.GetCurrentUserHandler(w, r)
-	})
-
-	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		s.GetUserHandler(w, r)
-	})
-
-	http.HandleFunc("/users/stats", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			return
-		}
-		s.GetUserStatsHandler(w, r)
-	})
-
-	http.HandleFunc("/users/me/stats", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			return
-		}
-		s.GetCurrentUserStatsHandler(w, r)
-	})
-
-	// Board setup endpoints
-	http.HandleFunc("/board-setups", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		switch r.Method {
-		case http.MethodGet:
-			if r.URL.Query().Get("id") != "" {
-				s.GetBoardSetupHandler(w, r)
-			} else {
-				s.GetUserBoardSetupsHandler(w, r)
-			}
-		case http.MethodPost:
-			s.CreateBoardSetupHandler(w, r)
-		case http.MethodPut:
-			s.UpdateBoardSetupHandler(w, r)
-		case http.MethodDelete:
-			s.DeleteBoardSetupHandler(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	// Existing game endpoints
-	http.HandleFunc("/games", func(w http.ResponseWriter, r *http.Request) {
-		setCORSHeaders(w, r)
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
+		// Authenticated user routes
+		me := users.Group("/me")
+		me.Use(auth.RequireAuth())
+		{
+			me.GET("", s.GetCurrentUserHandler)
+			me.GET("/stats", s.GetCurrentUserStatsHandler)
 		}
 
-		if r.Method == http.MethodPost {
-			s.HandleCreateGame(w, r)
-		} else {
-			s.HandleListGames(w, r)
-		}
-	})
+		// Public/Optional user info
+		users.GET("/:id", s.GetUserHandler)
+		users.GET("/stats", s.GetUserStatsHandler)
+	}
 
-	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
-		s.HandleWebSocketConnection(w, r)
-	})
+	// Board setup endpoints (all require auth)
+	setups := s.router.Group("/board-setups")
+	setups.Use(auth.RequireAuth())
+	{
+		setups.GET("", s.GetUserBoardSetupsHandler)
+		setups.GET("/:id", s.GetBoardSetupHandler)
+		setups.POST("", s.CreateBoardSetupHandler)
+		setups.PUT("/:id", s.UpdateBoardSetupHandler)
+		setups.DELETE("/:id", s.DeleteBoardSetupHandler)
+	}
+
+	// Game endpoints
+	games := s.router.Group("/games")
+	{
+		games.POST("", s.HandleCreateGame)
+		games.GET("", s.HandleListGames)
+	}
+
+	// WebSocket endpoint
+	s.router.GET("/game/:gameID", s.HandleWebSocketConnection)
 
 	log.Printf("Starting game server on %s", addr)
-	return http.ListenAndServe(addr, CORSMiddleware(http.DefaultServeMux))
+	return s.router.Run(addr)
 }

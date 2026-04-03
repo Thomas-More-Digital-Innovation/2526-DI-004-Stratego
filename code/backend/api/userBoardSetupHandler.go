@@ -3,137 +3,127 @@ package api
 import (
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/models"
-	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CreateBoardSetupHandler creates a new board setup
-func (s *GameServer) CreateBoardSetupHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	user := ensureAuthenticated(w, r)
+func (s *GameServer) CreateBoardSetupHandler(c *gin.Context) {
+	user := ensureAuthenticated(c)
 	if user == nil {
 		return
 	}
 
 	var req models.CreateBoardSetupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		sendError(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		sendError(c, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.Name == "" {
-		sendError(w, "Setup name is required", http.StatusBadRequest)
+		sendError(c, "Setup name is required", http.StatusBadRequest)
 		return
 	}
 
 	setup, err := db.CreateBoardSetup(user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
-		sendError(w, fmt.Sprintf("Failed to create board setup: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to create board setup: %v", err)
+		sendError(c, "Failed to create board setup", http.StatusInternalServerError)
 		return
 	}
 
-	sendJSON(w, setup, http.StatusCreated)
+	sendJSON(c, setup, http.StatusCreated)
 }
 
 // GetUserBoardSetupsHandler retrieves all setups for a user
-func (s *GameServer) GetUserBoardSetupsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	user := ensureAuthenticated(w, r)
+func (s *GameServer) GetUserBoardSetupsHandler(c *gin.Context) {
+	user := ensureAuthenticated(c)
 	if user == nil {
 		return
 	}
 
 	setups, err := db.GetUserBoardSetups(user.ID)
 	if err != nil {
-		sendError(w, fmt.Sprintf("Failed to get board setups: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to get board setups: %v", err)
+		sendError(c, "Failed to get board setups", http.StatusInternalServerError)
 		return
 	}
 
-	sendJSON(w, setups, http.StatusOK)
+	sendJSON(c, setups, http.StatusOK)
 }
 
 // GetBoardSetupHandler retrieves a single board setup
-func (s *GameServer) GetBoardSetupHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (s *GameServer) GetBoardSetupHandler(c *gin.Context) {
+	user := ensureAuthenticated(c)
+	if user == nil {
 		return
 	}
 
-	setupID, err := parseID(r, "id")
+	setupID, err := parseID(c, "id")
+	if err != nil || setupID == 0 {
+		sendError(c, "Invalid or missing setup ID", http.StatusBadRequest)
+		return
+	}
+
+	setup, err := db.GetBoardSetup(setupID, user.ID)
 	if err != nil {
-		sendError(w, err.Error(), http.StatusBadRequest)
+		sendError(c, "Setup not found or not owned by user", http.StatusNotFound)
 		return
 	}
 
-	setup, err := db.GetBoardSetup(setupID)
-	if err != nil {
-		sendError(w, "Setup not found", http.StatusNotFound)
-		return
-	}
-
-	sendJSON(w, setup, http.StatusOK)
+	sendJSON(c, setup, http.StatusOK)
 }
 
 // UpdateBoardSetupHandler updates an existing board setup
-func (s *GameServer) UpdateBoardSetupHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (s *GameServer) UpdateBoardSetupHandler(c *gin.Context) {
+	user := ensureAuthenticated(c)
+	if user == nil {
 		return
 	}
 
-	setupID, err := parseID(r, "id")
-	if err != nil {
-		sendError(w, err.Error(), http.StatusBadRequest)
+	setupID, err := parseID(c, "id")
+	if err != nil || setupID == 0 {
+		sendError(c, "Invalid or missing setup ID", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateBoardSetupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		sendError(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		sendError(c, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err = db.UpdateBoardSetup(setupID, req.Name, req.Description, req.SetupData, req.IsDefault)
+	err = db.UpdateBoardSetup(setupID, user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
-		sendError(w, fmt.Sprintf("Failed to update board setup: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to update board setup: %v", err)
+		sendError(c, "Failed to update board setup", http.StatusInternalServerError)
 		return
 	}
 
-	sendNoContent(w)
+	sendNoContent(c)
 }
 
 // DeleteBoardSetupHandler deletes a board setup
-func (s *GameServer) DeleteBoardSetupHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	setupID, err := parseID(r, "id")
-	if err != nil {
-		sendError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	user := ensureAuthenticated(w, r)
+func (s *GameServer) DeleteBoardSetupHandler(c *gin.Context) {
+	user := ensureAuthenticated(c)
 	if user == nil {
+		return
+	}
+
+	setupID, err := parseID(c, "id")
+	if err != nil || setupID == 0 {
+		sendError(c, "Invalid or missing setup ID", http.StatusBadRequest)
 		return
 	}
 
 	err = db.DeleteBoardSetup(setupID, user.ID)
 	if err != nil {
-		sendError(w, fmt.Sprintf("Failed to delete board setup: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to delete board setup: %v", err)
+		sendError(c, "Failed to delete board setup", http.StatusInternalServerError)
 		return
 	}
 
-	sendNoContent(w)
+	sendNoContent(c)
 }

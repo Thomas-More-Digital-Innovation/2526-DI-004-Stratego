@@ -74,7 +74,9 @@ jobs:
           script: |
             mkdir -p ${{ vars.DEPLOY_PATH }}
             cd ${{ vars.DEPLOY_PATH }}
-            echo "REPO_LOWER=${{ steps.prep.outputs.repo_lower }}" > .env
+            echo "APP_ENV=${{ vars.APP_ENV }}" > .env
+            echo "ALLOWED_ORIGINS=${{ vars.ALLOWED_ORIGINS }}" >> .env
+            echo "REPO_LOWER=${{ steps.prep.outputs.repo_lower }}" >> .env
             echo "BACKEND_PORT=${{ vars.BACKEND_PORT }}" >> .env
             echo "FRONTEND_PORT=${{ vars.FRONTEND_PORT }}" >> .env
             echo "VITE_API_BASE=${{ vars.VITE_API_BASE }}" >> .env

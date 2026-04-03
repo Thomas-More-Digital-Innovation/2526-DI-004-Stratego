@@ -2,8 +2,10 @@ package api
 
 import (
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/utils"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -12,9 +14,21 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// Allow all origins for development
-		// TODO: Restrict in production
-		return true
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // Allow non-browser clients
+		}
+
+		// Get allowed origins from env
+		allowedOrigins := utils.GetEnv("ALLOWED_ORIGINS", "")
+		for _, allowed := range strings.Split(allowedOrigins, ",") {
+			if origin == allowed {
+				return true
+			}
+		}
+
+		log.Printf("WebSocket: Rejected connection from unauthorized origin: %s", origin)
+		return false
 	},
 }
 
