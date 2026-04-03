@@ -14,7 +14,7 @@ import (
 
 // HTTP Handlers
 
-// HandleCreateGame handles POST /api/games
+// HandleCreateGame handles POST /games
 func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -50,7 +50,7 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 	response := map[string]any{
 		"gameId":   req.GameID,
 		"gameType": req.GameType,
-		"wsUrl":    fmt.Sprintf("/ws/game/%s", req.GameID),
+		"wsUrl":    fmt.Sprintf("/game/%s", req.GameID),
 	}
 
 	sendJSON(w, response, http.StatusOK)
@@ -59,10 +59,10 @@ func (s *GameServer) HandleCreateGame(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleWebSocketConnection handles WebSocket connections
-// GET /ws/game/{gameID}?player={0|1|spectator}
+// GET /game/{gameID}?player={0|1|spectator}
 func (s *GameServer) HandleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 	// Extract game ID from path
-	gameID := r.URL.Path[len("/ws/game/"):]
+	gameID := r.URL.Path[len("/game/"):]
 	if gameID == "" {
 		sendError(w, "Game ID required", http.StatusBadRequest)
 		return
@@ -102,7 +102,7 @@ func (s *GameServer) HandleWebSocketConnection(w http.ResponseWriter, r *http.Re
 	HandleWebSocket(w, r, handler.Session, handler.Hub, playerID)
 }
 
-// HandleListGames handles GET /api/games
+// HandleListGames handles GET /games
 func (s *GameServer) HandleListGames(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)

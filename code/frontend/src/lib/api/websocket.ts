@@ -10,7 +10,7 @@ export class GameSocket {
 
     connect(gameId: string, playerId: number = -1): Promise<void> {
         return new Promise((resolve, reject) => {
-            const url = `${WS_BASE}/ws/game/${gameId}?player=${playerId}`;
+            const url = `${WS_BASE}/game/${gameId}?player=${playerId}`;
             this.ws = new WebSocket(url);
 
             this.ws.onopen = () => resolve();

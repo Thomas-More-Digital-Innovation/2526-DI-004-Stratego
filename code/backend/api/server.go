@@ -148,7 +148,7 @@ func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
 // StartServer starts the HTTP server
 func (s *GameServer) StartServer(addr string) error {
 	// User & Auth endpoints
-	http.HandleFunc("/api/users/register", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users/register", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -157,7 +157,7 @@ func (s *GameServer) StartServer(addr string) error {
 		s.RegisterUserHandler(w, r)
 	})
 
-	http.HandleFunc("/api/users/login", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users/login", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -166,7 +166,7 @@ func (s *GameServer) StartServer(addr string) error {
 		s.LoginHandler(w, r)
 	})
 
-	http.HandleFunc("/api/users/logout", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users/logout", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -175,7 +175,7 @@ func (s *GameServer) StartServer(addr string) error {
 		s.LogoutHandler(w, r)
 	})
 
-	http.HandleFunc("/api/users/me", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users/me", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -184,7 +184,7 @@ func (s *GameServer) StartServer(addr string) error {
 		s.GetCurrentUserHandler(w, r)
 	})
 
-	http.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -193,7 +193,7 @@ func (s *GameServer) StartServer(addr string) error {
 		s.GetUserHandler(w, r)
 	})
 
-	http.HandleFunc("/api/users/stats", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users/stats", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			return
@@ -201,7 +201,7 @@ func (s *GameServer) StartServer(addr string) error {
 		s.GetUserStatsHandler(w, r)
 	})
 
-	http.HandleFunc("/api/users/me/stats", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/users/me/stats", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			return
@@ -210,7 +210,7 @@ func (s *GameServer) StartServer(addr string) error {
 	})
 
 	// Board setup endpoints
-	http.HandleFunc("/api/board-setups", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/board-setups", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -235,7 +235,7 @@ func (s *GameServer) StartServer(addr string) error {
 	})
 
 	// Existing game endpoints
-	http.HandleFunc("/api/games", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/games", func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, r)
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -249,7 +249,7 @@ func (s *GameServer) StartServer(addr string) error {
 		}
 	})
 
-	http.HandleFunc("/ws/game/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/game/", func(w http.ResponseWriter, r *http.Request) {
 		s.HandleWebSocketConnection(w, r)
 	})
 

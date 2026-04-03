@@ -32,59 +32,59 @@ async function requestVoid(path: string, options?: RequestInit): Promise<void> {
 // Auth
 export const auth = {
     login: (username: string, password: string) =>
-        requestVoid('/api/users/login', {
+        requestVoid('/users/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         }),
 
     register: (username: string, password: string) =>
-        requestVoid('/api/users/register', {
+        requestVoid('/users/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         }),
 
-    logout: () => requestVoid('/api/users/logout', { method: 'POST' }),
+    logout: () => requestVoid('/users/logout', { method: 'POST' }),
 
-    getMe: () => request<User>('/api/users/me'),
+    getMe: () => request<User>('/users/me'),
 };
 
 // Games
 export const games = {
     create: (gameType: GameMode, ai1: string, ai2: string) =>
-        request<GameInfo>('/api/games', {
+        request<GameInfo>('/games', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gameType, ai1, ai2 }),
         }),
 
-    list: () => request<GameInfo[]>('/api/games'),
+    list: () => request<GameInfo[]>('/games'),
 };
 
 // Stats
 export const stats = {
-    getMine: () => request<UserStats>('/api/users/me/stats'),
+    getMine: () => request<UserStats>('/users/me/stats'),
 };
 
 // Board Setups
 export const boardSetups = {
-    list: () => request<BoardSetup[]>('/api/board-setups'),
+    list: () => request<BoardSetup[]>('/board-setups'),
 
     create: (data: { name: string; description: string; setup_data: string; is_default: boolean }) =>
-        requestVoid('/api/board-setups', {
+        requestVoid('/board-setups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         }),
 
     update: (id: number, data: { name: string; description: string; setup_data: string; is_default: boolean }) =>
-        requestVoid(`/api/board-setups?id=${id}`, {
+        requestVoid(`/board-setups?id=${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         }),
 
     delete: (id: number) =>
-        requestVoid(`/api/board-setups?id=${id}`, { method: 'DELETE' }),
+        requestVoid(`/board-setups?id=${id}`, { method: 'DELETE' }),
 };
