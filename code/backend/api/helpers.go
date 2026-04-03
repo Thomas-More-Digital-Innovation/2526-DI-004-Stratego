@@ -41,7 +41,7 @@ func SecurityMiddleware() gin.HandlerFunc {
 
 		if utils.IsProduction() {
 			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-			c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:;")
+			c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:;")
 		}
 
 		c.Next()
