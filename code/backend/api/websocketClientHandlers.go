@@ -94,7 +94,7 @@ func (c *WSClient) handleGetValidMoves(data any) {
 
 	pos := engine.NewPosition(reqMsg.Position.X, reqMsg.Position.Y)
 
-	moves, err := c.session.GetAvailableMoves(pos)
+	moves, err := c.session.GetAvailableMoves(c.seatIndex, pos)
 	if err != nil {
 		c.sendError(err.Error())
 		return

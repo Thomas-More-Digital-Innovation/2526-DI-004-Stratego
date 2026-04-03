@@ -13,7 +13,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - DB_SSLMODE=disable
+      - DB_SSLMODE=prefer
     deploy:
       resources:
         limits:
@@ -44,8 +44,6 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "${DB_PORT}:5432"
     volumes:
       - stratego-pg-data:/var/lib/postgresql/data
     deploy:

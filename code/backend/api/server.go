@@ -140,6 +140,9 @@ func (s *GameServer) StartServer(addr string) error {
 	corsConfig.AllowHeaders = []string{"Content-Type", "Authorization", "X-Requested-With", "X-XSRF-TOKEN"}
 	s.router.Use(cors.New(corsConfig))
 
+	// Security Headers
+	s.router.Use(SecurityMiddleware())
+
 	// CSRF Protection
 	s.router.Use(CSRFMiddleware())
 

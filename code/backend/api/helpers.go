@@ -3,15 +3,22 @@ package api
 import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// parseID extracts an integer ID from a query parameter
+// parseID extracts an integer ID from a path or query parameter
 func parseID(c *gin.Context, key string) (int, error) {
-	idStr := c.Query(key)
+	// First check path parameter
+	idStr := c.Param(key)
+	if idStr == "" {
+		// Then check query parameter
+		idStr = c.Query(key)
+	}
+
 	if idStr == "" {
 		return 0, nil // Optional path or query
 	}
@@ -22,6 +29,23 @@ func parseID(c *gin.Context, key string) (int, error) {
 	}
 
 	return id, nil
+}
+
+// SecurityMiddleware adds security headers to the response
+func SecurityMiddleware() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("X-XSS-Protection", "1; mode=block")
+
+		if utils.IsProduction() {
+			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+			c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:;")
+		}
+
+		c.Next()
+	}
 }
 
 // ensureAuthenticated checks if a user is logged in, otherwise sends an error

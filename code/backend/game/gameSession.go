@@ -169,9 +169,19 @@ func (gs *GameSession) GetBoard() *engine.Board {
 }
 
 // GetAvailableMoves returns valid moves for a piece at the given position
-func (gs *GameSession) GetAvailableMoves(pos engine.Position) ([]engine.Move, error) {
+// It returns an error if the piece does not belong to the requesting player
+func (gs *GameSession) GetAvailableMoves(playerID int, pos engine.Position) ([]engine.Move, error) {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
+
+	piece := gs.game.Board.GetPieceAt(pos)
+	if piece == nil {
+		return nil, errors.New("no piece at the given position")
+	}
+
+	if piece.GetOwner().GetID() != playerID {
+		return nil, errors.New("you can only request moves for your own pieces")
+	}
 
 	return gs.game.Board.ListMoves(pos)
 }
