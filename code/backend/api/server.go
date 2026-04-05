@@ -154,6 +154,9 @@ func (s *GameServer) StartServer(addr string) error {
 	// Security Headers
 	s.router.Use(SecurityMiddleware())
 
+	// JSON Logging for Loki
+	s.router.Use(JSONLoggerMiddleware())
+
 	// CSRF Protection
 	s.router.Use(CSRFMiddleware())
 
