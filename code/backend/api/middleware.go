@@ -90,6 +90,12 @@ func JSONLoggerMiddleware() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 
+		// Skip logging for health check because it is used by docker compose health check
+		if path == "/health" {
+			c.Next()
+			return
+		}
+
 		// Process request
 		c.Next()
 

@@ -40,7 +40,7 @@ func NewGameServer() *GameServer {
 
 	return &GameServer{
 		sessions: make(map[string]*GameSessionHandler),
-		router:   gin.Default(),
+		router:   gin.New(),
 	}
 }
 
@@ -141,6 +141,11 @@ func (s *GameServer) PrintRoutes() {
 
 // StartServer starts the HTTP server
 func (s *GameServer) StartServer(addr string) error {
+	s.router.Use(gin.Recovery())
+	s.router.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/health"},
+	}))
+
 	// Configure CORS
 	corsConfig := cors.DefaultConfig()
 	// Whitelist allowed origins
