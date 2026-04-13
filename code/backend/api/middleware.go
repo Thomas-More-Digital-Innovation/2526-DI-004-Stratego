@@ -1,9 +1,12 @@
 package api
 
 import (
+	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/utils"
+	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -77,5 +80,46 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 			return
 		}
 		c.Next()
+	}
+}
+
+// JSONLoggerMiddleware logs requests in JSON format
+func JSONLoggerMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		raw := c.Request.URL.RawQuery
+
+		// Skip logging for health check because it is used by docker compose health check
+		if path == "/health" {
+			c.Next()
+			return
+		}
+
+		// Process request
+		c.Next()
+
+		if raw != "" {
+			path = path + "?" + raw
+		}
+
+		user := auth.GetCurrentUser(c)
+		userName := "anonymous"
+		if user != nil {
+			userName = user.Username
+		}
+
+		// Use standard log package which we've redirected to both stdout and file
+		// Gin will already log its own format, but this gives us a clean JSON object for Loki
+		log.Printf(`{"time":"%s", "latency":"%s", "ip":"%s", "method":"%s", "path":"%s", "status":%d, "user":"%s", "agent":"%s"}`+"\n",
+			time.Now().Format(time.RFC3339),
+			time.Since(start),
+			c.ClientIP(),
+			c.Request.Method,
+			path,
+			c.Writer.Status(),
+			userName,
+			c.Request.UserAgent(),
+		)
 	}
 }
