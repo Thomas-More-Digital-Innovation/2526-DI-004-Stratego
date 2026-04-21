@@ -29,9 +29,8 @@ func (h *WSHub) BroadcastSetupBoard() {
 	h.BroadcastMessage(MsgTypeBoardState, boardMsg)
 }
 
-// BroadcastGameTransition broadcasts complete state after setup phase ends
-// IsSetupPhase will be false now
-func (h *WSHub) BroadcastGameTransition() {
+// BroadcastGameState broadcasts the current game state to all clients
+func (h *WSHub) BroadcastGameState() {
 	state := h.session.GetGameState()
 
 	var winnerName string
@@ -55,11 +54,18 @@ func (h *WSHub) BroadcastGameTransition() {
 		Player1Score:       state.Player1Score,
 		Player2Score:       state.Player2Score,
 		WaitingForInput:    state.WaitingForInput,
+		Paused:             state.Paused,
 		MoveCount:          state.MoveCount,
 		Player1AlivePieces: state.Player1AlivePieces,
 		Player2AlivePieces: state.Player2AlivePieces,
 		IsSetupPhase:       state.IsSetupPhase,
 	})
+}
+
+// BroadcastGameTransition broadcasts complete state after setup phase ends
+// IsSetupPhase will be false now
+func (h *WSHub) BroadcastGameTransition() {
+	h.BroadcastGameState()
 
 	// Broadcast board state (pieces are now on the board)
 	if h.gameType == models.AiVsAi {

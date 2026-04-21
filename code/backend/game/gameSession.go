@@ -109,6 +109,22 @@ func (gs *GameSession) Stop() {
 	}
 }
 
+// Pause pauses the game session
+func (gs *GameSession) Pause() {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.runner.Pause()
+	log.Printf("GameSession %s: Paused", gs.ID)
+}
+
+// Unpause unpauses the game session
+func (gs *GameSession) Unpause() {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.runner.Unpause()
+	log.Printf("GameSession %s: Unpaused", gs.ID)
+}
+
 // SubmitMove submits a move for a human player
 // Returns error if move is invalid or not the player's turn
 func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
@@ -154,6 +170,7 @@ func (gs *GameSession) GetGameState() models.GameState {
 		Player1Score:       gs.game.Players[0].GetPieceScore(),
 		Player2Score:       gs.game.Players[1].GetPieceScore(),
 		WaitingForInput:    gs.runner.IsWaitingForInput(),
+		Paused:             gs.runner.IsPaused(),
 		MoveCount:          len(gs.game.MoveHistory),
 		Player1AlivePieces: len(gs.game.Players[0].GetAlivePieces()),
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),

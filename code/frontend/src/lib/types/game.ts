@@ -30,6 +30,7 @@ export interface GameState {
     player1Score: number;
     player2Score: number;
     waitingForInput: boolean;
+    paused: boolean;
     moveCount: number;
     player1AlivePieces: number;
     player2AlivePieces: number;

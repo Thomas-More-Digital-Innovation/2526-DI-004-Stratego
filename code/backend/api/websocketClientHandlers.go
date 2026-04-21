@@ -2,6 +2,7 @@ package api
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/models"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -33,6 +34,10 @@ func (c *WSClient) handleMessage(message []byte) {
 		c.handleStartGame()
 	case MsgTypeLoadSetup:
 		c.handleLoadSetup(baseMsg.Data)
+	case MsgTypePause:
+		c.handlePause()
+	case MsgTypeUnpause:
+		c.handleUnpause()
 	default:
 		c.sendError("Unknown message type")
 	}
@@ -233,4 +238,26 @@ func (c *WSClient) handleLoadSetup(data interface{}) {
 	log.Printf("Setup loaded for player %d", c.seatIndex)
 
 	c.hub.BroadcastSetupBoard()
+}
+
+// handlePause processes a pause game message
+func (c *WSClient) handlePause() {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+		c.sendError("Spectators cannot pause the game")
+		return
+	}
+	c.session.Pause()
+	log.Printf("Game paused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
+	c.hub.BroadcastGameState()
+}
+
+// handleUnpause processes an unpause game message
+func (c *WSClient) handleUnpause() {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+		c.sendError("Spectators cannot unpause the game")
+		return
+	}
+	c.session.Unpause()
+	log.Printf("Game unpaused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
+	c.hub.BroadcastGameState()
 }

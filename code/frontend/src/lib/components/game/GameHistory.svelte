@@ -10,6 +10,7 @@
         onNext: () => void;
         onGoToMove: (index: number) => void;
         onExitReplay: () => void;
+        onTogglePause: () => void;
     }
 
     let {
@@ -20,7 +21,10 @@
         onNext,
         onGoToMove,
         onExitReplay,
+        onTogglePause,
     }: Props = $props();
+
+    import { gameStore } from "$lib/state/game.svelte";
 
     const canGoPrevious = $derived(currentMoveIndex > 0);
     const canGoNext = $derived(currentMoveIndex < totalMoves - 1);
@@ -40,6 +44,13 @@
                 class="text-[10px] font-bold bg-brand-secondary/20 text-brand-secondary px-2 py-0.5 rounded-full uppercase"
             >
                 Replay
+            </span>
+        {/if}
+        {#if gameStore.isPaused}
+            <span
+                class="text-[10px] font-bold bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full uppercase"
+            >
+                Paused
             </span>
         {/if}
     </div>
@@ -82,11 +93,17 @@
             {/each}
         </div>
 
-        {#if isReplaying}
-            <Button variant="secondary" size="sm" onclick={onExitReplay}>
-                Exit Replay
-            </Button>
-        {/if}
+        <div class="flex flex-col gap-2">
+            {#if isReplaying}
+                <Button variant="secondary" size="sm" onclick={onExitReplay}>
+                    Exit Replay
+                </Button>
+            {:else}
+                <Button variant="outline" size="sm" onclick={onTogglePause}>
+                    {gameStore.isPaused ? "▶ Resume" : "⏸ Pause"}
+                </Button>
+            {/if}
+        </div>
     {:else}
         <p class="text-white/30 text-center py-4 text-sm">No moves yet</p>
     {/if}

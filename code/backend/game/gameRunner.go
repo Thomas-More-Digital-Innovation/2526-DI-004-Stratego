@@ -14,6 +14,7 @@ type GameRunner struct {
 	turnDelay            time.Duration // Optional delay between AI turns for visualization, can be 0 to remove the delay
 	maxTurns             int
 	waitingForHumanInput bool
+	paused               bool // flag to indicate if game is paused
 	onMoveExecuted       func()
 	stopChan             chan bool
 }
@@ -26,6 +27,7 @@ func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunne
 		game:      game,
 		turnDelay: turnDelay,
 		maxTurns:  maxTurns,
+		paused:    false,
 	}
 }
 
@@ -52,6 +54,11 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 			return nil
 		default:
 			// No stop signal, continue
+		}
+
+		if gr.IsPaused() {
+			time.Sleep(100 * time.Millisecond)
+			continue
 		}
 
 		executed := gr.ExecuteTurn(logging)
@@ -102,6 +109,13 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 	if gr.game.IsGameOver() {
 		if logging {
 			log.Printf("GameRunner.ExecuteTurn: Game is over")
+		}
+		return false
+	}
+
+	if gr.IsPaused() {
+		if logging {
+			log.Printf("GameRunner.ExecuteTurn: Game is paused")
 		}
 		return false
 	}
@@ -241,4 +255,19 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 	gr.ExecuteTurn(true) // TODO assuming logging is true for human moves
 
 	return nil
+}
+
+// Pause pauses the game runner
+func (gr *GameRunner) Pause() {
+	gr.paused = true
+}
+
+// Unpause unpauses the game runner
+func (gr *GameRunner) Unpause() {
+	gr.paused = false
+}
+
+// IsPaused returns whether the game runner is paused
+func (gr *GameRunner) IsPaused() bool {
+	return gr.paused
 }

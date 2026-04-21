@@ -56,7 +56,9 @@
 
     function setupHandlers() {
         socket.on("gameState", (data) => gameStore.updateGameState(data));
-        socket.on("boardState", (data) => gameStore.updateBoardState(data));
+        socket.on("boardState", (data) =>
+            gameStore.updateBoardState(data, viewerId),
+        );
         socket.on("moveHistory", (data) =>
             gameStore.loadMoveHistory(data.moves),
         );
@@ -269,10 +271,29 @@
                     currentMoveIndex={gameStore.currentHistoryIndex}
                     totalMoves={gameStore.history.length}
                     isReplaying={gameStore.isReplaying}
-                    onPrevious={() => gameStore.previousMove()}
-                    onNext={() => gameStore.nextMove()}
-                    onGoToMove={(index) => gameStore.goToMove(index)}
-                    onExitReplay={() => gameStore.exitReplay()}
+                    onPrevious={() => {
+                        if (!gameStore.isPaused) socket.sendPause();
+                        gameStore.previousMove();
+                    }}
+                    onNext={() => {
+                        if (!gameStore.isPaused) socket.sendPause();
+                        gameStore.nextMove();
+                    }}
+                    onGoToMove={(index) => {
+                        if (!gameStore.isPaused) socket.sendPause();
+                        gameStore.goToMove(index);
+                    }}
+                    onExitReplay={() => {
+                        socket.sendUnpause();
+                        gameStore.exitReplay();
+                    }}
+                    onTogglePause={() => {
+                        if (gameStore.isPaused) {
+                            socket.sendUnpause();
+                        } else {
+                            socket.sendPause();
+                        }
+                    }}
                 />
             {:else}
                 <div
