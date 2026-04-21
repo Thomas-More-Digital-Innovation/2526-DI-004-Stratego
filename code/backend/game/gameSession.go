@@ -19,6 +19,7 @@ type GameSession struct {
 	mutex                 sync.RWMutex
 	running               bool
 	isSetupPhase          bool
+	headless              bool
 	player1Pieces         []*engine.Piece
 	player2Pieces         []*engine.Piece
 	doneChan              chan *engine.Player // Signals when game is complete
@@ -125,6 +126,20 @@ func (gs *GameSession) Unpause() {
 	log.Printf("GameSession %s: Unpaused", gs.ID)
 }
 
+// SetTurnDelay sets the delay between AI turns
+func (gs *GameSession) SetTurnDelay(delay time.Duration) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.runner.SetTurnDelay(delay)
+}
+
+// StepAI executes a single AI turn even if the game is paused
+func (gs *GameSession) StepAI() bool {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	return gs.runner.Step(true)
+}
+
 // SubmitMove submits a move for a human player
 // Returns error if move is invalid or not the player's turn
 func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
@@ -175,6 +190,7 @@ func (gs *GameSession) GetGameState() models.GameState {
 		Player1AlivePieces: len(gs.game.Players[0].GetAlivePieces()),
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),
 		IsSetupPhase:       gs.isSetupPhase,
+		Headless:           gs.headless,
 	}
 }
 
@@ -358,6 +374,13 @@ func (gs *GameSession) SetSetupPhaseComplete() {
 	gs.isSetupPhase = false
 }
 
+// IsHeadless returns whether the game is running in headless simulation mode
+func (gs *GameSession) IsHeadless() bool {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.headless
+}
+
 // GetSetupPieces returns the setup pieces for a player
 func (gs *GameSession) GetSetupPieces(playerID int) []*engine.Piece {
 	gs.mutex.RLock()
@@ -485,7 +508,7 @@ func (gs *GameSession) RandomizeSetup(playerID int) error {
 }
 
 // StartGameFromSetup starts the game from setup phase
-func (gs *GameSession) StartGameFromSetup() error {
+func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	gs.mutex.Lock()
 
 	if !gs.isSetupPhase {
@@ -493,7 +516,15 @@ func (gs *GameSession) StartGameFromSetup() error {
 		return errors.New("not in setup phase")
 	}
 
-	log.Printf("Game %s: Starting game from setup - placing pieces on board", gs.ID)
+	log.Printf("Game %s: Starting game from setup - placing pieces on board (headless=%v)", gs.ID, headless)
+
+	// Set initial speed based on headless mode
+	if headless {
+		gs.runner.SetTurnDelay(0)
+	} else {
+		// Default pacing of 1 second for visible games
+		gs.runner.SetTurnDelay(1 * time.Second)
+	}
 
 	// Place pieces on the board
 	if err := SetupGame(gs.game, gs.player1Pieces, gs.player2Pieces); err != nil {
@@ -503,6 +534,7 @@ func (gs *GameSession) StartGameFromSetup() error {
 
 	// Exit setup phase BEFORE starting the game
 	gs.isSetupPhase = false
+	gs.headless = headless
 	log.Printf("Game %s: Setup phase marked complete", gs.ID)
 
 	gs.mutex.Unlock()

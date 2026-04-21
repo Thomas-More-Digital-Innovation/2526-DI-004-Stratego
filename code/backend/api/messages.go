@@ -15,6 +15,8 @@ const (
 	MsgTypeLoadSetup         = "loadSetup"
 	MsgTypePause             = "pause"
 	MsgTypeUnpause           = "unpause"
+	MsgTypeSetSpeed          = "setSpeed"
+	MsgTypeStep              = "step"
 
 	// Server -> Client
 	MsgTypeGameState   = "gameState"
@@ -50,8 +52,21 @@ type SwapPiecesMessage struct {
 	Pos2 PositionDTO `json:"pos2"`
 }
 
+type StartGameMessage struct {
+	Headless bool `json:"headless"`
+}
+
 type LoadSetupMessage struct {
+	PlayerID  *int   `json:"playerId,omitempty"`
 	SetupData string `json:"setupData"` // Base64 encoded 40 bytes
+}
+
+type RandomizeSetupMessage struct {
+	PlayerID *int `json:"playerId,omitempty"`
+}
+
+type SetSpeedMessage struct {
+	SpeedMs int `json:"speedMs"`
 }
 
 // Server messages
