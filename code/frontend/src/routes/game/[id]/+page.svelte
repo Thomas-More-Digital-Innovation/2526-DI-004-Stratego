@@ -18,6 +18,7 @@
     let connected = $state(false);
     let validMoves = $state<Position[]>([]);
     let setupSwapPos1 = $state<Position | null>(null);
+    let setupSelectedPlayer = $state(0);
 
     const isSetupPhase = $derived(gameStore.gameState?.isSetupPhase ?? false);
 
@@ -100,8 +101,12 @@
     }
 
     function handleCellClick(x: number, y: number) {
-        if (isSetupPhase && gameMode === "human_vs_ai") {
-            handleSetupClick(x, y);
+        if (isSetupPhase) {
+            if (gameMode === "human_vs_ai") {
+                handleSetupClick(x, y);
+            } else if (gameMode === "ai_vs_ai") {
+                handleSetupClick(x, y, setupSelectedPlayer);
+            }
             return;
         }
 
@@ -143,8 +148,11 @@
         }
     }
 
-    function handleSetupClick(x: number, y: number) {
-        if (y < 6 || y > 9) return;
+    function handleSetupClick(x: number, y: number, playerId: number = 0) {
+        const startRow = playerId === 0 ? 6 : 0;
+        const endRow = playerId === 0 ? 9 : 3;
+
+        if (y < startRow || y > endRow) return;
 
         if (!setupSwapPos1) {
             setupSwapPos1 = { x, y };
@@ -173,19 +181,27 @@
         }
     }
 
-    function handleRandomize() {
-        socket.sendRandomizeSetup();
+    function handleRandomize(playerId?: number) {
+        socket.sendRandomizeSetup(playerId);
         setupSwapPos1 = null;
     }
 
-    function handleStartGame() {
-        socket.sendStartGame();
+    function handleStartGame(headless: boolean = false) {
+        socket.sendStartGame(headless);
         setupSwapPos1 = null;
     }
 
-    function handleLoadSetup(setupData: string) {
-        socket.sendLoadSetup(setupData);
+    function handleLoadSetup(setupData: string, playerId?: number) {
+        socket.sendLoadSetup(setupData, playerId);
         setupSwapPos1 = null;
+    }
+
+    function handleSetSpeed(speedMs: number) {
+        socket.sendSetSpeed(speedMs);
+    }
+
+    function handleStep() {
+        socket.sendStep();
     }
 
     function saveGame() {
@@ -223,6 +239,34 @@
         ></div>
         <p class="text-white/40">Connecting to game...</p>
     </div>
+{:else if gameStore.gameState?.headless && !gameStore.gameState?.isGameOver}
+    <div
+        class="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-in fade-in duration-500"
+    >
+        <div class="relative flex items-center justify-center">
+            <div
+                class="absolute w-24 h-24 border-4 border-brand-secondary/30 rounded-full animate-ping"
+            ></div>
+            <div
+                class="w-16 h-16 border-4 border-white/10 border-t-brand-primary rounded-full animate-spin relative z-10"
+            ></div>
+        </div>
+        <div class="text-center space-y-2">
+            <h2
+                class="text-2xl font-black text-white uppercase tracking-wider glow-primary"
+            >
+                Simulation Running
+            </h2>
+            <p class="text-white/50 text-sm">
+                Headless AI vs AI mode is executing at maximum speed...
+            </p>
+            <p
+                class="text-brand-accent/70 text-xs font-mono uppercase tracking-widest mt-4"
+            >
+                Computing strategic parameters
+            </p>
+        </div>
+    </div>
 {:else}
     <div class="flex items-center justify-between mb-6">
         <Button variant="ghost" onclick={() => (window.location.href = "/")}>
@@ -259,7 +303,13 @@
                     (isHumanTurn || isSetupPhase)}
                 {viewerId}
                 {validMoves}
-                disabledRows={isSetupPhase ? [0, 1, 2, 3, 4, 5] : []}
+                disabledRows={isSetupPhase
+                    ? gameMode === "human_vs_ai"
+                        ? [0, 1, 2, 3, 4, 5]
+                        : setupSelectedPlayer === 0
+                          ? [0, 1, 2, 3, 4, 5]
+                          : [4, 5, 6, 7, 8, 9]
+                    : []}
                 visualDisabledRows={isSetupPhase ? [4, 5] : []}
                 scale={1.3}
             />
@@ -294,6 +344,8 @@
                             socket.sendPause();
                         }
                     }}
+                    onSetSpeed={handleSetSpeed}
+                    onStep={handleStep}
                 />
             {:else}
                 <div
@@ -328,11 +380,17 @@
     />
 {/if}
 
-{#if isSetupPhase && gameMode === "human_vs_ai"}
+{#if isSetupPhase && (gameMode === "human_vs_ai" || gameMode === "ai_vs_ai")}
     <SetupBanner
         onRandomize={handleRandomize}
         onStart={handleStartGame}
         onLoadSetup={handleLoadSetup}
         {viewerId}
+        {gameMode}
+        selectedPlayer={setupSelectedPlayer}
+        onSelectPlayer={(p) => {
+            setupSelectedPlayer = p;
+            setupSwapPos1 = null;
+        }}
     />
 {/if}

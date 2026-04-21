@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 )
 
 // handleMessage processes incoming WebSocket messages
@@ -29,15 +30,19 @@ func (c *WSClient) handleMessage(message []byte) {
 	case MsgTypeSwapPieces:
 		c.handleSwapPieces(baseMsg.Data)
 	case MsgTypeRandomizeSetup:
-		c.handleRandomizeSetup()
+		c.handleRandomizeSetup(baseMsg.Data)
 	case MsgTypeStartGame:
-		c.handleStartGame()
+		c.handleStartGame(baseMsg.Data)
 	case MsgTypeLoadSetup:
 		c.handleLoadSetup(baseMsg.Data)
 	case MsgTypePause:
 		c.handlePause()
 	case MsgTypeUnpause:
 		c.handleUnpause()
+	case MsgTypeSetSpeed:
+		c.handleSetSpeed(baseMsg.Data)
+	case MsgTypeStep:
+		c.handleStep()
 	default:
 		c.sendError("Unknown message type")
 	}
@@ -135,10 +140,7 @@ func (c *WSClient) handleAnimationComplete() {
 
 // handleSwapPieces processes a swap pieces message during setup
 func (c *WSClient) handleSwapPieces(data interface{}) {
-	if c.seatIndex < 0 {
-		c.sendError("Spectators cannot swap pieces")
-		return
-	}
+	// Let the validation happen below so we can infer the player ID
 
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
@@ -155,7 +157,21 @@ func (c *WSClient) handleSwapPieces(data interface{}) {
 	pos1 := engine.NewPosition(swapMsg.Pos1.X, swapMsg.Pos1.Y)
 	pos2 := engine.NewPosition(swapMsg.Pos2.X, swapMsg.Pos2.Y)
 
-	if err := c.session.SwapSetupPieces(c.seatIndex, pos1, pos2); err != nil {
+	playerID := c.seatIndex
+	if playerID < 0 {
+		if c.hub.gameType == models.AiVsAi {
+			if pos1.Y >= 6 {
+				playerID = 0 // Bottom rows belong to player 0 (Red)
+			} else {
+				playerID = 1 // Top rows belong to player 1 (Blue)
+			}
+		} else {
+			c.sendError("Spectators cannot swap pieces")
+			return
+		}
+	}
+
+	if err := c.session.SwapSetupPieces(playerID, pos1, pos2); err != nil {
 		c.sendError(fmt.Sprintf("Failed to swap pieces: %v", err))
 		return
 	}
@@ -166,42 +182,69 @@ func (c *WSClient) handleSwapPieces(data interface{}) {
 }
 
 // handleRandomizeSetup processes a randomize setup message
-func (c *WSClient) handleRandomizeSetup() {
-	if c.seatIndex < 0 {
+func (c *WSClient) handleRandomizeSetup(data interface{}) {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
 		c.sendError("Spectators cannot randomize setup")
 		return
 	}
 
-	if err := c.session.RandomizeSetup(c.seatIndex); err != nil {
+	targetPlayer := c.seatIndex
+	if c.hub.gameType == models.AiVsAi {
+		// Spectators in AI vs AI can specify which target player to randomize
+		dataBytes, _ := json.Marshal(data)
+		var msg RandomizeSetupMessage
+		if err := json.Unmarshal(dataBytes, &msg); err == nil && msg.PlayerID != nil {
+			targetPlayer = *msg.PlayerID
+		} else {
+			// If not specified, we can't infer, but maybe we can default to 0
+			// (User should provide PlayerID)
+		}
+	}
+
+	if targetPlayer < 0 {
+		c.sendError("Target player required for AI randomization")
+		return
+	}
+
+	if err := c.session.RandomizeSetup(targetPlayer); err != nil {
 		c.sendError(fmt.Sprintf("Failed to randomize setup: %v", err))
 		return
 	}
 
-	log.Printf("Setup randomized for player %d", c.seatIndex)
+	log.Printf("Setup randomized for player %d", targetPlayer)
 
 	c.hub.BroadcastSetupBoard()
 }
 
 // handleStartGame processes a start game message
-func (c *WSClient) handleStartGame() {
-	if c.seatIndex < 0 {
+func (c *WSClient) handleStartGame(data interface{}) {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
 		c.sendError("Spectators cannot start game")
 		return
 	}
 
-	if err := c.session.StartGameFromSetup(); err != nil {
+	headless := false
+	if data != nil {
+		dataBytes, _ := json.Marshal(data)
+		var msg StartGameMessage
+		if err := json.Unmarshal(dataBytes, &msg); err == nil {
+			headless = msg.Headless
+		}
+	}
+
+	if err := c.session.StartGameFromSetup(headless); err != nil {
 		c.sendError(fmt.Sprintf("Failed to start game: %v", err))
 		return
 	}
 
-	log.Printf("Game started by player %d", c.seatIndex)
+	log.Printf("Game started (client: %d, headless: %v)", c.seatIndex, headless)
 
 	c.hub.BroadcastGameTransition()
 }
 
 // handleLoadSetup processes a load setup message from saved board setups
 func (c *WSClient) handleLoadSetup(data interface{}) {
-	if c.seatIndex < 0 {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
 		c.sendError("Spectators cannot load setups")
 		return
 	}
@@ -218,6 +261,16 @@ func (c *WSClient) handleLoadSetup(data interface{}) {
 		return
 	}
 
+	targetPlayer := c.seatIndex
+	if c.hub.gameType == models.AiVsAi && loadMsg.PlayerID != nil {
+		targetPlayer = *loadMsg.PlayerID
+	}
+
+	if targetPlayer < 0 {
+		c.sendError("Target player required for AI setup loading")
+		return
+	}
+
 	var setupData []byte
 	if len(loadMsg.SetupData) == 40 {
 		setupData = []byte(loadMsg.SetupData)
@@ -230,12 +283,12 @@ func (c *WSClient) handleLoadSetup(data interface{}) {
 		}
 	}
 
-	if err := c.session.LoadSetup(c.seatIndex, setupData); err != nil {
+	if err := c.session.LoadSetup(targetPlayer, setupData); err != nil {
 		c.sendError(fmt.Sprintf("Failed to load setup: %v", err))
 		return
 	}
 
-	log.Printf("Setup loaded for player %d", c.seatIndex)
+	log.Printf("Setup loaded for player %d", targetPlayer)
 
 	c.hub.BroadcastSetupBoard()
 }
@@ -260,4 +313,45 @@ func (c *WSClient) handleUnpause() {
 	c.session.Unpause()
 	log.Printf("Game unpaused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
 	c.hub.BroadcastGameState()
+}
+
+// handleSetSpeed processes a set speed message
+func (c *WSClient) handleSetSpeed(data interface{}) {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+		c.sendError("Spectators cannot change speed")
+		return
+	}
+
+	dataBytes, _ := json.Marshal(data)
+	var msg SetSpeedMessage
+	if err := json.Unmarshal(dataBytes, &msg); err != nil {
+		c.sendError("Invalid set speed message")
+		return
+	}
+
+	// Range check: 500ms to 5000ms
+	speed := msg.SpeedMs
+	if speed < 500 {
+		speed = 500
+	} else if speed > 5000 {
+		speed = 5000
+	}
+
+	c.session.SetTurnDelay(time.Duration(speed) * time.Millisecond)
+	log.Printf("Game speed set to %dms", speed)
+}
+
+// handleStep processes a manual step message
+func (c *WSClient) handleStep() {
+	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+		c.sendError("Spectators cannot step the game")
+		return
+	}
+
+	if c.session.StepAI() {
+		log.Printf("Manual AI step executed")
+		c.hub.BroadcastGameState()
+	} else {
+		c.sendError("Failed to execute step (maybe already running or not AI turn)")
+	}
 }

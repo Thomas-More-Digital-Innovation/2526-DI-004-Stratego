@@ -52,12 +52,12 @@ export class GameSocket {
         this.send('swapPieces', { pos1, pos2 });
     }
 
-    sendRandomizeSetup() {
-        this.send('randomizeSetup');
+    sendRandomizeSetup(playerId?: number) {
+        this.send('randomizeSetup', { playerId });
     }
 
-    sendStartGame() {
-        this.send('startGame');
+    sendStartGame(headless: boolean = false) {
+        this.send('startGame', { headless });
     }
 
     sendAnimationComplete() {
@@ -72,8 +72,16 @@ export class GameSocket {
         this.send('unpause');
     }
 
-    sendLoadSetup(setupData: string) {
-        this.send('loadSetup', { setupData });
+    sendLoadSetup(setupData: string, playerId?: number) {
+        this.send('loadSetup', { setupData, playerId });
+    }
+
+    sendSetSpeed(speedMs: number) {
+        this.send('setSpeed', { speedMs });
+    }
+
+    sendStep() {
+        this.send('step');
     }
 
     disconnect() {

@@ -35,6 +35,7 @@ export interface GameState {
     player1AlivePieces: number;
     player2AlivePieces: number;
     isSetupPhase: boolean;
+    headless: boolean;
 }
 
 export interface BoardState {

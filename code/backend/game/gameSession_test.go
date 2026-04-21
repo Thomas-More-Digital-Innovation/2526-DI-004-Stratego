@@ -133,7 +133,7 @@ func TestGameSessionStartGameFromSetup(t *testing.T) {
 
 	session := game.NewGameSession("start-test", controller1, controller2)
 
-	err := session.StartGameFromSetup()
+	err := session.StartGameFromSetup(false)
 	if err != nil {
 		t.Errorf("Expected no error starting game from setup, got: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestGameSessionSubmitMove(t *testing.T) {
 	session := game.NewGameSession("move-test", controller1, controller2)
 
 	// Start the game
-	err := session.StartGameFromSetup()
+	err := session.StartGameFromSetup(false)
 	if err != nil {
 		t.Fatalf("Failed to start game: %v", err)
 	}
@@ -313,7 +313,7 @@ func TestGameSessionStop(t *testing.T) {
 
 	session := game.NewGameSession("stop-test", controller1, controller2)
 
-	err := session.StartGameFromSetup()
+	err := session.StartGameFromSetup(false)
 	if err != nil {
 		t.Fatalf("Failed to start game: %v", err)
 	}

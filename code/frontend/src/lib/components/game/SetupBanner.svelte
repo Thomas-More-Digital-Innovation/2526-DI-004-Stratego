@@ -6,19 +6,37 @@
     import BoardSetupCard from "$lib/components/setup/BoardSetupCard.svelte";
 
     interface Props {
-        onRandomize: () => void;
-        onStart: () => void;
-        onLoadSetup: (setupData: string) => void;
+        onRandomize: (player?: number) => void;
+        onStart: (headless?: boolean) => void;
+        onLoadSetup: (setupData: string, player?: number) => void;
         viewerId?: number;
+        gameMode?: string;
+        selectedPlayer?: number;
+        onSelectPlayer?: (player: number) => void;
     }
 
-    let { onRandomize, onStart, onLoadSetup, viewerId = 0 }: Props = $props();
+    let {
+        onRandomize,
+        onStart,
+        onLoadSetup,
+        viewerId = 0,
+        gameMode = "human_vs_ai",
+        selectedPlayer = 0,
+        onSelectPlayer,
+    }: Props = $props();
 
-    const ownerId = $derived(viewerId === -1 ? 1 : viewerId + 1);
+    const ownerId = $derived(
+        gameMode === "ai_vs_ai"
+            ? selectedPlayer + 1
+            : viewerId === -1
+              ? 1
+              : viewerId + 1,
+    );
 
     let savedSetups = $state<BoardSetup[]>([]);
     let loadingSetups = $state(true);
     let showSelector = $state(false);
+    let headless = $state(false);
 
     onMount(async () => {
         try {
@@ -32,7 +50,10 @@
     });
 
     function selectSetup(setupData: string) {
-        onLoadSetup(setupData);
+        onLoadSetup(
+            setupData,
+            gameMode === "ai_vs_ai" ? selectedPlayer : undefined,
+        );
         showSelector = false;
     }
 </script>
@@ -55,13 +76,52 @@
                 >
                     ⚔️ Setup Phase
                 </h2>
-                <p class="text-white/50 text-sm">
-                    Arrange your pieces or load a saved configuration
-                </p>
+                {#if gameMode === "ai_vs_ai"}
+                    <div class="flex gap-2 mt-1">
+                        <Button
+                            variant={selectedPlayer === 0 ? "primary" : "ghost"}
+                            size="sm"
+                            onclick={() => onSelectPlayer?.(0)}
+                            class="py-1! h-auto! text-[10px]!"
+                        >
+                            AI Red
+                        </Button>
+                        <Button
+                            variant={selectedPlayer === 1 ? "primary" : "ghost"}
+                            size="sm"
+                            onclick={() => onSelectPlayer?.(1)}
+                            class="py-1! h-auto! text-[10px]!"
+                        >
+                            AI Blue
+                        </Button>
+                    </div>
+                {:else}
+                    <p class="text-white/50 text-sm">
+                        Arrange your pieces or load a saved configuration
+                    </p>
+                {/if}
             </div>
         </div>
 
-        <div class="flex gap-3 items-center">
+        <div class="flex gap-4 items-center">
+            {#if gameMode === "ai_vs_ai"}
+                <div
+                    class="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-xl border border-white/5"
+                >
+                    <input
+                        type="checkbox"
+                        id="headless-mode"
+                        bind:checked={headless}
+                        class="accent-brand-primary cursor-pointer"
+                    />
+                    <label
+                        for="headless-mode"
+                        class="text-[10px] font-bold text-white/60 uppercase tracking-tighter cursor-pointer"
+                    >
+                        Headless Mode
+                    </label>
+                </div>
+            {/if}
             <Button
                 variant="ghost"
                 onclick={() => (showSelector = true)}
@@ -71,10 +131,18 @@
                 📁 Load Saved Setup
             </Button>
 
-            <Button variant="outline" onclick={onRandomize}>
+            <Button
+                variant="outline"
+                onclick={() =>
+                    onRandomize(
+                        gameMode === "ai_vs_ai" ? selectedPlayer : undefined,
+                    )}
+            >
                 🎲 Randomize
             </Button>
-            <Button variant="primary" onclick={onStart}>▶️ Start Game</Button>
+            <Button variant="primary" onclick={() => onStart(headless)}
+                >▶️ Start Game</Button
+            >
         </div>
     </div>
 </div>
