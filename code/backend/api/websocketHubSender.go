@@ -31,6 +31,7 @@ func (h *WSHub) sendGameState(client *WSClient) {
 		Player1Score:       state.Player1Score,
 		Player2Score:       state.Player2Score,
 		WaitingForInput:    state.WaitingForInput,
+		Paused:             state.Paused,
 		MoveCount:          state.MoveCount,
 		Player1AlivePieces: state.Player1AlivePieces,
 		Player2AlivePieces: state.Player2AlivePieces,

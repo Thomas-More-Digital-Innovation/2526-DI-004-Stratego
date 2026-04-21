@@ -9,20 +9,36 @@ class GameStore {
     selectedPosition = $state<{ x: number; y: number } | null>(null);
     combatAnimation = $state<CombatAnimation | null>(null);
 
+    get isPaused() {
+        return this.gameState?.paused ?? false;
+    }
+
     updateGameState(state: GameState) {
         this.gameState = state;
     }
 
-    updateBoardState(board: BoardState) {
-        this.boardState = board;
+    updateBoardState(board: BoardState, viewerId: number = -1) {
+        if (!this.isReplaying) {
+            this.boardState = board;
+        }
 
         if (!this.isReplaying && this.gameState && !this.gameState.isSetupPhase) {
-            this.addToHistory(board.board);
+            this.addToHistory(board.board, viewerId);
         }
     }
 
-    private addToHistory(board: Piece[][]) {
-        const boardCopy = board.map(row => row.map(cell => ({ ...cell })));
+    private addToHistory(board: Piece[][], viewerId: number) {
+        const boardCopy = board.map(row => row.map(cell => {
+            const newCell = { ...cell };
+            // Strip opponent piece identity in history if it's Human vs AI (viewerId !== -1)
+            if (viewerId !== -1 && newCell.ownerId !== viewerId) {
+                newCell.type = undefined;
+                newCell.rank = undefined;
+                newCell.iconBlue = undefined;
+                newCell.iconRed = undefined;
+            }
+            return newCell;
+        }));
 
         this.history.push({
             moveNumber: this.history.length,

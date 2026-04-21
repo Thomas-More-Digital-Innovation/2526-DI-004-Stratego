@@ -64,6 +64,14 @@ export class GameSocket {
         this.send('animationComplete');
     }
 
+    sendPause() {
+        this.send('pause');
+    }
+
+    sendUnpause() {
+        this.send('unpause');
+    }
+
     sendLoadSetup(setupData: string) {
         this.send('loadSetup', { setupData });
     }

@@ -10,6 +10,7 @@ type GameState struct {
 	Player1Score       int    `json:"player1Score"`
 	Player2Score       int    `json:"player2Score"`
 	WaitingForInput    bool   `json:"waitingForInput"`
+	Paused             bool   `json:"paused"`
 	MoveCount          int    `json:"moveCount"`
 	Player1AlivePieces int    `json:"player1AlivePieces"`
 	Player2AlivePieces int    `json:"player2AlivePieces"`
