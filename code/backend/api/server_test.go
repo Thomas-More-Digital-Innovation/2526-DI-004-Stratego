@@ -55,12 +55,12 @@ func TestCreateGameAIVsAI(t *testing.T) {
 		t.Fatal("Expected handler to be created, but got nil")
 	}
 
-	if handler.Session.IsSetupPhase() {
-		t.Error("Expected AiVsAi game to skip setup phase")
+	if !handler.Session.IsSetupPhase() {
+		t.Error("Expected AiVsAi game to start in setup phase")
 	}
 
-	if !handler.Session.IsRunning() {
-		t.Error("Expected AiVsAi game to start running immediately")
+	if handler.Session.IsRunning() {
+		t.Error("Expected AiVsAi game not to start running immediately")
 	}
 
 	// Clean up
