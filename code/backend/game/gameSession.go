@@ -135,8 +135,6 @@ func (gs *GameSession) SetTurnDelay(delay time.Duration) {
 
 // StepAI executes a single AI turn even if the game is paused
 func (gs *GameSession) StepAI() bool {
-	gs.mutex.Lock()
-	defer gs.mutex.Unlock()
 	return gs.runner.Step(true)
 }
 

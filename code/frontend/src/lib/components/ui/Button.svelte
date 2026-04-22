@@ -6,6 +6,7 @@
         variant?: "primary" | "secondary" | "ghost" | "outline";
         size?: "sm" | "md" | "lg";
         disabled?: boolean;
+        loading?: boolean;
         onclick?: () => void;
         children: Snippet;
         class?: string;
@@ -16,6 +17,7 @@
         variant = "primary",
         size = "md",
         disabled = false,
+        loading = false,
         onclick,
         children,
         class: className = "",
@@ -45,9 +47,20 @@
 
 <button
     {type}
-    {disabled}
+    disabled={disabled || loading}
     {onclick}
-    class="{shared} {variants[variant]} {sizes[size]} {className}"
+    class="{shared} {variants[variant]} {sizes[size]} {className} relative"
 >
-    {@render children()}
+    {#if loading}
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div
+                class="w-4 h-4 border-2 border-white/20 border-t-current rounded-full animate-spin"
+            ></div>
+        </div>
+        <span class="opacity-0">
+            {@render children()}
+        </span>
+    {:else}
+        {@render children()}
+    {/if}
 </button>

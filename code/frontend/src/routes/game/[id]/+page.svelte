@@ -5,7 +5,7 @@
     import { gameStore } from "$lib/state/game.svelte";
     import Board from "$lib/components/game/Board.svelte";
     import GameInfo from "$lib/components/game/GameInfo.svelte";
-    import GameHistory from "$lib/components/game/GameHistory.svelte";
+    import RightBar from "$lib/components/game/right-bar/RightBar.svelte";
     import CombatAnimation from "$lib/components/game/CombatAnimation.svelte";
     import SetupBanner from "$lib/components/game/SetupBanner.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
@@ -202,6 +202,7 @@
     }
 
     function handleStep() {
+        gameStore.isStepping = true;
         socket.sendStep();
     }
 
@@ -296,7 +297,7 @@
 
         <div>
             {#if !isSetupPhase}
-                <GameHistory
+                <RightBar
                     currentMoveIndex={gameStore.currentHistoryIndex}
                     totalMoves={gameStore.history.length}
                     isReplaying={gameStore.isReplaying}
