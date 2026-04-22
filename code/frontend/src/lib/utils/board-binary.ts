@@ -49,6 +49,15 @@ export function decodeSetup(encoded: string): string[] {
 }
 
 /**
+ * Flips a setup.
+ */
+export function flipSetup(encoded: string): string {
+    const rows = decodeSetup(encoded);
+    const flippedRows = rows.map(row => row.split('').reverse().join('')).reverse();
+    return encodeSetup(flippedRows);
+}
+
+/**
  * Decodes a base64 10x10 board to a 2D array of Piece objects.
  */
 export function decodeBoard(encoded: string): (Piece | null)[][] {

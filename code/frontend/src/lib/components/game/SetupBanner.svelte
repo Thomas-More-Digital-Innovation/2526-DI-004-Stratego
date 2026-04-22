@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import { boardSetups } from "$lib/api/client";
+    import { flipSetup } from "$lib/utils/board-binary";
     import type { BoardSetup } from "$lib/types/board-setup";
     import BoardSetupCard from "$lib/components/setup/BoardSetupCard.svelte";
 
@@ -50,8 +51,12 @@
     });
 
     function selectSetup(setupData: string) {
+        let finalSetup = setupData;
+        if (gameMode === "ai_vs_ai" && selectedPlayer === 1) {
+            finalSetup = flipSetup(setupData);
+        }
         onLoadSetup(
-            setupData,
+            finalSetup,
             gameMode === "ai_vs_ai" ? selectedPlayer : undefined,
         );
         showSelector = false;
