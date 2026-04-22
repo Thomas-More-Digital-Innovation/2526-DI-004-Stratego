@@ -9,7 +9,6 @@ import (
 	"digital-innovation/stratego/utils"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"sync"
 
@@ -197,7 +196,8 @@ func (s *GameServer) StartServer(addr string) error {
 			me.GET("/stats", s.GetCurrentUserStatsHandler)
 		}
 
-		// Public/Optional user info
+		// Public info
+		users.GET("/count", s.UserCountHandler)
 		users.GET("/:id", s.GetUserHandler)
 		users.GET("/stats", s.GetUserStatsHandler)
 	}
@@ -218,6 +218,7 @@ func (s *GameServer) StartServer(addr string) error {
 	{
 		games.POST("", s.HandleCreateGame)
 		games.GET("", s.HandleListGames)
+		games.GET("/count", s.GamesPlayedCountHandler)
 	}
 
 	// WebSocket endpoint
@@ -227,15 +228,4 @@ func (s *GameServer) StartServer(addr string) error {
 
 	log.Printf("Starting game server on %s", addr)
 	return s.router.Run(addr)
-}
-
-// HealthHandler returns the server status
-// @Summary Health check
-// @Description Confirm the server is running
-// @Tags monitoring
-// @Produce json
-// @Success 200 {object} map[string]string "Status OK"
-// @Router /health [get]
-func (s *GameServer) HealthHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

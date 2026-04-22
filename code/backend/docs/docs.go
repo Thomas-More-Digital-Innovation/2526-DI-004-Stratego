@@ -361,6 +361,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/games/count": {
+            "get": {
+                "description": "Get the total number of games played",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitoring"
+                ],
+                "summary": "Games played count",
+                "responses": {
+                    "200": {
+                        "description": "Games played count",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Confirm the server is running",
@@ -378,6 +401,29 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/count": {
+            "get": {
+                "description": "Get the total number of users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitoring"
+                ],
+                "summary": "User count",
+                "responses": {
+                    "200": {
+                        "description": "User count",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
                             }
                         }
                     }
