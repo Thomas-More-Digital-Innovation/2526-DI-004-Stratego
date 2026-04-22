@@ -8,6 +8,7 @@
     import GameHistory from "$lib/components/game/GameHistory.svelte";
     import CombatAnimation from "$lib/components/game/CombatAnimation.svelte";
     import SetupBanner from "$lib/components/game/SetupBanner.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import type { Position } from "$lib/types/game";
 
@@ -240,33 +241,11 @@
         <p class="text-white/40">Connecting to game...</p>
     </div>
 {:else if gameStore.gameState?.headless && !gameStore.gameState?.isGameOver}
-    <div
-        class="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-in fade-in duration-500"
-    >
-        <div class="relative flex items-center justify-center">
-            <div
-                class="absolute w-24 h-24 border-4 border-brand-secondary/30 rounded-full animate-ping"
-            ></div>
-            <div
-                class="w-16 h-16 border-4 border-white/10 border-t-brand-primary rounded-full animate-spin relative z-10"
-            ></div>
-        </div>
-        <div class="text-center space-y-2">
-            <h2
-                class="text-2xl font-black text-white uppercase tracking-wider glow-primary"
-            >
-                Simulation Running
-            </h2>
-            <p class="text-white/50 text-sm">
-                Headless AI vs AI mode is executing at maximum speed...
-            </p>
-            <p
-                class="text-brand-accent/70 text-xs font-mono uppercase tracking-widest mt-4"
-            >
-                Computing strategic parameters
-            </p>
-        </div>
-    </div>
+    <Loading
+        title="Game in progress"
+        description="2 AI's are having the battle of their lives"
+        subtitle="AI is thinking"
+    />
 {:else}
     <div class="flex items-center justify-between mb-6">
         <Button variant="ghost" onclick={() => (window.location.href = "/")}>
@@ -388,7 +367,7 @@
         {viewerId}
         {gameMode}
         selectedPlayer={setupSelectedPlayer}
-        onSelectPlayer={(p) => {
+        onSelectPlayer={(p: number) => {
             setupSelectedPlayer = p;
             setupSwapPos1 = null;
         }}
