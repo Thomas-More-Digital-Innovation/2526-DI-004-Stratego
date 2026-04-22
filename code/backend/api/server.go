@@ -16,6 +16,11 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
+
+	_ "digital-innovation/stratego/docs"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // GameServer manages HTTP and WebSocket connections
@@ -173,6 +178,11 @@ func (s *GameServer) StartServer(addr string) error {
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	// Swagger documentation (Dev only)
+	if !utils.IsProduction() {
+		s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	// User & Auth endpoints
 	users := s.router.Group("/users")
