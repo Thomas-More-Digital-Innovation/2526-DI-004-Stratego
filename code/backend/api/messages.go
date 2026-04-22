@@ -86,6 +86,7 @@ type GameStateMessage struct {
 	Player1AlivePieces int    `json:"player1AlivePieces"`
 	Player2AlivePieces int    `json:"player2AlivePieces"`
 	IsSetupPhase       bool   `json:"isSetupPhase"`
+	Headless           bool   `json:"headless"`
 }
 
 type MoveResultMessage struct {

@@ -168,6 +168,8 @@ func (s *GameServer) HandleListGames(c *gin.Context) {
 
 // handleGameOver broadcasts final game state and saves stats
 func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
+	hub.BroadcastGameState()
+
 	state := session.GetGameState()
 	winner := session.GetWinner()
 	var winnerID *int
