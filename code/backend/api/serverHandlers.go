@@ -15,7 +15,16 @@ import (
 
 // HTTP Handlers
 
-// HandleCreateGame handles POST /games
+// HandleCreateGame handles game creation
+// @Summary Create a new game
+// @Description Initialize a new game session with specified type and AIs
+// @Tags games
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Game creation details (id, type, ai1, ai2)"
+// @Success 201 {object} map[string]string "Game created"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Router /games [post]
 func (s *GameServer) HandleCreateGame(c *gin.Context) {
 	var req struct {
 		GameID   string `json:"gameId"`
@@ -67,7 +76,12 @@ func (s *GameServer) HandleCreateGame(c *gin.Context) {
 }
 
 // HandleWebSocketConnection handles WebSocket connections
-// GET /game/:gameID?player={0|1|spectator}
+// @Summary Game WebSocket
+// @Description Real-time game connection. Use `player` query param to join as 0 (Red), 1 (Blue), or anything else (Spectator)
+// @Tags games
+// @Param gameID path string true "Game ID"
+// @Param player query string false "Player role (0, 1, or spec)"
+// @Router /game/{gameID} [get]
 func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 	gameID := c.Param("gameID")
 	if gameID == "" {
@@ -128,6 +142,12 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 }
 
 // HandleListGames handles GET /games
+// @Summary List active games
+// @Description Retrieve a list of all currently active game sessions
+// @Tags games
+// @Produce json
+// @Success 200 {array} map[string]interface{} "List of games"
+// @Router /games [get]
 func (s *GameServer) HandleListGames(c *gin.Context) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()

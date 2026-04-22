@@ -14,6 +14,21 @@ import (
 	"time"
 )
 
+// @title Stratego API
+// @version 0.1.1
+// @description This is the API server for the Stratego game.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Sem Van Broekhoven
+// @contact.url https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego
+// @contact.email [EMAIL_ADDRESS]
+
+// @license.name MIT
+// @license.url https://opensource.org/license/mit/
+
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	serverMode := flag.Bool("server", false, "Run in WebSocket server mode")
 	defaultAddr := fmt.Sprintf(":%s", utils.GetEnv("PORT", "8080"))

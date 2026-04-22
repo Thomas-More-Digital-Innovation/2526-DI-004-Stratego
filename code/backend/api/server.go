@@ -175,9 +175,7 @@ func (s *GameServer) StartServer(addr string) error {
 	s.router.Use(RateLimitMiddleware(limiter))
 
 	// Health check
-	s.router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	s.router.GET("/health", s.HealthHandler)
 
 	// Swagger documentation (Dev only)
 	if !utils.IsProduction() {
@@ -229,4 +227,15 @@ func (s *GameServer) StartServer(addr string) error {
 
 	log.Printf("Starting game server on %s", addr)
 	return s.router.Run(addr)
+}
+
+// HealthHandler returns the server status
+// @Summary Health check
+// @Description Confirm the server is running
+// @Tags monitoring
+// @Produce json
+// @Success 200 {object} map[string]string "Status OK"
+// @Router /health [get]
+func (s *GameServer) HealthHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
