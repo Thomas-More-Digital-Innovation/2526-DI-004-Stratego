@@ -168,7 +168,7 @@ func (gr *GameRunner) executeTurn(logging bool, ignorePause bool) bool {
 	elapsed := time.Since(start)
 
 	// Add delay for pacing if requested, compensating for AI thinking time
-	if gr.turnDelay > 0 {
+	if !ignorePause && gr.turnDelay > 0 {
 		// If turnDelay is tiny (like 1ns), we use it as is
 		// Otherwise we add some random variance for pacing if it's substantial
 		delay := gr.turnDelay
@@ -182,7 +182,7 @@ func (gr *GameRunner) executeTurn(logging bool, ignorePause bool) bool {
 		}
 
 		// Re-check pause after delay to ensure we haven't been paused in the meantime
-		if gr.IsPaused() {
+		if !ignorePause && gr.IsPaused() {
 			return false // Abort execution, AI will safely recalculate when unpaused
 		}
 	}

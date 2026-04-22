@@ -8,6 +8,7 @@ class GameStore {
     isReplaying = $state(false);
     selectedPosition = $state<{ x: number; y: number } | null>(null);
     combatAnimation = $state<CombatAnimation | null>(null);
+    isStepping = $state(false);
 
     get isPaused() {
         return this.gameState?.paused ?? false;
@@ -15,6 +16,7 @@ class GameStore {
 
     updateGameState(state: GameState) {
         this.gameState = state;
+        this.isStepping = false;
     }
 
     updateBoardState(board: BoardState, viewerId: number = -1) {
