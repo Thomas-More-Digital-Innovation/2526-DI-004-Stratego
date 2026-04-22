@@ -196,8 +196,8 @@ func (c *WSClient) handleRandomizeSetup(data interface{}) {
 		if err := json.Unmarshal(dataBytes, &msg); err == nil && msg.PlayerID != nil {
 			targetPlayer = *msg.PlayerID
 		} else {
-			// If not specified, we can't infer, but maybe we can default to 0
-			// (User should provide PlayerID)
+			c.sendError("Invalid randomize setup message")
+			return
 		}
 	}
 
