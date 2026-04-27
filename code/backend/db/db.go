@@ -7,10 +7,21 @@ import (
 	"log"
 	"time"
 
+	"sync"
+
 	_ "github.com/lib/pq"
 )
 
 var DB *sql.DB
+
+type statsCache struct {
+	userCount  int
+	gameCount  int
+	lastUpdate time.Time
+	mu         sync.RWMutex
+}
+
+var cache = &statsCache{}
 
 // InitDB initializes the database connection
 func InitDB() error {
@@ -53,4 +64,49 @@ func CloseDB() error {
 		return DB.Close()
 	}
 	return nil
+}
+
+func updateStatsCache() error {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	if time.Since(cache.lastUpdate) < time.Minute && !cache.lastUpdate.IsZero() {
+		return nil
+	}
+
+	var userCount int
+	err := DB.QueryRow("SELECT COUNT(*) FROM users").Scan(&userCount)
+	if err != nil {
+		return err
+	}
+
+	var gameCount int
+	// We aggregate the total games from user_stats as an indicator of platform activity
+	err = DB.QueryRow("SELECT COALESCE(SUM(total_games), 0) FROM user_stats").Scan(&gameCount)
+	if err != nil {
+		return err
+	}
+
+	cache.userCount = userCount
+	cache.gameCount = gameCount
+	cache.lastUpdate = time.Now()
+	return nil
+}
+
+func GetTotalUserCount() (int, error) {
+	if err := updateStatsCache(); err != nil {
+		return 0, err
+	}
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+	return cache.userCount, nil
+}
+
+func GetTotalGamesPlayedCount() (int, error) {
+	if err := updateStatsCache(); err != nil {
+		return 0, err
+	}
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+	return cache.gameCount, nil
 }

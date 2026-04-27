@@ -9,13 +9,17 @@ import (
 	"digital-innovation/stratego/utils"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"sync"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
+
+	_ "digital-innovation/stratego/docs"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // GameServer manages HTTP and WebSocket connections
@@ -170,9 +174,12 @@ func (s *GameServer) StartServer(addr string) error {
 	s.router.Use(RateLimitMiddleware(limiter))
 
 	// Health check
-	s.router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	s.router.GET("/health", s.HealthHandler)
+
+	// Swagger documentation (Dev only)
+	if !utils.IsProduction() {
+		s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	// User & Auth endpoints
 	users := s.router.Group("/users")
@@ -189,7 +196,8 @@ func (s *GameServer) StartServer(addr string) error {
 			me.GET("/stats", s.GetCurrentUserStatsHandler)
 		}
 
-		// Public/Optional user info
+		// Public info
+		users.GET("/count", s.UserCountHandler)
 		users.GET("/:id", s.GetUserHandler)
 		users.GET("/stats", s.GetUserStatsHandler)
 	}
@@ -210,6 +218,7 @@ func (s *GameServer) StartServer(addr string) error {
 	{
 		games.POST("", s.HandleCreateGame)
 		games.GET("", s.HandleListGames)
+		games.GET("/count", s.GamesPlayedCountHandler)
 	}
 
 	// WebSocket endpoint
