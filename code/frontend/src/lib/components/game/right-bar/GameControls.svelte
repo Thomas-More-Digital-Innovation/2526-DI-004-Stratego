@@ -44,7 +44,7 @@
             >
                 {gameStore.isPaused ? "▶ Resume" : "⏸ Pause"}
             </Button>
-            {#if gameStore.isPaused}
+            {#if gameStore.isPaused && gameStore.gameMode == "ai_vs_ai"}
                 <Button
                     variant="ghost"
                     size="sm"
