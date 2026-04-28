@@ -1,5 +1,6 @@
-import type { GameState, BoardState, HistoryMove, Piece, CombatAnimation } from '$lib/types/game';
+import type { GameMode, GameState, BoardState, HistoryMove, Piece, CombatAnimation } from '$lib/types/game';
 import { getBoardAtMove, type PieceData, type GameHistory } from '$lib/replayEngine';
+import { gamemodes } from '$lib/data/gamemodes.data';
 class GameStore {
     gameState = $state<GameState | null>(null);
     boardState = $state<BoardState | null>(null);
@@ -9,7 +10,7 @@ class GameStore {
     selectedPosition = $state<{ x: number; y: number } | null>(null);
     combatAnimation = $state<CombatAnimation | null>(null);
     isStepping = $state(false);
-    gameMode = $state<string>("");
+    gameMode = $state<GameMode>(gamemodes.unknown);
     lastLiveBoard = $state<BoardState | null>(null);
 
     get isPaused() {
@@ -89,7 +90,7 @@ class GameStore {
                 // Map PieceData back to Piece interface
                 const mappedBoard = moveBoard.map((row: (PieceData | null)[], y: number) => row.map((cell: PieceData | null, x: number) => {
                     if (!cell) return null;
-                    const revealed = this.gameMode === "ai_vs_ai" || (this.gameState?.isGameOver ?? false) || cell.ownerId === viewerId;
+                    const revealed = this.gameMode.mode === gamemodes.ai_vs_ai.mode || (this.gameState?.isGameOver ?? false) || cell.ownerId === viewerId;
                     return {
                         type: cell.type,
                         rank: cell.rank,
@@ -156,6 +157,7 @@ class GameStore {
         this.isReplaying = false;
         this.selectedPosition = null;
         this.combatAnimation = null;
+        this.gameMode = gamemodes.unknown;
     }
 
     exportGame() {

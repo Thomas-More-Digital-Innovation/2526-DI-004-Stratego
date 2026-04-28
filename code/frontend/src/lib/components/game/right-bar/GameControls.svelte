@@ -1,5 +1,6 @@
 <script lang="ts">
     import Button from "$lib/components/ui/Button.svelte";
+    import { gamemodes } from "$lib/data/gamemodes.data";
     import { gameStore } from "$lib/state/game.svelte";
 
     interface Props {
@@ -44,7 +45,7 @@
             >
                 {gameStore.isPaused ? "▶ Resume" : "⏸ Pause"}
             </Button>
-            {#if gameStore.isPaused && gameStore.gameMode == "ai_vs_ai"}
+            {#if gameStore.isPaused && gameStore.gameMode.mode === gamemodes.ai_vs_ai.mode}
                 <Button
                     variant="ghost"
                     size="sm"

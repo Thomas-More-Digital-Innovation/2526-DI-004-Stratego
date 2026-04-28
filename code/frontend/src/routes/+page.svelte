@@ -4,18 +4,18 @@
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import type { GameMode } from "$lib/types/game";
-    import { gamemodes } from "$lib/data/gamemodes.data";
+    import { allGamemodes, gamemodes } from "$lib/data/gamemodes.data";
 
-    let selectedMode = $state<GameMode>("human_vs_ai");
+    let selectedMode = $state<GameMode>(gamemodes.human_vs_ai);
     let error = $state("");
 
     function startFlow() {
         error = "";
-        if (selectedMode === "human_vs_human") {
+        if (selectedMode.mode === gamemodes.human_vs_human.mode) {
             error = "Coming Soon";
             return;
         }
-        goto(`/select-ai?mode=${selectedMode}`);
+        goto(`/select-ai?mode=${selectedMode.mode}`);
     }
 </script>
 
@@ -54,25 +54,25 @@
     {#if selectedMode}
         <!-- Game Mode Selection -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {#each gamemodes as m}
+            {#each allGamemodes as gamemode}
                 <button
-                    class="text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl p-6 border-2 transition-all duration-200 {selectedMode ===
-                    m.mode
+                    class="text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl p-6 border-2 transition-all duration-200 {selectedMode.mode ===
+                    gamemode.mode
                         ? 'border-brand-primary bg-brand-primary/10 scale-102 shadow-glow'
                         : 'border-white/5 bg-surface-elevated/20 hover:border-white/20 hover:bg-white/5'}"
-                    onclick={() => (selectedMode = m.mode)}
-                    disabled={m.disabled}
+                    onclick={() => (selectedMode = gamemode)}
+                    disabled={gamemode.disabled}
                 >
-                    <div class="text-3xl mb-3">{m.icon}</div>
+                    <div class="text-3xl mb-3">{gamemode.icon}</div>
                     <h3
                         class="font-bold text-white text-lg lowercase tracking-widest"
                     >
-                        {m.title}
+                        {gamemode.title}
                     </h3>
                     <p
                         class="text-white/50 text-xs mt-1 leading-relaxed italic"
                     >
-                        {m.desc}
+                        {gamemode.desc}
                     </p>
                 </button>
             {/each}

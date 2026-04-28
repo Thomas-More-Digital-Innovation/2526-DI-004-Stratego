@@ -11,10 +11,10 @@
     import Loading from "$lib/components/ui/Loading.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import type { Position } from "$lib/types/game";
+    import { gamemodes } from "$lib/data/gamemodes.data";
 
     let socket = new GameSocket();
     let gameId = $state("");
-    let gameMode = $state("");
     let error = $state("");
     let connected = $state(false);
     let validMoves = $state<Position[]>([]);
@@ -26,24 +26,25 @@
     const isHumanTurn = $derived.by(() => {
         return (
             gameStore.gameState?.currentPlayerId === 0 &&
-            gameMode === "human_vs_ai" &&
+            gameStore.gameMode.mode === gamemodes.human_vs_ai.mode &&
             !gameStore.gameState?.isGameOver &&
             !isSetupPhase
         );
     });
 
-    const viewerId = $derived(gameMode === "human_vs_ai" ? 0 : -1);
+    const viewerId = $derived(
+        gameStore.gameMode.mode === gamemodes.human_vs_ai.mode ? 0 : -1,
+    );
 
     onMount(async () => {
         gameId = $page.params.id || "";
         const params = new URLSearchParams(window.location.search);
-        gameMode = params.get("mode") || "unknown";
-        gameStore.gameMode = gameMode;
+        gameStore.gameMode = gamemodes.fromString(params.get("mode") || "");
 
         setupHandlers();
 
         try {
-            const playerId = gameMode === "human_vs_ai" ? 0 : -1;
+            const playerId = gameStore.gameMode.mode === "human_vs_ai" ? 0 : -1;
             await socket.connect(gameId, playerId);
             connected = true;
         } catch (e) {
@@ -104,9 +105,9 @@
 
     function handleCellClick(x: number, y: number) {
         if (isSetupPhase) {
-            if (gameMode === "human_vs_ai") {
+            if (gameStore.gameMode.mode === gamemodes.human_vs_ai.mode) {
                 handleSetupClick(x, y);
-            } else if (gameMode === "ai_vs_ai") {
+            } else if (gameStore.gameMode.mode === gamemodes.ai_vs_ai.mode) {
                 handleSetupClick(x, y, setupSelectedPlayer);
             }
             return;
@@ -268,7 +269,10 @@
 
     <div class="grid grid-cols-[280px_1fr_280px] gap-6 items-start">
         <div>
-            <GameInfo gameState={gameStore.gameState} {gameMode} />
+            <GameInfo
+                gameState={gameStore.gameState}
+                gameMode={gameStore.gameMode}
+            />
         </div>
 
         <div class="flex justify-center">
@@ -285,7 +289,7 @@
                 {viewerId}
                 {validMoves}
                 disabledRows={isSetupPhase
-                    ? gameMode === "human_vs_ai"
+                    ? gameStore.gameMode.mode === gamemodes.human_vs_ai.mode
                         ? [0, 1, 2, 3, 4, 5]
                         : setupSelectedPlayer === 0
                           ? [0, 1, 2, 3, 4, 5]
@@ -361,13 +365,13 @@
     />
 {/if}
 
-{#if isSetupPhase && (gameMode === "human_vs_ai" || gameMode === "ai_vs_ai")}
+{#if isSetupPhase && (gameStore.gameMode.mode === gamemodes.human_vs_ai.mode || gameStore.gameMode.mode === gamemodes.ai_vs_ai.mode)}
     <SetupBanner
         onRandomize={handleRandomize}
         onStart={handleStartGame}
         onLoadSetup={handleLoadSetup}
         {viewerId}
-        {gameMode}
+        gameMode={gameStore.gameMode}
         selectedPlayer={setupSelectedPlayer}
         onSelectPlayer={(p: number) => {
             setupSelectedPlayer = p;
