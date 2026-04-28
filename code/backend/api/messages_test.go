@@ -57,8 +57,8 @@ func TestPieceToDTONil(t *testing.T) {
 	if dto.Type != "" {
 		t.Errorf("Expected empty type for nil piece, got: %s", dto.Type)
 	}
-	if dto.OwnerID != 0 {
-		t.Errorf("Expected OwnerID 0 for nil piece, got: %d", dto.OwnerID)
+	if dto.OwnerID != -1 {
+		t.Errorf("Expected OwnerID -1 for nil piece, got: %d", dto.OwnerID)
 	}
 }
 
