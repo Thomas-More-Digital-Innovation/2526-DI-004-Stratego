@@ -114,9 +114,9 @@ type ErrorMessage struct {
 }
 
 type BoardStateMessage struct {
-	Board    [][]PieceDTO          `json:"board"`
-	Width    int                   `json:"width"`
-	Height   int                   `json:"height"`
+	Board    [][]PieceDTO           `json:"board"`
+	Width    int                    `json:"width"`
+	Height   int                    `json:"height"`
 	LastMove *models.HistoricalMove `json:"lastMove,omitempty"`
 }
 
