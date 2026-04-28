@@ -235,9 +235,9 @@ func (g *Game) GetInitialBoardState() [][]models.PieceData {
 	}
 	field := g.Board.GetField()
 	state := make([][]models.PieceData, 10)
-	for y := 0; y < 10; y++ {
+	for y := range 10 {
 		state[y] = make([]models.PieceData, 10)
-		for x := 0; x < 10; x++ {
+		for x := range 10 {
 			piece := field[y][x]
 			if piece != nil {
 				state[y][x] = models.PieceData{
@@ -245,9 +245,14 @@ func (g *Game) GetInitialBoardState() [][]models.PieceData {
 					Rank:    string(piece.GetType().GetRank()),
 					OwnerID: piece.GetOwner().GetID(),
 				}
+			} else {
+				state[y][x] = models.PieceData{
+					OwnerID: -1,
+				}
 			}
 		}
 	}
+
 	return state
 }
 

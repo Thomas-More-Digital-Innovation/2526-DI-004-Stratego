@@ -12,6 +12,8 @@ class GameStore {
     isStepping = $state(false);
     gameMode = $state<GameMode>(gamemodes.unknown);
     lastLiveBoard = $state<BoardState | null>(null);
+    rawHistory = $state<GameHistory | null>(null);
+
 
     get isPaused() {
         return this.gameState?.paused ?? false;
@@ -83,6 +85,8 @@ class GameStore {
                 initialState: data.initialState,
                 moves: data.fullHistory,
             };
+            this.rawHistory = gameHistory;
+
 
             this.history = data.moves.map((move, index) => {
                 const moveBoard = getBoardAtMove(gameHistory, index + 1);
@@ -158,14 +162,15 @@ class GameStore {
         this.selectedPosition = null;
         this.combatAnimation = null;
         this.gameMode = gamemodes.unknown;
+        this.rawHistory = null;
     }
 
+
     exportGame() {
-        return JSON.stringify({
-            history: this.history,
-            gameState: this.gameState,
-        }, null, 2);
+        if (!this.rawHistory) return null;
+        return JSON.stringify(this.rawHistory, null, 2);
     }
+
 }
 
 export const gameStore = new GameStore();

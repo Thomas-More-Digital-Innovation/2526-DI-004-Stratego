@@ -211,6 +211,10 @@
     function saveGame() {
         try {
             const data = gameStore.exportGame();
+            if (!data) {
+                error = "No history available to save";
+                return;
+            }
             const blob = new Blob([data], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -262,10 +266,12 @@
             variant="outline"
             size="sm"
             onclick={saveGame}
-            disabled={!connected}
+            disabled={!connected || !gameStore.gameState?.isGameOver}
+            disabledMessage="Game must be finished to save a replay"
         >
-            💾 Save
+            💾 Save Replay
         </Button>
+
     </div>
 
     <div class="grid grid-cols-[280px_1fr_280px] gap-6 items-start">

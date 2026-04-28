@@ -176,8 +176,9 @@ func MoveToDTO(move engine.Move) MoveDTO {
 
 func PieceToDTO(piece *engine.Piece, viewerID int) PieceDTO {
 	if piece == nil {
-		return PieceDTO{}
+		return PieceDTO{OwnerID: -1}
 	}
+
 
 	ownerID := piece.GetOwner().GetID()
 	canSee := piece.IsRevealed() || ownerID == viewerID

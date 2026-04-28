@@ -77,6 +77,7 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 	for y := range 10 {
 		boardDTO[y] = make([]PieceDTO, 10)
 		for x := range 10 {
+			boardDTO[y][x] = PieceDTO{OwnerID: -1}
 			piece := field[y][x]
 			if piece != nil {
 				dto := PieceToDTO(piece, client.seatIndex)
@@ -93,6 +94,7 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 			}
 		}
 	}
+
 
 	boardMsg := BoardStateMessage{
 		Board:  boardDTO,
