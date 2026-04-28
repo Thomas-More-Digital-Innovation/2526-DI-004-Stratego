@@ -1,6 +1,7 @@
 package api
 
 import (
+	"digital-innovation/stratego/models"
 	"encoding/json"
 	"log"
 	"time"
@@ -31,6 +32,7 @@ func (h *WSHub) sendGameState(client *WSClient) {
 		Player1Score:       state.Player1Score,
 		Player2Score:       state.Player2Score,
 		WaitingForInput:    state.WaitingForInput,
+		Paused:             state.Paused,
 		MoveCount:          state.MoveCount,
 		Player1AlivePieces: state.Player1AlivePieces,
 		Player2AlivePieces: state.Player2AlivePieces,
@@ -72,12 +74,21 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 	field := board.GetField()
 
 	boardDTO := make([][]PieceDTO, 10)
-	for y := 0; y < 10; y++ {
+	for y := range 10 {
 		boardDTO[y] = make([]PieceDTO, 10)
-		for x := 0; x < 10; x++ {
+		for x := range 10 {
+			boardDTO[y][x] = PieceDTO{OwnerID: -1}
 			piece := field[y][x]
 			if piece != nil {
 				dto := PieceToDTO(piece, client.seatIndex)
+				// Force reveal all pieces for AI vs AI spectators or when game is over
+				if h.gameType == models.AiVsAi || h.session.GetGameState().IsGameOver {
+					pieceType := piece.GetType()
+					dto.Type = pieceType.GetName()
+					dto.Rank = string(pieceType.GetRank())
+					dto.Icon = pieceType.GetIcon()
+					dto.Revealed = true
+				}
 				dto.Position = PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dto
 			}
@@ -139,8 +150,50 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 		moveDTOs[i] = MoveToDTO(move)
 	}
 
+	// Filter history if not AI vs AI and game is not over
+	fullHistory := g.HistoricalHistory
+	initialState := g.InitialState
+
+	if h.gameType != models.AiVsAi && !g.IsGameOver() {
+		// Filter initial state
+		initialState = make([][]models.PieceData, len(g.InitialState))
+		for y, row := range g.InitialState {
+			initialState[y] = make([]models.PieceData, len(row))
+			for x, piece := range row {
+				p := piece
+				if p.OwnerID != client.seatIndex && p.OwnerID != -1 && p.Type != "" {
+					p.Type = ""
+					p.Rank = ""
+				}
+				initialState[y][x] = p
+			}
+		}
+
+		fullHistory = make([]models.HistoricalMove, len(g.HistoricalHistory))
+		for i, m := range g.HistoricalHistory {
+			move := m
+			if move.Attacker != nil && move.Attacker.OwnerID != client.seatIndex && move.Result == models.ResultMove {
+				move.Attacker = &models.PieceData{
+					OwnerID: move.Attacker.OwnerID,
+					Type:    "",
+					Rank:    "",
+				}
+			}
+			if move.Defender != nil && move.Defender.OwnerID != client.seatIndex && move.Result == models.ResultMove {
+				move.Defender = &models.PieceData{
+					OwnerID: move.Defender.OwnerID,
+					Type:    "",
+					Rank:    "",
+				}
+			}
+			fullHistory[i] = move
+		}
+	}
+
 	historyMsg := MoveHistoryMessage{
-		Moves: moveDTOs,
+		Moves:        moveDTOs,
+		FullHistory:  fullHistory,
+		InitialState: initialState,
 	}
 
 	msg := WSMessage{

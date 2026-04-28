@@ -1,6 +1,9 @@
 package api
 
-import "digital-innovation/stratego/engine"
+import (
+	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/models"
+)
 
 // WebSocket message types
 const (
@@ -13,6 +16,10 @@ const (
 	MsgTypeRandomizeSetup    = "randomizeSetup"
 	MsgTypeStartGame         = "startGame"
 	MsgTypeLoadSetup         = "loadSetup"
+	MsgTypePause             = "pause"
+	MsgTypeUnpause           = "unpause"
+	MsgTypeSetSpeed          = "setSpeed"
+	MsgTypeStep              = "step"
 
 	// Server -> Client
 	MsgTypeGameState   = "gameState"
@@ -48,8 +55,21 @@ type SwapPiecesMessage struct {
 	Pos2 PositionDTO `json:"pos2"`
 }
 
+type StartGameMessage struct {
+	Headless bool `json:"headless"`
+}
+
 type LoadSetupMessage struct {
+	PlayerID  *int   `json:"playerId,omitempty"`
 	SetupData string `json:"setupData"` // Base64 encoded 40 bytes
+}
+
+type RandomizeSetupMessage struct {
+	PlayerID *int `json:"playerId,omitempty"`
+}
+
+type SetSpeedMessage struct {
+	SpeedMs int `json:"speedMs"`
 }
 
 // Server messages
@@ -64,10 +84,12 @@ type GameStateMessage struct {
 	Player1Score       int    `json:"player1Score"`
 	Player2Score       int    `json:"player2Score"`
 	WaitingForInput    bool   `json:"waitingForInput"`
+	Paused             bool   `json:"paused"`
 	MoveCount          int    `json:"moveCount"`
 	Player1AlivePieces int    `json:"player1AlivePieces"`
 	Player2AlivePieces int    `json:"player2AlivePieces"`
 	IsSetupPhase       bool   `json:"isSetupPhase"`
+	Headless           bool   `json:"headless"`
 }
 
 type MoveResultMessage struct {
@@ -107,7 +129,9 @@ type CombatMessage struct {
 }
 
 type MoveHistoryMessage struct {
-	Moves []MoveDTO `json:"moves"`
+	Moves        []MoveDTO               `json:"moves"`
+	FullHistory  []models.HistoricalMove `json:"fullHistory"`
+	InitialState [][]models.PieceData    `json:"initialState"`
 }
 
 // DTOs for data transfer
@@ -152,7 +176,7 @@ func MoveToDTO(move engine.Move) MoveDTO {
 
 func PieceToDTO(piece *engine.Piece, viewerID int) PieceDTO {
 	if piece == nil {
-		return PieceDTO{}
+		return PieceDTO{OwnerID: -1}
 	}
 
 	ownerID := piece.GetOwner().GetID()

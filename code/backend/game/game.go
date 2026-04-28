@@ -2,6 +2,7 @@ package game
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/models"
 )
 
 type WinCause string
@@ -27,6 +28,8 @@ type Game struct {
 	CurrentPlayer     *engine.Player
 	CurrentController engine.PlayerController
 	MoveHistory       []engine.Move
+	HistoricalHistory []models.HistoricalMove
+	InitialState      [][]models.PieceData
 	LastCombat        *CombatResult // Track last combat for broadcasting
 	round             int
 	winner            *engine.Player
@@ -46,6 +49,7 @@ func NewGame(controller1, controller2 engine.PlayerController) *Game {
 		CurrentPlayer:     player1,
 		CurrentController: controller1,
 		MoveHistory:       []engine.Move{},
+		HistoricalHistory: []models.HistoricalMove{},
 		round:             1,
 		gameOver:          false,
 	}
@@ -144,7 +148,53 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 		g.Board.MovePiece(move, piece)
 		piece.GetOwner().UpdatePiecePosition(piece, move.GetTo())
 	}
+
+	// Record historical move
+	histMove := models.HistoricalMove{
+		MoveIndex: len(g.HistoricalHistory),
+		PlayerID:  move.GetPlayer().GetID(),
+		FromX:     move.GetFrom().X,
+		FromY:     move.GetFrom().Y,
+		ToX:       move.GetTo().X,
+		ToY:       move.GetTo().Y,
+		Result:    models.ResultMove,
+	}
+
+	if g.LastCombat != nil && g.LastCombat.Occurred {
+		attackerType := g.LastCombat.AttackerPiece.GetType()
+		defenderType := g.LastCombat.DefenderPiece.GetType()
+
+		histMove.Attacker = &models.PieceData{
+			Type:    attackerType.GetName(),
+			Rank:    string(attackerType.GetRank()),
+			OwnerID: g.LastCombat.AttackerPiece.GetOwner().GetID(),
+		}
+		histMove.Defender = &models.PieceData{
+			Type:    defenderType.GetName(),
+			Rank:    string(defenderType.GetRank()),
+			OwnerID: g.LastCombat.DefenderPiece.GetOwner().GetID(),
+		}
+		// Determine result
+		attackerAlive := g.LastCombat.AttackerPiece.IsAlive()
+		defenderAlive := g.LastCombat.DefenderPiece.IsAlive()
+
+		if !attackerAlive {
+			if !defenderAlive {
+				histMove.Result = models.ResultTie
+			} else {
+				histMove.Result = models.ResultLoss
+			}
+		} else {
+			if defenderType.GetName() == "Flag" {
+				histMove.Result = models.ResultCapture
+			} else {
+				histMove.Result = models.ResultWin
+			}
+		}
+	}
+
 	g.MoveHistory = append(g.MoveHistory, *move)
+	g.HistoricalHistory = append(g.HistoricalHistory, histMove)
 
 	// Notify all observers (AI)
 	round := g.GetRound()
@@ -176,6 +226,34 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 
 	g.NextTurn()
 	return []*engine.Piece{piece, target}
+}
+
+// GetInitialBoardState returns the full board state as PieceData (for history)
+func (g *Game) GetInitialBoardState() [][]models.PieceData {
+	if g.InitialState != nil {
+		return g.InitialState
+	}
+	field := g.Board.GetField()
+	state := make([][]models.PieceData, 10)
+	for y := range 10 {
+		state[y] = make([]models.PieceData, 10)
+		for x := range 10 {
+			piece := field[y][x]
+			if piece != nil {
+				state[y][x] = models.PieceData{
+					Type:    piece.GetType().GetName(),
+					Rank:    string(piece.GetType().GetRank()),
+					OwnerID: piece.GetOwner().GetID(),
+				}
+			} else {
+				state[y][x] = models.PieceData{
+					OwnerID: -1,
+				}
+			}
+		}
+	}
+
+	return state
 }
 
 // GetLastCombat returns the last combat result if any

@@ -1,10 +1,10 @@
 <script lang="ts">
     import Card from "$lib/components/ui/Card.svelte";
-    import type { GameState } from "$lib/types/game";
+    import type { GameMode, GameState } from "$lib/types/game";
 
     interface Props {
         gameState: GameState | null;
-        gameMode: string;
+        gameMode: GameMode;
     }
 
     let { gameState, gameMode }: Props = $props();
@@ -15,7 +15,7 @@
         <h2
             class="text-lg font-bold text-brand-accent uppercase tracking-wider"
         >
-            {gameMode.replace(/_/g, " ")}
+            {gameMode.title}
         </h2>
     </div>
 

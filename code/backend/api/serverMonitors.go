@@ -35,7 +35,21 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		}
 
 		// Move was executed
-		log.Printf("Move executed in game %s", session.ID)
+		if !session.IsHeadless() {
+			log.Printf("Move executed in game %s", session.ID)
+		}
+
+		if session.IsHeadless() {
+			session.AckMoveProcessed()
+
+			state := session.GetGameState()
+			if state.IsGameOver {
+				time.Sleep(100 * time.Millisecond) // Brief delay to ensure runner completes
+				s.handleGameOver(session, hub)
+				return
+			}
+			continue
+		}
 
 		// Check if combat occurred
 		combat := session.GetLastCombat()

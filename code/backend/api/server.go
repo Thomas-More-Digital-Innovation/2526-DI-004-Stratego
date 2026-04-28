@@ -83,21 +83,6 @@ func (s *GameServer) CreateGame(gameID string, gameType string, ai1, ai2 string)
 
 	session := game.NewGameSession(gameID, controller1, controller2)
 
-	// For AI vs AI, setup immediately and start
-	if gameType == models.AiVsAi {
-		g := session.GetGame()
-		player1Pieces := game.RandomSetup(g.Players[0])
-		player2Pieces := game.RandomSetup(g.Players[1])
-
-		// Place pieces on the board
-		if err := game.SetupGame(g, player1Pieces, player2Pieces); err != nil {
-			return nil, fmt.Errorf("failed to setup game: %v", err)
-		}
-
-		// Exit setup phase for AI vs AI
-		session.SetSetupPhaseComplete()
-	}
-
 	hub := NewWSHub(session, gameType)
 
 	handler := &GameSessionHandler{
@@ -113,13 +98,6 @@ func (s *GameServer) CreateGame(gameID string, gameType string, ai1, ai2 string)
 
 	// Start game monitoring for broadcasting moves
 	go s.monitorGame(handler, gameType)
-
-	// Start the game only for AI vs AI
-	if gameType == models.AiVsAi {
-		if err := session.Start(); err != nil {
-			return nil, err
-		}
-	}
 
 	return handler, nil
 }
@@ -215,6 +193,7 @@ func (s *GameServer) StartServer(addr string) error {
 
 	// Game endpoints
 	games := s.router.Group("/games")
+	games.Use(auth.OptionalAuth())
 	{
 		games.POST("", s.HandleCreateGame)
 		games.GET("", s.HandleListGames)
@@ -222,7 +201,7 @@ func (s *GameServer) StartServer(addr string) error {
 	}
 
 	// WebSocket endpoint
-	s.router.GET("/game/:gameID", s.HandleWebSocketConnection)
+	s.router.GET("/game/:gameID", auth.OptionalAuth(), s.HandleWebSocketConnection)
 
 	s.PrintRoutes()
 

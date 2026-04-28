@@ -66,7 +66,7 @@ export const auth = {
 
 // Games
 export const games = {
-    create: (gameType: GameMode, ai1: string, ai2: string) =>
+    create: (gameType: string, ai1: string, ai2: string) =>
         request<GameInfo>('/games', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -142,6 +142,9 @@ func (h *WSHub) setupBoard() BoardStateMessage {
 			if idx < len(player1Pieces) {
 				piece := player1Pieces[idx]
 				dto := PieceToDTO(piece, 0) // Player 0 can see their own pieces
+				if h.gameType == models.AiVsAi {
+					dto.Revealed = true // Force visibility for spectators during setup
+				}
 				dto.Position = PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dto
 				idx++
@@ -157,7 +160,14 @@ func (h *WSHub) setupBoard() BoardStateMessage {
 		for x := range 10 {
 			if idx < len(player2Pieces) {
 				piece := player2Pieces[idx]
-				dto := PieceToDTO(piece, -1) // Hide pieces
+				viewerID := -1
+				if h.gameType == models.AiVsAi {
+					viewerID = 1 // Show all pieces in AI vs AI
+				}
+				dto := PieceToDTO(piece, viewerID) // Hide pieces
+				if h.gameType == models.AiVsAi {
+					dto.Revealed = true // Force visibility for spectators during setup
+				}
 				dto.Position = PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dto
 				idx++

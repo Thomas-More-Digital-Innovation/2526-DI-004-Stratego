@@ -14,6 +14,7 @@ type GameRunner struct {
 	turnDelay            time.Duration // Optional delay between AI turns for visualization, can be 0 to remove the delay
 	maxTurns             int
 	waitingForHumanInput bool
+	paused               bool // flag to indicate if game is paused
 	onMoveExecuted       func()
 	stopChan             chan bool
 }
@@ -26,6 +27,7 @@ func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunne
 		game:      game,
 		turnDelay: turnDelay,
 		maxTurns:  maxTurns,
+		paused:    false,
 	}
 }
 
@@ -54,6 +56,11 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 			// No stop signal, continue
 		}
 
+		if gr.IsPaused() {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
 		executed := gr.ExecuteTurn(logging)
 
 		if executed {
@@ -72,10 +79,7 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 			continue
 		}
 
-		// Optional delay for visualization
-		if gr.turnDelay > 0 {
-			time.Sleep(gr.turnDelay)
-		}
+		// Optional delay for visualization is handled in ExecuteTurn
 	}
 
 	if turnCount >= gr.maxTurns {
@@ -99,9 +103,20 @@ func (gr *GameRunner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
 
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
 func (gr *GameRunner) ExecuteTurn(logging bool) bool {
+	return gr.executeTurn(logging, false)
+}
+
+func (gr *GameRunner) executeTurn(logging bool, ignorePause bool) bool {
 	if gr.game.IsGameOver() {
 		if logging {
 			log.Printf("GameRunner.ExecuteTurn: Game is over")
+		}
+		return false
+	}
+
+	if !ignorePause && gr.IsPaused() {
+		if logging {
+			log.Printf("GameRunner.ExecuteTurn: Game is paused")
 		}
 		return false
 	}
@@ -147,13 +162,30 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 	}
 
 	// AI controller - make move
-	// Add delay between 500ms and 1000ms before AI moves (for pacing)
-	if gr.turnDelay > 0 {
-		aiDelay := time.Duration(500+rand.Intn(500)) * time.Millisecond
-		time.Sleep(aiDelay)
-	}
-
+	// Calculate AI move first so we can subtract its thinking time from the pacing delay
+	start := time.Now()
 	move := controller.MakeMove(gr.game.Board)
+	elapsed := time.Since(start)
+
+	// Add delay for pacing if requested, compensating for AI thinking time
+	if !ignorePause && gr.turnDelay > 0 {
+		// If turnDelay is tiny (like 1ns), we use it as is
+		// Otherwise we add some random variance for pacing if it's substantial
+		delay := gr.turnDelay
+		if gr.turnDelay >= 100*time.Millisecond {
+			delay = time.Duration(float64(gr.turnDelay)*0.8 + float64(rand.Intn(int(gr.turnDelay)))*0.4)
+		}
+
+		sleepTime := delay - elapsed
+		if sleepTime > 0 {
+			time.Sleep(sleepTime)
+		}
+
+		// Re-check pause after delay to ensure we haven't been paused in the meantime
+		if !ignorePause && gr.IsPaused() {
+			return false // Abort execution, AI will safely recalculate when unpaused
+		}
+	}
 
 	piece := gr.game.Board.GetPieceAt(move.GetFrom())
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
@@ -241,4 +273,29 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 	gr.ExecuteTurn(true) // TODO assuming logging is true for human moves
 
 	return nil
+}
+
+// Pause pauses the game runner
+func (gr *GameRunner) Pause() {
+	gr.paused = true
+}
+
+// Unpause unpauses the game runner
+func (gr *GameRunner) Unpause() {
+	gr.paused = false
+}
+
+// SetTurnDelay sets the delay between AI turns
+func (gr *GameRunner) SetTurnDelay(delay time.Duration) {
+	gr.turnDelay = delay
+}
+
+// Step executes a single turn even if the game is paused
+func (gr *GameRunner) Step(logging bool) bool {
+	return gr.executeTurn(logging, true)
+}
+
+// IsPaused returns whether the game runner is paused
+func (gr *GameRunner) IsPaused() bool {
+	return gr.paused
 }

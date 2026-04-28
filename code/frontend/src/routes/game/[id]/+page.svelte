@@ -5,42 +5,46 @@
     import { gameStore } from "$lib/state/game.svelte";
     import Board from "$lib/components/game/Board.svelte";
     import GameInfo from "$lib/components/game/GameInfo.svelte";
-    import GameHistory from "$lib/components/game/GameHistory.svelte";
+    import RightBar from "$lib/components/game/right-bar/RightBar.svelte";
     import CombatAnimation from "$lib/components/game/CombatAnimation.svelte";
     import SetupBanner from "$lib/components/game/SetupBanner.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import type { Position } from "$lib/types/game";
+    import { gamemodes } from "$lib/data/gamemodes.data";
 
     let socket = new GameSocket();
     let gameId = $state("");
-    let gameMode = $state("");
     let error = $state("");
     let connected = $state(false);
     let validMoves = $state<Position[]>([]);
     let setupSwapPos1 = $state<Position | null>(null);
+    let setupSelectedPlayer = $state(0);
 
     const isSetupPhase = $derived(gameStore.gameState?.isSetupPhase ?? false);
 
     const isHumanTurn = $derived.by(() => {
         return (
             gameStore.gameState?.currentPlayerId === 0 &&
-            gameMode === "human_vs_ai" &&
+            gameStore.gameMode.mode === gamemodes.human_vs_ai.mode &&
             !gameStore.gameState?.isGameOver &&
             !isSetupPhase
         );
     });
 
-    const viewerId = $derived(gameMode === "human_vs_ai" ? 0 : -1);
+    const viewerId = $derived(
+        gameStore.gameMode.mode === gamemodes.human_vs_ai.mode ? 0 : -1,
+    );
 
     onMount(async () => {
         gameId = $page.params.id || "";
         const params = new URLSearchParams(window.location.search);
-        gameMode = params.get("mode") || "human_vs_ai";
+        gameStore.gameMode = gamemodes.fromString(params.get("mode") || "");
 
         setupHandlers();
 
         try {
-            const playerId = gameMode === "human_vs_ai" ? 0 : -1;
+            const playerId = gameStore.gameMode.mode === "human_vs_ai" ? 0 : -1;
             await socket.connect(gameId, playerId);
             connected = true;
         } catch (e) {
@@ -56,9 +60,11 @@
 
     function setupHandlers() {
         socket.on("gameState", (data) => gameStore.updateGameState(data));
-        socket.on("boardState", (data) => gameStore.updateBoardState(data));
+        socket.on("boardState", (data) =>
+            gameStore.updateBoardState(data, viewerId),
+        );
         socket.on("moveHistory", (data) =>
-            gameStore.loadMoveHistory(data.moves),
+            gameStore.loadMoveHistory(data, gameId, viewerId),
         );
 
         socket.on("moveResult", (data) => {
@@ -98,8 +104,12 @@
     }
 
     function handleCellClick(x: number, y: number) {
-        if (isSetupPhase && gameMode === "human_vs_ai") {
-            handleSetupClick(x, y);
+        if (isSetupPhase) {
+            if (gameStore.gameMode.mode === gamemodes.human_vs_ai.mode) {
+                handleSetupClick(x, y);
+            } else if (gameStore.gameMode.mode === gamemodes.ai_vs_ai.mode) {
+                handleSetupClick(x, y, setupSelectedPlayer);
+            }
             return;
         }
 
@@ -141,8 +151,11 @@
         }
     }
 
-    function handleSetupClick(x: number, y: number) {
-        if (y < 6 || y > 9) return;
+    function handleSetupClick(x: number, y: number, playerId: number = 0) {
+        const startRow = playerId === 0 ? 6 : 0;
+        const endRow = playerId === 0 ? 9 : 3;
+
+        if (y < startRow || y > endRow) return;
 
         if (!setupSwapPos1) {
             setupSwapPos1 = { x, y };
@@ -171,24 +184,37 @@
         }
     }
 
-    function handleRandomize() {
-        socket.sendRandomizeSetup();
+    function handleRandomize(playerId?: number) {
+        socket.sendRandomizeSetup(playerId);
         setupSwapPos1 = null;
     }
 
-    function handleStartGame() {
-        socket.sendStartGame();
+    function handleStartGame(headless: boolean = false) {
+        socket.sendStartGame(headless);
         setupSwapPos1 = null;
     }
 
-    function handleLoadSetup(setupData: string) {
-        socket.sendLoadSetup(setupData);
+    function handleLoadSetup(setupData: string, playerId?: number) {
+        socket.sendLoadSetup(setupData, playerId);
         setupSwapPos1 = null;
+    }
+
+    function handleSetSpeed(speedMs: number) {
+        socket.sendSetSpeed(speedMs);
+    }
+
+    function handleStep() {
+        gameStore.isStepping = true;
+        socket.sendStep();
     }
 
     function saveGame() {
         try {
             const data = gameStore.exportGame();
+            if (!data) {
+                error = "No history available to save";
+                return;
+            }
             const blob = new Blob([data], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -208,7 +234,8 @@
 
 {#if error}
     <div
-        class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center mb-4"
+        class="bg-brand-secondary/20 border z-50 fixed top-4 left-1/2 -translate-x-1/2
+         border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center mb-4"
     >
         ⚠️ {error}
     </div>
@@ -221,6 +248,12 @@
         ></div>
         <p class="text-white/40">Connecting to game...</p>
     </div>
+{:else if gameStore.gameState?.headless && !gameStore.gameState?.isGameOver}
+    <Loading
+        title="Game in progress"
+        description="2 AI's are having the battle of their lives"
+        subtitle="AI is thinking"
+    />
 {:else}
     <div class="flex items-center justify-between mb-6">
         <Button variant="ghost" onclick={() => (window.location.href = "/")}>
@@ -233,15 +266,20 @@
             variant="outline"
             size="sm"
             onclick={saveGame}
-            disabled={!connected}
+            disabled={!connected || !gameStore.gameState?.isGameOver}
+            disabledMessage="Game must be finished to save a replay"
         >
-            💾 Save
+            💾 Save Replay
         </Button>
+
     </div>
 
     <div class="grid grid-cols-[280px_1fr_280px] gap-6 items-start">
         <div>
-            <GameInfo gameState={gameStore.gameState} {gameMode} />
+            <GameInfo
+                gameState={gameStore.gameState}
+                gameMode={gameStore.gameMode}
+            />
         </div>
 
         <div class="flex justify-center">
@@ -257,7 +295,13 @@
                     (isHumanTurn || isSetupPhase)}
                 {viewerId}
                 {validMoves}
-                disabledRows={isSetupPhase ? [0, 1, 2, 3, 4, 5] : []}
+                disabledRows={isSetupPhase
+                    ? gameStore.gameMode.mode === gamemodes.human_vs_ai.mode
+                        ? [0, 1, 2, 3, 4, 5]
+                        : setupSelectedPlayer === 0
+                          ? [0, 1, 2, 3, 4, 5]
+                          : [4, 5, 6, 7, 8, 9]
+                    : []}
                 visualDisabledRows={isSetupPhase ? [4, 5] : []}
                 scale={1.3}
             />
@@ -265,14 +309,35 @@
 
         <div>
             {#if !isSetupPhase}
-                <GameHistory
+                <RightBar
                     currentMoveIndex={gameStore.currentHistoryIndex}
                     totalMoves={gameStore.history.length}
                     isReplaying={gameStore.isReplaying}
-                    onPrevious={() => gameStore.previousMove()}
-                    onNext={() => gameStore.nextMove()}
-                    onGoToMove={(index) => gameStore.goToMove(index)}
-                    onExitReplay={() => gameStore.exitReplay()}
+                    onPrevious={() => {
+                        if (!gameStore.isPaused) socket.sendPause();
+                        gameStore.previousMove();
+                    }}
+                    onNext={() => {
+                        if (!gameStore.isPaused) socket.sendPause();
+                        gameStore.nextMove();
+                    }}
+                    onGoToMove={(index) => {
+                        if (!gameStore.isPaused) socket.sendPause();
+                        gameStore.goToMove(index);
+                    }}
+                    onExitReplay={() => {
+                        socket.sendUnpause();
+                        gameStore.exitReplay();
+                    }}
+                    onTogglePause={() => {
+                        if (gameStore.isPaused) {
+                            socket.sendUnpause();
+                        } else {
+                            socket.sendPause();
+                        }
+                    }}
+                    onSetSpeed={handleSetSpeed}
+                    onStep={handleStep}
                 />
             {:else}
                 <div
@@ -307,11 +372,17 @@
     />
 {/if}
 
-{#if isSetupPhase && gameMode === "human_vs_ai"}
+{#if isSetupPhase && (gameStore.gameMode.mode === gamemodes.human_vs_ai.mode || gameStore.gameMode.mode === gamemodes.ai_vs_ai.mode)}
     <SetupBanner
         onRandomize={handleRandomize}
         onStart={handleStartGame}
         onLoadSetup={handleLoadSetup}
         {viewerId}
+        gameMode={gameStore.gameMode}
+        selectedPlayer={setupSelectedPlayer}
+        onSelectPlayer={(p: number) => {
+            setupSelectedPlayer = p;
+            setupSwapPos1 = null;
+        }}
     />
 {/if}

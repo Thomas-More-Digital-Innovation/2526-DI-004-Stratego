@@ -3,6 +3,7 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import SetupEditor from "$lib/components/setup/SetupEditor.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
     import { boardSetups } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
@@ -73,9 +74,11 @@
     </div>
 
     {#if loading}
-        <div class="text-center py-20 text-white/30 animate-pulse">
-            Loading setup...
-        </div>
+        <Loading
+            title="Loading Setup"
+            description="Fetching your strategic configuration..."
+            subtitle="Synchronizing"
+        />
     {:else if error && !setup}
         <Card class="text-center py-12">
             <p class="text-brand-secondary">{error}</p>
@@ -142,9 +145,11 @@
         </Card>
 
         {#if saving}
-            <div class="text-center py-12 text-white/30 italic">
-                Updating your setup...
-            </div>
+            <Loading
+                title="Saving Setup"
+                description="Updating your encrypted battle plans..."
+                subtitle="Encrypting"
+            />
         {:else}
             <SetupEditor
                 initialSetup={setup.setup_data}

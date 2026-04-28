@@ -6,9 +6,11 @@
         variant?: "primary" | "secondary" | "ghost" | "outline";
         size?: "sm" | "md" | "lg";
         disabled?: boolean;
+        loading?: boolean;
         onclick?: () => void;
         children: Snippet;
         class?: string;
+        disabledMessage?: string;
     }
 
     let {
@@ -16,9 +18,11 @@
         variant = "primary",
         size = "md",
         disabled = false,
+        loading = false,
         onclick,
         children,
         class: className = "",
+        disabledMessage,
     }: Props = $props();
 
     const shared = `inline-flex items-center justify-center rounded-xl 
@@ -43,11 +47,36 @@
     };
 </script>
 
-<button
-    {type}
-    {disabled}
-    {onclick}
-    class="{shared} {variants[variant]} {sizes[size]} {className}"
->
-    {@render children()}
-</button>
+<div class="relative group inline-block {className}">
+    <button
+        {type}
+        disabled={disabled || loading}
+        {onclick}
+        class="{shared} {variants[variant]} {sizes[size]} w-full"
+    >
+        {#if loading}
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div
+                    class="w-4 h-4 border-2 border-white/20 border-t-current rounded-full animate-spin"
+                ></div>
+            </div>
+            <span class="opacity-0">
+                {@render children()}
+            </span>
+        {:else}
+            {@render children()}
+        {/if}
+    </button>
+
+    {#if (disabled || loading) && disabledMessage}
+        <div
+            class="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 
+            bg-black/80 backdrop-blur-sm text-white text-[10px] rounded-md
+            pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200
+            z-50 whitespace-nowrap shadow-xl border border-white/10"
+        >
+            {disabledMessage}
+        </div>
+    {/if}
+</div>
+

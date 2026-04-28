@@ -5,10 +5,11 @@
     import { AIs } from "$lib/data/AI.data";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
-    import type { GameMode } from "$lib/types/game";
+    import { gamemodes } from "$lib/data/gamemodes.data";
 
-    const gameMode =
-        ($page.url.searchParams.get("mode") as GameMode) || "human_vs_ai";
+    const gameMode = gamemodes.fromString(
+        $page.url.searchParams.get("mode") || "",
+    );
 
     let step = $state<"ai1" | "ai2">("ai1");
     let ai1 = $state("");
@@ -19,7 +20,7 @@
     async function selectAi(aiId: string) {
         if (step === "ai1") {
             ai1 = aiId;
-            if (gameMode === "human_vs_ai") {
+            if (gameMode.mode === gamemodes.human_vs_ai.mode) {
                 await start();
             } else {
                 step = "ai2";
@@ -34,8 +35,8 @@
         creating = true;
         error = "";
         try {
-            const info = await games.create(gameMode, ai1, ai2);
-            goto(`/game/${info.gameId}?mode=${gameMode}`);
+            const info = await games.create(gameMode.mode, ai1, ai2);
+            goto(`/game/${info.gameId}?mode=${gameMode.mode}`);
         } catch (e: any) {
             error = e.message || "Failed to create game";
             creating = false;
@@ -65,7 +66,7 @@
                 Select {step === "ai1" ? "AI Opponent" : "Second AI"}
             </h1>
             <p class="text-white/50">
-                {gameMode.replace(/_/g, " ").toUpperCase()}
+                {gameMode.title}
             </p>
         </div>
         <Button variant="ghost" onclick={back}>

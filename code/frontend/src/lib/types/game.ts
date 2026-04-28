@@ -30,10 +30,12 @@ export interface GameState {
     player1Score: number;
     player2Score: number;
     waitingForInput: boolean;
+    paused: boolean;
     moveCount: number;
     player1AlivePieces: number;
     player2AlivePieces: number;
     isSetupPhase: boolean;
+    headless: boolean;
 }
 
 export interface BoardState {
@@ -62,7 +64,13 @@ export interface CombatAnimation {
     defenderWon: boolean;
 }
 
-export type GameMode = 'human_vs_ai' | 'ai_vs_ai' | 'human_vs_human';
+export interface GameMode {
+    mode: string;
+    icon: string;
+    title: string;
+    desc: string;
+    disabled?: boolean;
+}
 
 export interface AI {
     name: string;

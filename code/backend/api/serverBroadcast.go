@@ -10,33 +10,8 @@ import (
 func (s *GameServer) broadcastFullState(hub *WSHub, gameType string) {
 	state := hub.session.GetGameState()
 
-	var winnerName string
-	var winCause string
-	if state.WinnerID != nil {
-		winner := hub.session.GetWinner()
-		if winner != nil {
-			winnerName = winner.GetName()
-		}
-		winCause = string(hub.session.GetWinCause())
-	}
-
 	// Broadcast game state
-	hub.BroadcastMessage(MsgTypeGameState, GameStateMessage{
-		Round:              state.Round,
-		CurrentPlayerID:    state.CurrentPlayerID,
-		CurrentPlayerName:  state.CurrentPlayerName,
-		IsGameOver:         state.IsGameOver,
-		WinnerID:           state.WinnerID,
-		WinnerName:         winnerName,
-		WinCause:           winCause,
-		Player1Score:       state.Player1Score,
-		Player2Score:       state.Player2Score,
-		WaitingForInput:    state.WaitingForInput,
-		MoveCount:          state.MoveCount,
-		Player1AlivePieces: state.Player1AlivePieces,
-		Player2AlivePieces: state.Player2AlivePieces,
-		IsSetupPhase:       state.IsSetupPhase,
-	})
+	hub.BroadcastGameState()
 
 	// Broadcast board state
 	switch {
@@ -80,57 +55,7 @@ func (s *GameServer) broadcastBoardState(hub *WSHub, viewerID int) {
 
 // broadcastSetupBoard sends the setup board state (pieces not yet placed on board)
 func (s *GameServer) broadcastSetupBoard(hub *WSHub, gameType string) {
-	session := hub.session
-
-	// Create empty board
-	boardDTO := make([][]PieceDTO, 10)
-	for y := 0; y < 10; y++ {
-		boardDTO[y] = make([]PieceDTO, 10)
-	}
-
-	// Place player 1 pieces in setup area (rows 6-9)
-	player1Pieces := session.GetSetupPieces(0)
-	idx := 0
-	for y := 6; y <= 9; y++ {
-		for x := 0; x < 10; x++ {
-			if idx < len(player1Pieces) {
-				piece := player1Pieces[idx]
-				dto := PieceToDTO(piece, 0) // Player 0 can see their own pieces
-				dto.Position = PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dto
-				idx++
-			}
-		}
-	}
-
-	// Place player 2 pieces in setup area (rows 0-3)
-	// In human vs AI, player 2 is AI, so pieces are hidden
-	player2Pieces := session.GetSetupPieces(1)
-	idx = 0
-	for y := 0; y <= 3; y++ {
-		for x := 0; x < 10; x++ {
-			if idx < len(player2Pieces) {
-				piece := player2Pieces[idx]
-				// For human vs AI, hide AI pieces during setup
-				viewerID := -1
-				if gameType == models.AiVsAi {
-					viewerID = 1 // Show all pieces in AI vs AI
-				}
-				dto := PieceToDTO(piece, viewerID)
-				dto.Position = PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dto
-				idx++
-			}
-		}
-	}
-
-	boardMsg := BoardStateMessage{
-		Board:  boardDTO,
-		Width:  10,
-		Height: 10,
-	}
-
-	hub.BroadcastMessage(MsgTypeBoardState, boardMsg)
+	hub.BroadcastSetupBoard()
 }
 
 // broadcastBoardStatePerClient sends personalized board state to each connected client
