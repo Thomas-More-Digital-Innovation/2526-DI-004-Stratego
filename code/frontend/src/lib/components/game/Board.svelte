@@ -124,7 +124,12 @@
             {/each}
 
             {#if lastMove}
-                <MoveVisualization move={lastMove} {cellSize} {scale} />
+                <MoveVisualization
+                    move={lastMove}
+                    {cellSize}
+                    {scale}
+                    {selectedPosition}
+                />
             {/if}
         </div>
     {:else}

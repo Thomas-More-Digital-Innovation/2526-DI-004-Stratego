@@ -1,7 +1,6 @@
 <script lang="ts">
-    import type { HistoricalMove, PieceData } from "$lib/types/game";
-    import { PIECE_INVENTORY } from "$lib/types/board-setup";
-    import { fade, fly } from "svelte/transition";
+    import type { HistoricalMove, Position } from "$lib/types/game";
+
     import { BOARD_CONFIG } from "$lib/data/board.data";
     import MoveArrow from "./MoveArrow.svelte";
     import CombatIndicator from "./CombatIndicator.svelte";
@@ -11,9 +10,15 @@
         move: HistoricalMove;
         cellSize: number;
         scale?: number;
+        selectedPosition?: Position | null;
     }
 
-    let { move, cellSize, scale = 1 }: Props = $props();
+    let {
+        move,
+        cellSize,
+        scale = 1,
+        selectedPosition = null,
+    }: Props = $props();
 
     const padding = BOARD_CONFIG.padding;
     const gap = $derived(BOARD_CONFIG.gap * scale);
@@ -107,7 +112,7 @@
             (cellSize + gap) +
             padding}px; width: {cellSize}px; height: {cellSize}px;"
     >
-        {#if isCombat}
+        {#if isCombat && !selectedPosition}
             <CombatIndicator {move} />
         {/if}
     </div>
