@@ -158,6 +158,11 @@ func (g *Game) MakeMove(move *engine.Move, piece *engine.Piece) []*engine.Piece 
 		ToX:       move.GetTo().X,
 		ToY:       move.GetTo().Y,
 		Result:    models.ResultMove,
+		Attacker: &models.PieceData{
+			Type:    piece.GetType().GetName(),
+			Rank:    string(piece.GetType().GetRank()),
+			OwnerID: piece.GetOwner().GetID(),
+		},
 	}
 
 	if g.LastCombat != nil && g.LastCombat.Occurred {

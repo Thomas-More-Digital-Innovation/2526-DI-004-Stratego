@@ -250,6 +250,17 @@ func (gs *GameSession) GetLastCombat() *CombatResult {
 	return gs.game.GetLastCombat()
 }
 
+// GetLastHistoricalMove returns the last historical move if any
+func (gs *GameSession) GetLastHistoricalMove() *models.HistoricalMove {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	if len(gs.game.HistoricalHistory) == 0 {
+		return nil
+	}
+	move := gs.game.HistoricalHistory[len(gs.game.HistoricalHistory)-1]
+	return &move
+}
+
 // ClearLastCombat clears the last combat result
 func (gs *GameSession) ClearLastCombat() {
 	gs.mutex.Lock()
