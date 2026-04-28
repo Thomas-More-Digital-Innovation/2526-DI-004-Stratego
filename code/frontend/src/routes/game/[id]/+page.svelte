@@ -230,7 +230,8 @@
 
 {#if error}
     <div
-        class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center mb-4"
+        class="bg-brand-secondary/20 border z-50 fixed top-4 left-1/2 -translate-x-1/2
+         border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center mb-4"
     >
         ⚠️ {error}
     </div>
