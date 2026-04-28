@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"digital-innovation/stratego/models"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -244,4 +245,101 @@ func DeleteBoardSetup(setupID, userID int) error {
 	}
 
 	return nil
+}
+
+// SaveGame persists the game metadata and initial state
+func SaveGame(gameID string, p1ID, p2ID *int, gameType string, initialState interface{}, winnerID *int) error {
+	stateJSON, err := json.Marshal(initialState)
+	if err != nil {
+		return fmt.Errorf("failed to marshal initial state: %w", err)
+	}
+
+	query := `
+		INSERT INTO games (id, player1_user_id, player2_user_id, winner_id, game_type, initial_state, finished_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err = DB.Exec(query, gameID, p1ID, p2ID, winnerID, gameType, stateJSON, time.Now())
+	if err != nil {
+		return fmt.Errorf("failed to save game: %w", err)
+	}
+	return nil
+}
+
+// SaveMove persists a single move in a game's history
+func SaveMove(gameID string, move models.HistoricalMove) error {
+	attackerJSON, err := json.Marshal(move.Attacker)
+	if err != nil {
+		return fmt.Errorf("failed to marshal attacker data: %w", err)
+	}
+	defenderJSON, err := json.Marshal(move.Defender)
+	if err != nil {
+		return fmt.Errorf("failed to marshal defender data: %w", err)
+	}
+
+	query := `
+		INSERT INTO game_moves (game_id, move_index, player_id, from_x, from_y, to_x, to_y, attacker_data, defender_data, result)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`
+	_, err = DB.Exec(query, gameID, move.MoveIndex, move.PlayerID,
+		move.FromX, move.FromY, move.ToX, move.ToY,
+		attackerJSON, defenderJSON, move.Result)
+	if err != nil {
+		return fmt.Errorf("failed to save move: %w", err)
+	}
+	return nil
+}
+func GetGameHistory(gameID string) (*models.GameHistory, error) {
+	var history models.GameHistory
+	history.GameID = gameID
+
+	var initialStateJSON []byte
+	query := `
+		SELECT initial_state, winner_id
+		FROM games
+		WHERE id = $1
+	`
+	err := DB.QueryRow(query, gameID).Scan(&initialStateJSON, &history.WinnerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get game history metadata: %w", err)
+	}
+
+	if err := json.Unmarshal(initialStateJSON, &history.InitialState); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal initial state: %w", err)
+	}
+
+	query = `
+		SELECT move_index, player_id, from_x, from_y, to_x, to_y, attacker_data, defender_data, result
+		FROM game_moves
+		WHERE game_id = $1
+		ORDER BY move_index ASC
+	`
+	rows, err := DB.Query(query, gameID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query game moves: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var m models.HistoricalMove
+		var attackerJSON, defenderJSON []byte
+		err = rows.Scan(&m.MoveIndex, &m.PlayerID, &m.FromX, &m.FromY, &m.ToX, &m.ToY, &attackerJSON, &defenderJSON, &m.Result)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan historical move: %w", err)
+		}
+
+		if len(attackerJSON) > 0 {
+			if err := json.Unmarshal(attackerJSON, &m.Attacker); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal attacker data: %w", err)
+			}
+		}
+		if len(defenderJSON) > 0 {
+			if err := json.Unmarshal(defenderJSON, &m.Defender); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal defender data: %w", err)
+			}
+		}
+
+		history.Moves = append(history.Moves, m)
+	}
+
+	return &history, nil
 }

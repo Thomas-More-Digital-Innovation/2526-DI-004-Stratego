@@ -26,7 +26,7 @@
 </h3>
 <div class="flex flex-col gap-2">
     <div class="flex gap-2">
-        {#if isReplaying}
+        {#if isReplaying && !gameStore.gameState?.isGameOver}
             <Button
                 variant="secondary"
                 size="sm"
@@ -35,7 +35,7 @@
             >
                 Exit Replay
             </Button>
-        {:else}
+        {:else if !gameStore.gameState?.isGameOver}
             <Button
                 variant="outline"
                 size="sm"

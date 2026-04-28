@@ -1,6 +1,9 @@
 package api
 
-import "digital-innovation/stratego/engine"
+import (
+	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/models"
+)
 
 // WebSocket message types
 const (
@@ -126,7 +129,9 @@ type CombatMessage struct {
 }
 
 type MoveHistoryMessage struct {
-	Moves []MoveDTO `json:"moves"`
+	Moves        []MoveDTO               `json:"moves"`
+	FullHistory  []models.HistoricalMove `json:"fullHistory"`
+	InitialState [][]models.PieceData    `json:"initialState"`
 }
 
 // DTOs for data transfer

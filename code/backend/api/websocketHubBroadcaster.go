@@ -117,3 +117,17 @@ func (h *WSHub) broadcastBoardStateRevealed() {
 
 	h.BroadcastMessage(MsgTypeBoardState, boardMsg)
 }
+
+// BroadcastMoveHistory sends personalized move history to each client
+func (h *WSHub) BroadcastMoveHistory() {
+	h.mutex.RLock()
+	clients := make([]*WSClient, 0, len(h.clients))
+	for client := range h.clients {
+		clients = append(clients, client)
+	}
+	h.mutex.RUnlock()
+
+	for _, client := range clients {
+		h.sendMoveHistory(client)
+	}
+}

@@ -530,6 +530,8 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 		return fmt.Errorf("failed to setup game: %v", err)
 	}
 
+	gs.game.InitialState = gs.game.GetInitialBoardState()
+
 	// Exit setup phase BEFORE starting the game
 	gs.isSetupPhase = false
 	gs.headless = headless

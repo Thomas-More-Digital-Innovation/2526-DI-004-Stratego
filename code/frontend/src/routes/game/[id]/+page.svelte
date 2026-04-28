@@ -37,7 +37,8 @@
     onMount(async () => {
         gameId = $page.params.id || "";
         const params = new URLSearchParams(window.location.search);
-        gameMode = params.get("mode") || "human_vs_ai";
+        gameMode = params.get("mode") || "unknown";
+        gameStore.gameMode = gameMode;
 
         setupHandlers();
 
@@ -62,7 +63,7 @@
             gameStore.updateBoardState(data, viewerId),
         );
         socket.on("moveHistory", (data) =>
-            gameStore.loadMoveHistory(data.moves),
+            gameStore.loadMoveHistory(data, gameId, viewerId),
         );
 
         socket.on("moveResult", (data) => {

@@ -29,14 +29,20 @@
     <h3 class="text-sm font-bold text-brand-accent uppercase tracking-wider">
         Move History
     </h3>
-    {#if isReplaying}
+    {#if gameStore.gameState?.isGameOver}
+        <span
+            class="text-[10px] font-bold bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full uppercase"
+        >
+            Finished
+        </span>
+    {:else if isReplaying}
         <span
             class="text-[10px] font-bold bg-brand-secondary/20 text-brand-secondary px-2 py-0.5 rounded-full uppercase"
         >
             Replay
         </span>
     {/if}
-    {#if gameStore.isPaused}
+    {#if gameStore.isPaused && !gameStore.gameState?.isGameOver}
         <span
             class="text-[10px] font-bold bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full uppercase"
         >

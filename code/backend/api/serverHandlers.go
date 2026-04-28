@@ -191,19 +191,34 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 
 	// Broadcast final board state with all pieces revealed
 	s.broadcastBoardStateRevealed(hub)
+	hub.BroadcastMoveHistory()
 
 	// Save game stats to database
-	go s.saveGameStats(session, winnerID)
+	go s.saveGameStats(session, winnerID, hub.gameType)
 
 	// Wait longer before stopping monitoring so users can see results
 	time.Sleep(30 * time.Second)
 }
 
 // saveGameStats saves game statistics to the database
-func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int) {
+func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gameType string) {
 	duration := time.Since(session.StartTime).Seconds()
 	state := session.GetGameState()
 
+	// Save game history (metadata and moves)
+	g := session.GetGame()
+	initialState := g.GetInitialBoardState()
+
+	if err := db.SaveGame(session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
+		log.Printf("Failed to save game metadata for %s: %v", session.ID, err)
+	} else {
+		for _, m := range g.HistoricalHistory {
+			if err := db.SaveMove(session.ID, m); err != nil {
+				log.Printf("Failed to save move %d for game %s: %v", m.MoveIndex, session.ID, err)
+			}
+		}
+		log.Printf("Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
+	}
 	// Track stats for player 1 if they have a user ID
 	if session.Player1UserID != nil {
 		userID := *session.Player1UserID
