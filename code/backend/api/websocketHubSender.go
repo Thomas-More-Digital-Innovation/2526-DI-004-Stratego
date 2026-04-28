@@ -95,7 +95,6 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 		}
 	}
 
-
 	boardMsg := BoardStateMessage{
 		Board:  boardDTO,
 		Width:  10,

@@ -179,7 +179,6 @@ func PieceToDTO(piece *engine.Piece, viewerID int) PieceDTO {
 		return PieceDTO{OwnerID: -1}
 	}
 
-
 	ownerID := piece.GetOwner().GetID()
 	canSee := piece.IsRevealed() || ownerID == viewerID
 
