@@ -38,10 +38,33 @@ export interface GameState {
     headless: boolean;
 }
 
+export type MoveVisualizationHighlightState = 'move' | 'win' | 'loss'
+
+export type MoveResultType = 'move' | 'win' | 'loss' | 'tie' | 'capture';
+
+export interface PieceData {
+    type: string;
+    rank: string;
+    ownerId: number;
+}
+
+export interface HistoricalMove {
+    moveIndex: number;
+    playerId: number;
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    attacker?: PieceData;
+    defender?: PieceData;
+    result: MoveResultType;
+}
+
 export interface BoardState {
     board: Piece[][];
     width: number;
     height: number;
+    lastMove?: HistoricalMove;
 }
 
 export interface GameInfo {
@@ -52,7 +75,7 @@ export interface GameInfo {
 
 export interface HistoryMove {
     moveNumber: number;
-    move: Move;
+    move: HistoricalMove;
     piece?: Piece;
     boardState: Piece[][];
 }

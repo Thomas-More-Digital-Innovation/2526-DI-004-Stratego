@@ -95,10 +95,19 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 		}
 	}
 
+	lastMove := h.session.GetLastHistoricalMove()
+	var filteredLastMove *models.HistoricalMove
+	if lastMove != nil {
+		// For the board state's LastMove, we don't force filter combat so the visualization works
+		fm := h.filterHistoricalMove(*lastMove, client.seatIndex, false)
+		filteredLastMove = &fm
+	}
+
 	boardMsg := BoardStateMessage{
-		Board:  boardDTO,
-		Width:  10,
-		Height: 10,
+		Board:    boardDTO,
+		Width:    10,
+		Height:   10,
+		LastMove: filteredLastMove,
 	}
 
 	msg := WSMessage{
@@ -171,22 +180,8 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 
 		fullHistory = make([]models.HistoricalMove, len(g.HistoricalHistory))
 		for i, m := range g.HistoricalHistory {
-			move := m
-			if move.Attacker != nil && move.Attacker.OwnerID != client.seatIndex && move.Result == models.ResultMove {
-				move.Attacker = &models.PieceData{
-					OwnerID: move.Attacker.OwnerID,
-					Type:    "",
-					Rank:    "",
-				}
-			}
-			if move.Defender != nil && move.Defender.OwnerID != client.seatIndex && move.Result == models.ResultMove {
-				move.Defender = &models.PieceData{
-					OwnerID: move.Defender.OwnerID,
-					Type:    "",
-					Rank:    "",
-				}
-			}
-			fullHistory[i] = move
+			// For history, we force filter combat to prevent leaking piece ranks in a live game
+			fullHistory[i] = h.filterHistoricalMove(m, client.seatIndex, true)
 		}
 	}
 
@@ -212,4 +207,31 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 	case <-time.After(time.Second):
 		log.Printf("Timeout sending move history to client")
 	}
+}
+
+func (h *WSHub) filterHistoricalMove(m models.HistoricalMove, seatIndex int, forceFilterCombat bool) models.HistoricalMove {
+	if h.gameType == models.AiVsAi || h.session.GetGameState().IsGameOver {
+		return m
+	}
+
+	move := m
+	if move.Attacker != nil && move.Attacker.OwnerID != seatIndex {
+		if move.Result == models.ResultMove || forceFilterCombat {
+			move.Attacker = &models.PieceData{
+				OwnerID: move.Attacker.OwnerID,
+				Type:    "",
+				Rank:    "",
+			}
+		}
+	}
+	if move.Defender != nil && move.Defender.OwnerID != seatIndex {
+		if move.Result == models.ResultMove || forceFilterCombat {
+			move.Defender = &models.PieceData{
+				OwnerID: move.Defender.OwnerID,
+				Type:    "",
+				Rank:    "",
+			}
+		}
+	}
+	return move
 }

@@ -1,5 +1,5 @@
 import type { GameMode, GameState, BoardState, HistoryMove, Piece, CombatAnimation } from '$lib/types/game';
-import { getBoardAtMove, type PieceData, type GameHistory } from '$lib/replayEngine';
+import { getBoardAtMove, type PieceData, type GameHistory, type HistoricalMove } from '$lib/replayEngine';
 import { gamemodes } from '$lib/data/gamemodes.data';
 class GameStore {
     gameState = $state<GameState | null>(null);
@@ -13,6 +13,7 @@ class GameStore {
     gameMode = $state<GameMode>(gamemodes.unknown);
     lastLiveBoard = $state<BoardState | null>(null);
     rawHistory = $state<GameHistory | null>(null);
+    lastMove = $state<HistoricalMove | null>(null);
 
 
     get isPaused() {
@@ -29,14 +30,15 @@ class GameStore {
 
         if (!this.isReplaying) {
             this.boardState = board;
+            this.lastMove = board.lastMove ?? null;
         }
 
         if (this.gameState && !this.gameState.isSetupPhase) {
-            this.addToHistory(board.board, viewerId);
+            this.addToHistory(board.board, board.lastMove ?? null, viewerId);
         }
     }
 
-    private addToHistory(board: Piece[][], viewerId: number) {
+    private addToHistory(board: Piece[][], lastMove: HistoricalMove | null, viewerId: number) {
         const boardCopy = board.map(row => row.map(cell => {
             const newCell = { ...cell };
             // Strip opponent piece identity in history if it's Human vs AI (viewerId !== -1)
@@ -49,10 +51,27 @@ class GameStore {
             return newCell;
         }));
 
+        // Redact opponent piece info in history move to prevent leakage when scrubbing back
+        let historyMove = lastMove;
+        if (historyMove && viewerId !== -1) {
+            if (historyMove.attacker && historyMove.attacker.ownerId !== viewerId) {
+                historyMove = {
+                    ...historyMove,
+                    attacker: { ...historyMove.attacker, type: '', rank: '' }
+                };
+            }
+            if (historyMove.defender && historyMove.defender.ownerId !== viewerId) {
+                historyMove = {
+                    ...historyMove,
+                    defender: { ...historyMove.defender, type: '', rank: '' }
+                };
+            }
+        }
+
         this.history.push({
             moveNumber: this.history.length,
             boardState: boardCopy,
-            move: { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } },
+            move: historyMove || { fromX: 0, fromY: 0, toX: 0, toY: 0, result: 'move', playerId: 0, moveIndex: this.history.length },
         });
 
         if (!this.isReplaying) {
@@ -76,7 +95,15 @@ class GameStore {
         if (!data.fullHistory || !data.initialState) {
             this.history = data.moves.map((move, index) => ({
                 moveNumber: index,
-                move,
+                move: {
+                    moveIndex: index,
+                    fromX: move.from.x,
+                    fromY: move.from.y,
+                    toX: move.to.x,
+                    toY: move.to.y,
+                    result: 'move',
+                    playerId: 0,
+                },
                 boardState: [],
             }));
         } else {
@@ -106,7 +133,7 @@ class GameStore {
 
                 return {
                     moveNumber: index,
-                    move,
+                    move: data.fullHistory[index],
                     boardState: mappedBoard as Piece[][],
                 };
             });
@@ -128,6 +155,7 @@ class GameStore {
         const historyItem = this.history[index];
         if (this.boardState) {
             this.boardState.board = historyItem.boardState;
+            this.lastMove = historyItem.move;
         }
     }
 
@@ -148,6 +176,7 @@ class GameStore {
         this.isReplaying = false;
         if (this.lastLiveBoard && this.boardState) {
             this.boardState.board = this.lastLiveBoard.board;
+            this.lastMove = this.lastLiveBoard.lastMove ?? null;
             this.currentHistoryIndex = this.history.length - 1;
         }
     }
@@ -163,6 +192,7 @@ class GameStore {
         this.combatAnimation = null;
         this.gameMode = gamemodes.unknown;
         this.rawHistory = null;
+        this.lastMove = null;
     }
 
 

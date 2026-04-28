@@ -4,7 +4,10 @@
         BoardState,
         Position,
         Piece as PieceType,
+        HistoricalMove,
     } from "$lib/types/game";
+    import MoveVisualization from "./move-visualization/MoveVisualization.svelte";
+    import { BOARD_CONFIG } from "$lib/data/board.data";
 
     interface Props {
         boardState?: BoardState | null;
@@ -25,6 +28,7 @@
         isLakeCell?: (x: number, y: number) => boolean;
         responsive?: boolean;
         visualDisabledRows?: number[];
+        lastMove?: HistoricalMove | null;
     }
 
     let {
@@ -36,8 +40,8 @@
         viewerId = 0,
         disabledRows = [],
         validMoves = [],
-        rows = 10,
-        cols = 10,
+        rows = BOARD_CONFIG.rows,
+        cols = BOARD_CONFIG.cols,
         scale = 1,
         onCellDragStart,
         onCellDragOver,
@@ -46,6 +50,7 @@
         isLakeCell,
         responsive = false,
         visualDisabledRows = [],
+        lastMove = null,
     }: Props = $props();
 
     const displayBoard = $derived(board || boardState?.board || []);
@@ -72,12 +77,12 @@
     const isValidMove = (x: number, y: number) =>
         validMoves.some((m) => m.x === x && m.y === y);
 
-    const cellSize = $derived(48 * scale);
+    const cellSize = $derived(BOARD_CONFIG.baseCellSize * scale);
 </script>
 
 <div
     class="board-wrapper"
-    style="--cell-size: {cellSize}px; --cols: {cols}; --rows: {rows}; --scale: {scale}"
+    style="--cell-size: {cellSize}px; --cols: {cols}; --rows: {rows}; --scale: {scale}; --gap: {BOARD_CONFIG.gap}px;"
     class:non-interactive={!isInteractive}
 >
     {#if displayBoard.length > 0}
@@ -117,6 +122,10 @@
                     </button>
                 {/each}
             {/each}
+
+            {#if lastMove}
+                <MoveVisualization move={lastMove} {cellSize} {scale} />
+            {/if}
         </div>
     {:else}
         <div class="flex items-center justify-center p-10 text-white/40">
@@ -137,10 +146,11 @@
     }
 
     .board {
+        position: relative;
         display: grid;
         grid-template-columns: repeat(var(--cols), var(--cell-size));
         grid-template-rows: repeat(var(--rows), var(--cell-size));
-        gap: calc(2px * var(--scale, 1));
+        gap: calc(var(--gap) * var(--scale, 1));
     }
 
     .board.responsive {

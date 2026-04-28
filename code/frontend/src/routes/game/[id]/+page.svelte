@@ -304,6 +304,7 @@
                     : []}
                 visualDisabledRows={isSetupPhase ? [4, 5] : []}
                 scale={1.3}
+                lastMove={gameStore.lastMove}
             />
         </div>
 
