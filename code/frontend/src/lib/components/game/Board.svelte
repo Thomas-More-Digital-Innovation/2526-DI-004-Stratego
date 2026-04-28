@@ -123,13 +123,8 @@
                 {/each}
             {/each}
 
-            {#if lastMove}
-                <MoveVisualization
-                    move={lastMove}
-                    {cellSize}
-                    {scale}
-                    {selectedPosition}
-                />
+            {#if lastMove && !selectedPosition}
+                <MoveVisualization move={lastMove} {cellSize} {scale} />
             {/if}
         </div>
     {:else}

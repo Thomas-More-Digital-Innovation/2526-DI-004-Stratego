@@ -10,15 +10,9 @@
         move: HistoricalMove;
         cellSize: number;
         scale?: number;
-        selectedPosition?: Position | null;
     }
 
-    let {
-        move,
-        cellSize,
-        scale = 1,
-        selectedPosition = null,
-    }: Props = $props();
+    let { move, cellSize, scale = 1 }: Props = $props();
 
     const padding = BOARD_CONFIG.padding;
     const gap = $derived(BOARD_CONFIG.gap * scale);
@@ -112,7 +106,7 @@
             (cellSize + gap) +
             padding}px; width: {cellSize}px; height: {cellSize}px;"
     >
-        {#if isCombat && !selectedPosition}
+        {#if isCombat}
             <CombatIndicator {move} />
         {/if}
     </div>
