@@ -49,8 +49,14 @@ func GenerateToken(userID int, username string) (string, error) {
 		Exp:  now.Add(30 * 24 * time.Hour).Unix(), // 30 days
 	}
 
-	headerJSON, _ := json.Marshal(header)
-	payloadJSON, _ := json.Marshal(payload)
+	headerJSON, err := json.Marshal(header)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JWT header: %w", err)
+	}
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JWT payload: %w", err)
+	}
 
 	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
 	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
