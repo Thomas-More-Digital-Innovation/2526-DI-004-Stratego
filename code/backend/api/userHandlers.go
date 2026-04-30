@@ -69,7 +69,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 	token, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
 		log.Printf("Failed to generate token: %v", err)
-		sendError(c, "Failed to create session", http.StatusInternalServerError)
+		sendError(c, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
