@@ -150,20 +150,19 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 // @Router /games [get]
 func (s *GameServer) HandleListGames(c *gin.Context) {
 	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	handlers := make([]*GameSessionHandler, 0, len(s.sessions))
+	for _, handler := range s.sessions {
+		handlers = append(handlers, handler)
+	}
+	s.mutex.RUnlock()
 
-	games := make([]gin.H, 0, len(s.sessions))
-	for gameID, handler := range s.sessions {
-		state := handler.Session.GetGameState()
-		games = append(games, gin.H{
-			"gameId":     gameID,
-			"round":      state.Round,
-			"isRunning":  handler.Session.IsRunning(),
-			"isGameOver": state.IsGameOver,
-		})
+	// Build summaries outside of the global lock
+	summaries := make([]models.GameSummary, 0, len(handlers))
+	for _, handler := range handlers {
+		summaries = append(summaries, handler.Session.GetGameSummary(handler.GameType))
 	}
 
-	sendJSON(c, games, http.StatusOK)
+	sendJSON(c, summaries, http.StatusOK)
 }
 
 // handleGameOver broadcasts final game state and saves stats

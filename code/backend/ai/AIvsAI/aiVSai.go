@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
+func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary {
 	draws := 0
 
 	flagCaptures := 0
@@ -96,7 +96,7 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.GameSummary {
 
 	avgRounds := float64(totalRounds) / float64(matches)
 
-	gameSummary := models.GameSummary{
+	gameSummary := models.AiGameSummary{
 		Player1data:          player1Data,
 		Player2data:          player2Data,
 		Draws:                draws,

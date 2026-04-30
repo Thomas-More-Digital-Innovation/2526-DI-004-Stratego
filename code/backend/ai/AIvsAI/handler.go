@@ -17,7 +17,7 @@ func RunAIvsAI(ai1, ai2 string, matches int, format string, logging bool) {
 
 }
 
-func printMarkdownSummary(summary models.GameSummary, matches int) {
+func printMarkdownSummary(summary models.AiGameSummary, matches int) {
 	// Top-level summary
 	fmt.Printf("\n### AI vs AI Tournament Summary (%d games)\n\n", matches)
 	fmt.Printf("**Total Matches:** %d  \n**Total Rounds:** %d  \n**Average Rounds (per game):** %.2f  \n**Shortest Game (rounds):** %d\n\n",
@@ -54,7 +54,7 @@ func printMarkdownSummary(summary models.GameSummary, matches int) {
 	fmt.Printf("**Draws:** %d (%.1f%%)\n", summary.Draws, float64(summary.Draws)*100.0/wonMatches)
 }
 
-func printDefaultSummary(summary models.GameSummary, matches int) {
+func printDefaultSummary(summary models.AiGameSummary, matches int) {
 	// Human-readable plain text summary
 	fmt.Println()
 	fmt.Println("========================================")

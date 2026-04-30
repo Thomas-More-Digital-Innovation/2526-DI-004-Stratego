@@ -231,6 +231,21 @@ func (gs *GameSession) GetGameState() models.GameState {
 	}
 }
 
+// GetGameSummary returns a lightweight summary of the game state
+func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+
+	return models.GameSummary{
+		GameID:       gs.ID,
+		Round:        gs.game.GetRound(),
+		IsRunning:    gs.running,
+		IsGameOver:   gs.game.IsGameOver(),
+		IsSetupPhase: gs.isSetupPhase,
+		GameType:     gameType,
+	}
+}
+
 // GetBoard returns the current board state
 func (gs *GameSession) GetBoard() *engine.Board {
 	gs.mutex.RLock()

@@ -17,3 +17,13 @@ type GameState struct {
 	IsSetupPhase       bool   `json:"isSetupPhase"`
 	Headless           bool   `json:"headless"`
 }
+
+// GameSummary represents a lightweight overview of a game
+type GameSummary struct {
+	GameID       string `json:"gameId"`
+	Round        int    `json:"round"`
+	IsRunning    bool   `json:"isRunning"`
+	IsGameOver   bool   `json:"isGameOver"`
+	IsSetupPhase bool   `json:"isSetupPhase"`
+	GameType     string `json:"gameType"`
+}
