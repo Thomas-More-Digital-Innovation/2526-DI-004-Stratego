@@ -165,6 +165,24 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 		return errors.New("failed to cast to human controller")
 	}
 
+	// Validate move legality
+	validMoves, err := gs.game.Board.ListMoves(move.GetFrom())
+	if err != nil {
+		return err
+	}
+
+	isLegal := false
+	for _, m := range validMoves {
+		if m.GetTo() == move.GetTo() {
+			isLegal = true
+			break
+		}
+	}
+
+	if !isLegal {
+		return errors.New("illegal move for this piece")
+	}
+
 	humanController.SetPendingMove(move)
 	return nil
 }

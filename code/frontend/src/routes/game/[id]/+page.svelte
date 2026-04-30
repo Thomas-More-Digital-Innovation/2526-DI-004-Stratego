@@ -100,6 +100,8 @@
         socket.on("error", (data) => {
             error = data.error;
             setTimeout(() => (error = ""), 3000);
+            gameStore.setSelectedPosition(null);
+            validMoves = [];
         });
     }
 
@@ -144,6 +146,7 @@
             validMoves = [];
         } else if (hasValidPiece && clickedPiece.ownerId === 0) {
             gameStore.setSelectedPosition({ x, y });
+            validMoves = [];
             socket.requestValidMoves({ x, y });
         } else {
             gameStore.setSelectedPosition(null);
