@@ -60,13 +60,33 @@ func VerifyToken(tokenString string) (*models.User, error) {
 	}
 
 	headerBase64, payloadBase64, signature := parts[0], parts[1], parts[2]
-	unsignedToken := headerBase64 + "." + payloadBase64
 
+	// Validate Header
+	headerJSON, err := base64.RawURLEncoding.DecodeString(headerBase64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode header: %w", err)
+	}
+
+	var header JWTHeader
+	if err := json.Unmarshal(headerJSON, &header); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal header: %w", err)
+	}
+
+	if header.Alg != "HS256" {
+		return nil, fmt.Errorf("unsupported algorithm: %s", header.Alg)
+	}
+	if header.Typ != "JWT" {
+		return nil, fmt.Errorf("invalid token type: %s", header.Typ)
+	}
+
+	// Validate Signature
+	unsignedToken := headerBase64 + "." + payloadBase64
 	expectedSignature := computeHmac(unsignedToken, jwtSecret)
 	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
 		return nil, errors.New("invalid signature")
 	}
 
+	// Validate Payload/Claims
 	payloadJSON, err := base64.RawURLEncoding.DecodeString(payloadBase64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode payload: %w", err)
@@ -77,8 +97,12 @@ func VerifyToken(tokenString string) (*models.User, error) {
 		return nil, fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	if time.Now().Unix() > payload.Exp {
+	now := time.Now().Unix()
+	if now > payload.Exp {
 		return nil, errors.New("token expired")
+	}
+	if now < payload.Iat-60 { // Allow 60s clock skew
+		return nil, errors.New("token used before issued")
 	}
 
 	return &models.User{
