@@ -3,6 +3,7 @@ package game_test
 import (
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/models"
 	"testing"
 	"time"
 )
@@ -196,6 +197,9 @@ func TestGameSessionSubmitMove(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond) // Wait for game to be ready
 
+	scout := engine.NewPiece(models.Scout, &player1)
+	session.GetBoard().SetPieceAt(engine.NewPosition(0, 6), scout)
+
 	// Submit a valid move
 	move := engine.NewMove(engine.NewPosition(0, 6), engine.NewPosition(0, 5), &player1)
 	err = session.SubmitMove(0, move)
@@ -222,6 +226,94 @@ func TestGameSessionSubmitMoveNotRunning(t *testing.T) {
 	err := session.SubmitMove(0, move)
 	if err == nil {
 		t.Error("Expected error submitting move when game is not running")
+	}
+}
+
+func TestGameSessionSubmitMove_NoPiece(t *testing.T) {
+	player1 := engine.NewPlayer(0, "Human", "red")
+	player2 := engine.NewPlayer(1, "AI", "blue")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	session := game.NewGameSession("move-no-piece", controller1, controller2)
+
+	session.StartGameFromSetup(false)
+	defer session.Stop()
+	time.Sleep(50 * time.Millisecond)
+
+	// Clear a spot
+	pos := engine.NewPosition(5, 5)
+	session.GetBoard().SetPieceAt(pos, nil)
+
+	move := engine.NewMove(pos, engine.NewPosition(5, 4), &player1)
+	err := session.SubmitMove(0, move)
+	if err == nil || err.Error() != "no piece at source position" {
+		t.Errorf("Expected 'no piece at source position' error, got: %v", err)
+	}
+}
+
+func TestGameSessionSubmitMove_WrongOwner(t *testing.T) {
+	player1 := engine.NewPlayer(0, "Human", "red")
+	player2 := engine.NewPlayer(1, "AI", "blue")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	session := game.NewGameSession("move-wrong-owner", controller1, controller2)
+
+	session.StartGameFromSetup(false)
+	defer session.Stop()
+	time.Sleep(50 * time.Millisecond)
+
+	// Find an opponent piece (Player 2 is at top rows 0-3)
+	pos := engine.NewPosition(0, 0)
+	move := engine.NewMove(pos, engine.NewPosition(0, 1), &player1)
+	err := session.SubmitMove(0, move)
+	if err == nil || err.Error() != "piece at source position does not belong to current player" {
+		t.Errorf("Expected ownership error, got: %v", err)
+	}
+}
+
+func TestGameSessionSubmitMove_UnmovablePiece(t *testing.T) {
+	player1 := engine.NewPlayer(0, "Human", "red")
+	player2 := engine.NewPlayer(1, "AI", "blue")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	session := game.NewGameSession("move-unmovable", controller1, controller2)
+
+	session.StartGameFromSetup(false)
+	defer session.Stop()
+	time.Sleep(50 * time.Millisecond)
+
+	// Place a flag for player 1
+	pos := engine.NewPosition(0, 9)
+	flag := engine.NewPiece(models.Flag, &player1)
+	session.GetBoard().SetPieceAt(pos, flag)
+
+	move := engine.NewMove(pos, engine.NewPosition(0, 8), &player1)
+	err := session.SubmitMove(0, move)
+	if err == nil || err.Error() != "no movable piece at the given position" {
+		t.Errorf("Expected 'no movable piece' error, got: %v", err)
+	}
+}
+
+func TestGameSessionSubmitMove_IllegalMove(t *testing.T) {
+	player1 := engine.NewPlayer(0, "Human", "red")
+	player2 := engine.NewPlayer(1, "AI", "blue")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	controller2 := engine.NewHumanPlayerController(&player2)
+	session := game.NewGameSession("move-illegal", controller1, controller2)
+
+	session.StartGameFromSetup(false)
+	defer session.Stop()
+	time.Sleep(50 * time.Millisecond)
+
+	// Place a non-scout for player 1
+	pos := engine.NewPosition(1, 9)
+	marshal := engine.NewPiece(models.Marshal, &player1)
+	session.GetBoard().SetPieceAt(pos, marshal)
+
+	move := engine.NewMove(pos, engine.NewPosition(1, 7), &player1)
+	err := session.SubmitMove(0, move)
+	if err == nil || err.Error() != "illegal move for this piece" {
+		t.Errorf("Expected 'illegal move' error, got: %v", err)
 	}
 }
 
