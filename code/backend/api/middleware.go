@@ -42,36 +42,68 @@ func CSRFMiddleware() gin.HandlerFunc {
 	}
 }
 
+type visitor struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
 // IPRateLimiter manages rate limiters for different IP addresses
 type IPRateLimiter struct {
-	ips map[string]*rate.Limiter
+	ips map[string]*visitor
 	mu  *sync.RWMutex
 	r   rate.Limit
 	b   int
 }
 
 func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
-	return &IPRateLimiter{
-		ips: make(map[string]*rate.Limiter),
+	i := &IPRateLimiter{
+		ips: make(map[string]*visitor),
 		mu:  &sync.RWMutex{},
 		r:   r,
 		b:   b,
 	}
+
+	go i.cleanupVisitors()
+
+	return i
 }
 
 func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
-	i.mu.RLock()
-	limiter, exists := i.ips[ip]
-	i.mu.RUnlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
+	v, exists := i.ips[ip]
 	if !exists {
-		i.mu.Lock()
-		limiter = rate.NewLimiter(i.r, i.b)
-		i.ips[ip] = limiter
-		i.mu.Unlock()
+		// Hard cap at 10,000 IPs to prevent OOM
+		if len(i.ips) >= 10000 {
+			// If we're at capacity, return a strict one-time limiter 
+			// or we could evict a random entry. For simplicity, we just 
+			// don't track the new IP until the next cleanup.
+			return rate.NewLimiter(i.r, i.b)
+		}
+
+		v = &visitor{
+			limiter: rate.NewLimiter(i.r, i.b),
+		}
+		i.ips[ip] = v
 	}
 
-	return limiter
+	v.lastSeen = time.Now()
+	return v.limiter
+}
+
+func (i *IPRateLimiter) cleanupVisitors() {
+	for {
+		time.Sleep(1 * time.Hour)
+
+		i.mu.Lock()
+		for ip, v := range i.ips {
+			if time.Since(v.lastSeen) > 3*time.Hour {
+				delete(i.ips, ip)
+			}
+		}
+		i.mu.Unlock()
+	}
 }
 
 // RateLimitMiddleware limits requests per IP

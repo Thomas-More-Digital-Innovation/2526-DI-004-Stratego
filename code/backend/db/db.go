@@ -44,6 +44,11 @@ func InitDB() error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// Set connection pool limits
+	DB.SetMaxOpenConns(25)
+	DB.SetMaxIdleConns(5)
+	DB.SetConnMaxLifetime(time.Hour)
+
 	// Test the connection with retries
 	maxRetries := 10
 	for i := 0; i < maxRetries; i++ {
