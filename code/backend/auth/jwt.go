@@ -55,7 +55,10 @@ func VerifyToken(tokenString string) (*models.User, error) {
 
 	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
 		var userID int
-		fmt.Sscanf(claims.Subject, "%d", &userID)
+		_, err = fmt.Sscanf(claims.Subject, "%d", &userID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid token subject: %w", err)
+		}
 
 		return &models.User{
 			ID:       userID,
