@@ -64,7 +64,10 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 
 	session.runner.SetMoveCallback(func() {
 		session.NotifyMoveExecuted()
-		session.WaitForMoveAck(10 * time.Second)
+		// If we are headless, don't wait for UI acknowledgment
+		if !session.headless {
+			session.WaitForMoveAck(10 * time.Second)
+		}
 	})
 
 	return session
@@ -604,6 +607,13 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	// Exit setup phase BEFORE starting the game
 	gs.isSetupPhase = false
 	gs.headless = headless
+
+	// Signal setup complete to any monitors
+	select {
+	case gs.setupCompleteChan <- true:
+	default:
+	}
+
 	log.Printf("Game %s: Setup phase marked complete", gs.ID)
 
 	gs.mutex.Unlock()
