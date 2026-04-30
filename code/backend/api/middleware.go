@@ -27,9 +27,13 @@ func CSRFMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Require X-XSRF-TOKEN header
-		if c.GetHeader("X-XSRF-TOKEN") == "" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF token missing"})
+		// Require X-XSRF-TOKEN header and compare with cookie
+		tokenHeader := c.GetHeader("X-XSRF-TOKEN")
+		tokenCookie, err := c.Cookie("XSRF-TOKEN")
+
+		if tokenHeader == "" || err != nil || tokenHeader != tokenCookie {
+			log.Printf("CSRF validation failed: header=%s, cookie=%s, err=%v", tokenHeader, tokenCookie, err)
+			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF validation failed"})
 			c.Abort()
 			return
 		}
