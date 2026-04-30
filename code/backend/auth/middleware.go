@@ -1,10 +1,10 @@
 package auth
 
 import (
+	"crypto/rand"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
 	"encoding/hex"
-	"crypto/rand"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
