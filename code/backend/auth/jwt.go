@@ -1,16 +1,12 @@
 package auth
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var jwtSecret []byte
@@ -23,110 +19,49 @@ func init() {
 	jwtSecret = []byte(secret)
 }
 
-type JWTHeader struct {
-	Alg string `json:"alg"`
-	Typ string `json:"typ"`
+// CustomClaims defines the structure of our JWT payload
+type CustomClaims struct {
+	Username string `json:"name"`
+	jwt.RegisteredClaims
 }
 
-type JWTPayload struct {
-	Sub  int    `json:"sub"`
-	Name string `json:"name"`
-	Exp  int64  `json:"exp"`
-	Iat  int64  `json:"iat"`
-}
-
+// GenerateToken creates a new JWT for a user
 func GenerateToken(userID int, username string) (string, error) {
-	header := JWTHeader{
-		Alg: "HS256",
-		Typ: "JWT",
+	claims := CustomClaims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   fmt.Sprintf("%d", userID),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(maxCookieAge) * time.Second)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
-	now := time.Now()
-	payload := JWTPayload{
-		Sub:  userID,
-		Name: username,
-		Iat:  now.Unix(),
-		Exp:  now.Add(time.Duration(maxCookieAge) * time.Second).Unix(),
-	}
-
-	headerJSON, err := json.Marshal(header)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal JWT header: %w", err)
-	}
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal JWT payload: %w", err)
-	}
-
-	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
-	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
-
-	unsignedToken := headerBase64 + "." + payloadBase64
-	signature := computeHmac(unsignedToken, jwtSecret)
-
-	return unsignedToken + "." + signature, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtSecret)
 }
 
+// VerifyToken validates the JWT and returns the user information
 func VerifyToken(tokenString string) (*models.User, error) {
-	parts := strings.Split(tokenString, ".")
-	if len(parts) != 3 {
-		return nil, errors.New("invalid token format")
-	}
+	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
 
-	headerBase64, payloadBase64, signature := parts[0], parts[1], parts[2]
-
-	// Validate Header
-	headerJSON, err := base64.RawURLEncoding.DecodeString(headerBase64)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode header: %w", err)
+		return nil, err
 	}
 
-	var header JWTHeader
-	if err := json.Unmarshal(headerJSON, &header); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal header: %w", err)
+	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
+		var userID int
+		fmt.Sscanf(claims.Subject, "%d", &userID)
+
+		return &models.User{
+			ID:       userID,
+			Username: claims.Username,
+		}, nil
 	}
 
-	if header.Alg != "HS256" {
-		return nil, fmt.Errorf("unsupported algorithm: %s", header.Alg)
-	}
-	if header.Typ != "JWT" {
-		return nil, fmt.Errorf("invalid token type: %s", header.Typ)
-	}
-
-	// Validate Signature
-	unsignedToken := headerBase64 + "." + payloadBase64
-	expectedSignature := computeHmac(unsignedToken, jwtSecret)
-	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
-		return nil, errors.New("invalid signature")
-	}
-
-	// Validate Payload/Claims
-	payloadJSON, err := base64.RawURLEncoding.DecodeString(payloadBase64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode payload: %w", err)
-	}
-
-	var payload JWTPayload
-	if err := json.Unmarshal(payloadJSON, &payload); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal payload: %w", err)
-	}
-
-	now := time.Now().Unix()
-	if now > payload.Exp {
-		return nil, errors.New("token expired")
-	}
-	if now < payload.Iat-60 { // Allow 60s clock skew
-		return nil, errors.New("token used before issued")
-	}
-
-	return &models.User{
-		ID:       payload.Sub,
-		Username: payload.Name,
-	}, nil
-}
-
-func computeHmac(message string, secret []byte) string {
-	h := hmac.New(sha256.New, secret)
-	h.Write([]byte(message))
-	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+	return nil, fmt.Errorf("invalid token")
 }
