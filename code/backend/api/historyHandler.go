@@ -23,7 +23,7 @@ func (s *GameServer) HandleGetGameHistory(c *gin.Context) {
 		return
 	}
 
-	history, err := db.GetGameHistory(gameID)
+	history, err := db.GetGameHistory(c.Request.Context(), gameID)
 	if err != nil {
 		sendError(c, "Game history not found or error retrieving it", http.StatusNotFound)
 		return

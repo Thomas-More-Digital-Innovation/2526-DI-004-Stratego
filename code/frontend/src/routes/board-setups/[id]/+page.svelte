@@ -20,8 +20,7 @@
 
     onMount(async () => {
         try {
-            const result = await boardSetups.list();
-            const found = result?.find((s) => s.id === id);
+            const found = await boardSetups.getOne(id);
             if (found) {
                 setup = found;
                 name = found.name;

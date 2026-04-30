@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"digital-innovation/stratego/utils"
 	"fmt"
@@ -43,6 +44,11 @@ func InitDB() error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// Set connection pool limits
+	DB.SetMaxOpenConns(25)
+	DB.SetMaxIdleConns(5)
+	DB.SetConnMaxLifetime(time.Hour)
+
 	// Test the connection with retries
 	maxRetries := 10
 	for i := 0; i < maxRetries; i++ {
@@ -66,7 +72,7 @@ func CloseDB() error {
 	return nil
 }
 
-func updateStatsCache() error {
+func updateStatsCache(ctx context.Context) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -75,14 +81,14 @@ func updateStatsCache() error {
 	}
 
 	var userCount int
-	err := DB.QueryRow("SELECT COUNT(*) FROM users").Scan(&userCount)
+	err := DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&userCount)
 	if err != nil {
 		return err
 	}
 
 	var gameCount int
 	// We aggregate the total games from user_stats as an indicator of platform activity
-	err = DB.QueryRow("SELECT COALESCE(SUM(total_games), 0) FROM user_stats").Scan(&gameCount)
+	err = DB.QueryRowContext(ctx, "SELECT COALESCE(SUM(total_games), 0) FROM user_stats").Scan(&gameCount)
 	if err != nil {
 		return err
 	}
@@ -93,8 +99,8 @@ func updateStatsCache() error {
 	return nil
 }
 
-func GetTotalUserCount() (int, error) {
-	if err := updateStatsCache(); err != nil {
+func GetTotalUserCount(ctx context.Context) (int, error) {
+	if err := updateStatsCache(ctx); err != nil {
 		return 0, err
 	}
 	cache.mu.RLock()
@@ -102,8 +108,8 @@ func GetTotalUserCount() (int, error) {
 	return cache.userCount, nil
 }
 
-func GetTotalGamesPlayedCount() (int, error) {
-	if err := updateStatsCache(); err != nil {
+func GetTotalGamesPlayedCount(ctx context.Context) (int, error) {
+	if err := updateStatsCache(ctx); err != nil {
 		return 0, err
 	}
 	cache.mu.RLock()

@@ -3,18 +3,33 @@ import type { BoardSetup } from '$lib/types/board-setup';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': '1',
-        ...options?.headers,
-    };
+function getCookie(name: string): string {
+    if (typeof document === 'undefined') return '';
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || '';
+    return '';
+}
 
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         ...options,
-        headers,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
+            ...options?.headers,
+        },
     });
+
+    if (response.status === 401 && path !== '/users/refresh' && path !== '/users/login') {
+        try {
+            await auth.refresh();
+            return request<T>(path, options);
+        } catch (err) {
+            throw new Error('Session expired');
+        }
+    }
 
     if (!response.ok) {
         const text = await response.text();
@@ -25,17 +40,24 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function requestVoid(path: string, options?: RequestInit): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': '1',
-        ...options?.headers,
-    };
-
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         ...options,
-        headers,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
+            ...options?.headers,
+        },
     });
+
+    if (response.status === 401 && path !== '/users/refresh' && path !== '/users/login') {
+        try {
+            await auth.refresh();
+            return requestVoid(path, options);
+        } catch (err) {
+            throw new Error('Session expired');
+        }
+    }
 
     if (!response.ok) {
         const text = await response.text();
@@ -48,16 +70,16 @@ export const auth = {
     login: (username: string, password: string) =>
         requestVoid('/users/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         }),
 
     register: (username: string, password: string) =>
         requestVoid('/users/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         }),
+
+    refresh: () => requestVoid('/users/refresh', { method: 'POST' }),
 
     logout: () => requestVoid('/users/logout', { method: 'POST' }),
 
@@ -85,6 +107,8 @@ export const stats = {
 export const boardSetups = {
     list: () => request<BoardSetup[]>('/board-setups'),
 
+    getOne: (id: number) => request<BoardSetup>(`/board-setups/${id}`),
+
     create: (data: { name: string; description: string; setup_data: string; is_default: boolean }) =>
         requestVoid('/board-setups', {
             method: 'POST',
@@ -93,12 +117,12 @@ export const boardSetups = {
         }),
 
     update: (id: number, data: { name: string; description: string; setup_data: string; is_default: boolean }) =>
-        requestVoid(`/board-setups?id=${id}`, {
+        requestVoid(`/board-setups/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         }),
 
     delete: (id: number) =>
-        requestVoid(`/board-setups?id=${id}`, { method: 'DELETE' }),
+        requestVoid(`/board-setups/${id}`, { method: 'DELETE' }),
 };

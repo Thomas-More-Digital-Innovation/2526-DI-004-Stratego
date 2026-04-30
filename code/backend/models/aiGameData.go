@@ -8,7 +8,7 @@ type AiTournamentData struct {
 	WinCauseMaxTurns     int
 }
 
-type GameSummary struct {
+type AiGameSummary struct {
 	Player1data          AiTournamentData
 	Player2data          AiTournamentData
 	Draws                int

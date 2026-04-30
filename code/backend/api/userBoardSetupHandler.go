@@ -38,7 +38,7 @@ func (s *GameServer) CreateBoardSetupHandler(c *gin.Context) {
 		return
 	}
 
-	setup, err := db.CreateBoardSetup(user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
+	setup, err := db.CreateBoardSetup(c.Request.Context(), user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
 		log.Printf("Failed to create board setup: %v", err)
 		sendError(c, "Failed to create board setup", http.StatusInternalServerError)
@@ -63,7 +63,7 @@ func (s *GameServer) GetUserBoardSetupsHandler(c *gin.Context) {
 		return
 	}
 
-	setups, err := db.GetUserBoardSetups(user.ID)
+	setups, err := db.GetUserBoardSetups(c.Request.Context(), user.ID)
 	if err != nil {
 		log.Printf("Failed to get board setups: %v", err)
 		sendError(c, "Failed to get board setups", http.StatusInternalServerError)
@@ -96,7 +96,7 @@ func (s *GameServer) GetBoardSetupHandler(c *gin.Context) {
 		return
 	}
 
-	setup, err := db.GetBoardSetup(setupID, user.ID)
+	setup, err := db.GetBoardSetup(c.Request.Context(), setupID, user.ID)
 	if err != nil {
 		sendError(c, "Setup not found or not owned by user", http.StatusNotFound)
 		return
@@ -136,7 +136,7 @@ func (s *GameServer) UpdateBoardSetupHandler(c *gin.Context) {
 		return
 	}
 
-	err = db.UpdateBoardSetup(setupID, user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
+	err = db.UpdateBoardSetup(c.Request.Context(), setupID, user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
 		log.Printf("Failed to update board setup: %v", err)
 		sendError(c, "Failed to update board setup", http.StatusInternalServerError)
@@ -168,7 +168,7 @@ func (s *GameServer) DeleteBoardSetupHandler(c *gin.Context) {
 		return
 	}
 
-	err = db.DeleteBoardSetup(setupID, user.ID)
+	err = db.DeleteBoardSetup(c.Request.Context(), setupID, user.ID)
 	if err != nil {
 		log.Printf("Failed to delete board setup: %v", err)
 		sendError(c, "Failed to delete board setup", http.StatusInternalServerError)

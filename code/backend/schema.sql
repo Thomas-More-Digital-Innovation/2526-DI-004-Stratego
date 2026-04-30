@@ -90,3 +90,14 @@ CREATE TABLE IF NOT EXISTS game_moves (
 CREATE INDEX idx_game_moves_game_id ON game_moves(game_id);
 CREATE INDEX idx_games_player1_id ON games(player1_user_id);
 CREATE INDEX idx_games_player2_id ON games(player2_user_id);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  token VARCHAR(255) UNIQUE NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);

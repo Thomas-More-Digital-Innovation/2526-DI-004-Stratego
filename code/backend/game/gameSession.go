@@ -30,9 +30,10 @@ type GameSession struct {
 	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
 	aborted               bool      // Signals that game was manually stopped
 	// User ID for players (nil if guest/AI)
-	Player1UserID *int
-	Player2UserID *int
-	StartTime     time.Time
+	Player1UserID     *int
+	Player2UserID     *int
+	StartTime         time.Time
+	setupCompleteChan chan bool
 }
 
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
@@ -55,13 +56,18 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		moveNotifyChan:        make(chan bool, 100),
 		moveAckChan:           make(chan bool, 1),
 		StartTime:             time.Now(),
+		setupCompleteChan:     make(chan bool, 1),
 	}
 
 	session.runner.stopChan = session.stopChan
+	session.runner.locker = &session.mutex
 
 	session.runner.SetMoveCallback(func() {
 		session.NotifyMoveExecuted()
-		session.WaitForMoveAck(10 * time.Second)
+		// If we are headless, don't wait for UI acknowledgment
+		if !session.headless {
+			session.WaitForMoveAck(10 * time.Second)
+		}
 	})
 
 	return session
@@ -106,12 +112,8 @@ func (gs *GameSession) Stop() {
 	log.Printf("GameSession %s: Stopping game (wasRunning=%v)", gs.ID, wasRunning)
 
 	if wasRunning {
-		select {
-		case gs.stopChan <- true:
-			log.Printf("GameSession %s: Stop signal sent to runner", gs.ID)
-		default:
-			log.Printf("GameSession %s: Stop channel full or already stopped", gs.ID)
-		}
+		close(gs.stopChan)
+		log.Printf("GameSession %s: Stop signal (close) sent to all listeners", gs.ID)
 	}
 }
 
@@ -147,7 +149,7 @@ func (gs *GameSession) SetTurnDelay(delay time.Duration) {
 
 // StepAI executes a single AI turn even if the game is paused
 func (gs *GameSession) StepAI() bool {
-	return gs.runner.Step(true)
+	return gs.runner.Step()
 }
 
 // SubmitMove submits a move for a human player
@@ -228,6 +230,21 @@ func (gs *GameSession) GetGameState() models.GameState {
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),
 		IsSetupPhase:       gs.isSetupPhase,
 		Headless:           gs.headless,
+	}
+}
+
+// GetGameSummary returns a lightweight summary of the game state
+func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+
+	return models.GameSummary{
+		GameID:       gs.ID,
+		Round:        gs.game.GetRound(),
+		IsRunning:    gs.running,
+		IsGameOver:   gs.game.IsGameOver(),
+		IsSetupPhase: gs.isSetupPhase,
+		GameType:     gameType,
 	}
 }
 
@@ -420,6 +437,11 @@ func (gs *GameSession) SetSetupPhaseComplete() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.isSetupPhase = false
+	select {
+	case gs.setupCompleteChan <- true:
+	default:
+		// Already signaled or no one listening
+	}
 }
 
 // IsHeadless returns whether the game is running in headless simulation mode
@@ -585,6 +607,13 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	// Exit setup phase BEFORE starting the game
 	gs.isSetupPhase = false
 	gs.headless = headless
+
+	// Signal setup complete to any monitors
+	select {
+	case gs.setupCompleteChan <- true:
+	default:
+	}
+
 	log.Printf("Game %s: Setup phase marked complete", gs.ID)
 
 	gs.mutex.Unlock()
@@ -597,4 +626,14 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	}
 
 	return nil
+}
+
+// GetSetupCompleteChan returns the channel that signals setup completion
+func (gs *GameSession) GetSetupCompleteChan() <-chan bool {
+	return gs.setupCompleteChan
+}
+
+// IsAbortedChan returns the channel that signals if the game was aborted
+func (gs *GameSession) IsAbortedChan() <-chan bool {
+	return gs.stopChan
 }

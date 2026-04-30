@@ -150,20 +150,19 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 // @Router /games [get]
 func (s *GameServer) HandleListGames(c *gin.Context) {
 	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	handlers := make([]*GameSessionHandler, 0, len(s.sessions))
+	for _, handler := range s.sessions {
+		handlers = append(handlers, handler)
+	}
+	s.mutex.RUnlock()
 
-	games := make([]gin.H, 0, len(s.sessions))
-	for gameID, handler := range s.sessions {
-		state := handler.Session.GetGameState()
-		games = append(games, gin.H{
-			"gameId":     gameID,
-			"round":      state.Round,
-			"isRunning":  handler.Session.IsRunning(),
-			"isGameOver": state.IsGameOver,
-		})
+	// Build summaries outside of the global lock
+	summaries := make([]models.GameSummary, 0, len(handlers))
+	for _, handler := range handlers {
+		summaries = append(summaries, handler.Session.GetGameSummary(handler.GameType))
 	}
 
-	sendJSON(c, games, http.StatusOK)
+	sendJSON(c, summaries, http.StatusOK)
 }
 
 // handleGameOver broadcasts final game state and saves stats
@@ -208,11 +207,12 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	g := session.GetGame()
 	initialState := g.GetInitialBoardState()
 
-	if err := db.SaveGame(session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
+	ctx := s.ctx
+	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
 		log.Printf("Failed to save game metadata for %s: %v", session.ID, err)
 	} else {
 		for _, m := range g.HistoricalHistory {
-			if err := db.SaveMove(session.ID, m); err != nil {
+			if err := db.SaveMove(ctx, session.ID, m); err != nil {
 				log.Printf("Failed to save move %d for game %s: %v", m.MoveIndex, session.ID, err)
 			}
 		}
@@ -223,7 +223,7 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		userID := *session.Player1UserID
 		won := winnerID != nil && *winnerID == 0
 
-		if err := db.UpdateUserStats(userID, won, state.MoveCount, duration); err != nil {
+		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
 			log.Printf("Failed to update stats for user %d: %v", userID, err)
 		} else {
 			log.Printf("Updated stats for user %d (won=%v)", userID, won)
@@ -235,7 +235,7 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		userID := *session.Player2UserID
 		won := winnerID != nil && *winnerID == 1
 
-		if err := db.UpdateUserStats(userID, won, state.MoveCount, duration); err != nil {
+		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
 			log.Printf("Failed to update stats for user %d: %v", userID, err)
 		} else {
 			log.Printf("Updated stats for user %d (won=%v)", userID, won)
