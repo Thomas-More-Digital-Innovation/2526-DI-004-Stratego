@@ -60,13 +60,11 @@ func GetCurrentUser(c *gin.Context) *models.User {
 	return user
 }
 
-const cookieMaxAge = 7 * 24 * 60 * 60
-
 var cookieSecure = utils.IsProduction()
 
 // SetSessionCookie sets the session cookie in response
 func SetSessionCookie(c *gin.Context, sessionID string) {
-	c.SetCookie("session_id", sessionID, cookieMaxAge, "/", "", cookieSecure, true)
+	c.SetCookie("session_id", sessionID, maxCookieAge, "/", "", cookieSecure, true)
 }
 
 // ClearSessionCookie removes the session cookie

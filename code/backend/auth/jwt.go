@@ -46,7 +46,7 @@ func GenerateToken(userID int, username string) (string, error) {
 		Sub:  userID,
 		Name: username,
 		Iat:  now.Unix(),
-		Exp:  now.Add(30 * 24 * time.Hour).Unix(), // 30 days
+		Exp:  now.Add(time.Duration(maxCookieAge) * time.Second).Unix(),
 	}
 
 	headerJSON, err := json.Marshal(header)
