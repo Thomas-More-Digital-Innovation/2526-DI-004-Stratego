@@ -16,9 +16,9 @@ import (
 var jwtSecret []byte
 
 func init() {
-	secret, err := utils.GetEnvOrError("JWT_SECRET")
+	secret, err := utils.GetEnvOrErrorInProduction("JWT_SECRET", "dev_fallback_secret")
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("critical: JWT_SECRET is not set in production: %w", err))
 	}
 	jwtSecret = []byte(secret)
 }

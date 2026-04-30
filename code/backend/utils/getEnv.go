@@ -19,6 +19,13 @@ func GetEnvOrError(key string) (string, error) {
 	return os.Getenv(key), nil
 }
 
+func GetEnvOrErrorInProduction(key string, devFallback string) (string, error) {
+	if !IsProduction() {
+		return GetEnv(key, devFallback), nil
+	}
+	return GetEnvOrError(key)
+}
+
 var isProd bool
 
 func init() {
