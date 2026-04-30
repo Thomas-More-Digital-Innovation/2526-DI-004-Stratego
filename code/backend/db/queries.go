@@ -344,3 +344,48 @@ func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, er
 
 	return &history, nil
 }
+
+// SaveRefreshToken stores a new refresh token for a user
+func SaveRefreshToken(ctx context.Context, userID int, token string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO refresh_tokens (user_id, token, expires_at)
+		VALUES ($1, $2, $3)
+	`
+	_, err := DB.ExecContext(ctx, query, userID, token, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to save refresh token: %w", err)
+	}
+	return nil
+}
+
+// GetUserIDByRefreshToken validates a refresh token and returns the owner's ID
+func GetUserIDByRefreshToken(ctx context.Context, token string) (int, error) {
+	var userID int
+	query := `
+		SELECT user_id 
+		FROM refresh_tokens 
+		WHERE token = $1 AND expires_at > now()
+	`
+	err := DB.QueryRowContext(ctx, query, token).Scan(&userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, fmt.Errorf("invalid or expired refresh token")
+		}
+		return 0, fmt.Errorf("database error: %w", err)
+	}
+	return userID, nil
+}
+
+// DeleteRefreshToken removes a refresh token (e.g., on logout)
+func DeleteRefreshToken(ctx context.Context, token string) error {
+	query := `DELETE FROM refresh_tokens WHERE token = $1`
+	_, err := DB.ExecContext(ctx, query, token)
+	return err
+}
+
+// DeleteAllUserRefreshTokens revokes all sessions for a user
+func DeleteAllUserRefreshTokens(ctx context.Context, userID int) error {
+	query := `DELETE FROM refresh_tokens WHERE user_id = $1`
+	_, err := DB.ExecContext(ctx, query, userID)
+	return err
+}

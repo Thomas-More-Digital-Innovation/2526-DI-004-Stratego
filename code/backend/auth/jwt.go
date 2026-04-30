@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"crypto/rand"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -31,7 +33,7 @@ func GenerateToken(userID int, username string) (string, error) {
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   fmt.Sprintf("%d", userID),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(maxCookieAge) * time.Second)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(MaxCookieAge) * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -67,4 +69,13 @@ func VerifyToken(tokenString string) (*models.User, error) {
 	}
 
 	return nil, fmt.Errorf("invalid token")
+}
+
+// GenerateRefreshToken creates a random string to be used as a refresh token
+func GenerateRefreshToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }

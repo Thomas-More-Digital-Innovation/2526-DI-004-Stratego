@@ -12,17 +12,24 @@ function getCookie(name: string): string {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
-        ...options?.headers,
-    };
-
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         ...options,
-        headers,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
+            ...options?.headers,
+        },
     });
+
+    if (response.status === 401 && path !== '/users/refresh' && path !== '/users/login') {
+        try {
+            await auth.refresh();
+            return request<T>(path, options);
+        } catch (err) {
+            throw new Error('Session expired');
+        }
+    }
 
     if (!response.ok) {
         const text = await response.text();
@@ -33,17 +40,24 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function requestVoid(path: string, options?: RequestInit): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
-        ...options?.headers,
-    };
-
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         ...options,
-        headers,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
+            ...options?.headers,
+        },
     });
+
+    if (response.status === 401 && path !== '/users/refresh' && path !== '/users/login') {
+        try {
+            await auth.refresh();
+            return requestVoid(path, options);
+        } catch (err) {
+            throw new Error('Session expired');
+        }
+    }
 
     if (!response.ok) {
         const text = await response.text();
@@ -56,16 +70,16 @@ export const auth = {
     login: (username: string, password: string) =>
         requestVoid('/users/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         }),
 
     register: (username: string, password: string) =>
         requestVoid('/users/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         }),
+
+    refresh: () => requestVoid('/users/refresh', { method: 'POST' }),
 
     logout: () => requestVoid('/users/logout', { method: 'POST' }),
 

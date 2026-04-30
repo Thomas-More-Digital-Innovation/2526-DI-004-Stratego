@@ -1,10 +1,8 @@
 package auth
 
 import (
-	"crypto/rand"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
-	"encoding/hex"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -64,26 +62,32 @@ func GetCurrentUser(c *gin.Context) *models.User {
 
 var cookieSecure = utils.IsProduction()
 
-// SetSessionCookie sets the session cookie in response
-func SetSessionCookie(c *gin.Context, sessionID string) {
+// SetSessionCookie sets the access token cookie in response
+func SetSessionCookie(c *gin.Context, accessToken string) {
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("session_id", sessionID, maxCookieAge, "/", "", cookieSecure, true)
+	c.SetCookie("session_id", accessToken, MaxCookieAge, "/", "", cookieSecure, true)
 
-	// Set CSRF cookie (readable by JS)
-	csrfToken := generateRandomString(32)
-	c.SetCookie("XSRF-TOKEN", csrfToken, maxCookieAge, "/", "", cookieSecure, false)
+	// Also ensure user has a CSRF token
+	SetCSRFCookie(c)
 }
 
-func generateRandomString(n int) string {
-	b := make([]byte, n/2)
-	if _, err := rand.Read(b); err != nil {
-		return "fallback_token" // Should not happen
-	}
-	return hex.EncodeToString(b)
+// SetRefreshTokenCookie sets the refresh token cookie
+func SetRefreshTokenCookie(c *gin.Context, refreshToken string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("refresh_token", refreshToken, MaxRefreshTokenAge, "/", "", cookieSecure, true)
 }
 
-// ClearSessionCookie removes the session cookie
+// SetCSRFCookie generates and sets a new CSRF cookie
+func SetCSRFCookie(c *gin.Context) string {
+	csrfToken, _ := GenerateRefreshToken() // Reuse the random string generator
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("XSRF-TOKEN", csrfToken, MaxCookieAge, "/", "", cookieSecure, false)
+	return csrfToken
+}
+
+// ClearSessionCookie removes all auth-related cookies
 func ClearSessionCookie(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("session_id", "", -1, "/", "", cookieSecure, true)
+	c.SetCookie("refresh_token", "", -1, "/", "", cookieSecure, true)
 }

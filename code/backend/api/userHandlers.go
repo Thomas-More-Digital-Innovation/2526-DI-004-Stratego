@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/gin-gonic/gin"
@@ -66,14 +67,30 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(user.ID, user.Username)
+	accessToken, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		log.Printf("Failed to generate token: %v", err)
+		log.Printf("Failed to generate access token: %v", err)
 		sendError(c, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
-	auth.SetSessionCookie(c, token)
+	refreshToken, err := auth.GenerateRefreshToken()
+	if err != nil {
+		log.Printf("Failed to generate refresh token: %v", err)
+		sendError(c, "Failed to generate session", http.StatusInternalServerError)
+		return
+	}
+
+	// Save refresh token to DB
+	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
+	if err := db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt); err != nil {
+		log.Printf("Failed to save refresh token: %v", err)
+		sendError(c, "Failed to persist session", http.StatusInternalServerError)
+		return
+	}
+
+	auth.SetSessionCookie(c, accessToken)
+	auth.SetRefreshTokenCookie(c, refreshToken)
 
 	sendJSON(c, user, http.StatusCreated)
 }
@@ -103,14 +120,30 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(user.ID, user.Username)
+	accessToken, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		log.Printf("Failed to generate token: %v", err)
+		log.Printf("Failed to generate access token: %v", err)
 		sendError(c, "Failed to create session", http.StatusInternalServerError)
 		return
 	}
 
-	auth.SetSessionCookie(c, token)
+	refreshToken, err := auth.GenerateRefreshToken()
+	if err != nil {
+		log.Printf("Failed to generate refresh token: %v", err)
+		sendError(c, "Failed to create session", http.StatusInternalServerError)
+		return
+	}
+
+	// Save refresh token to DB
+	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
+	if err := db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt); err != nil {
+		log.Printf("Failed to save refresh token: %v", err)
+		sendError(c, "Failed to persist session", http.StatusInternalServerError)
+		return
+	}
+
+	auth.SetSessionCookie(c, accessToken)
+	auth.SetRefreshTokenCookie(c, refreshToken)
 
 	sendJSON(c, user, http.StatusOK)
 }
@@ -123,8 +156,50 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 // @Success 200 {object} map[string]string "Logged out successfully"
 // @Router /users/logout [post]
 func (s *GameServer) LogoutHandler(c *gin.Context) {
+	// Try to delete refresh token from DB if it exists
+	if token, err := c.Cookie("refresh_token"); err == nil {
+		_ = db.DeleteRefreshToken(c.Request.Context(), token)
+	}
+
 	auth.ClearSessionCookie(c)
 	sendJSON(c, gin.H{"message": "Logged out successfully"}, http.StatusOK)
+}
+
+// RefreshTokenHandler handles access token renewal using a refresh token
+// @Summary Refresh access token
+// @Description Use a refresh token to get a new access token
+// @Tags users
+// @Produce json
+// @Success 200 {object} map[string]string "Success"
+// @Failure 401 {object} map[string]string "Invalid refresh token"
+// @Router /users/refresh [post]
+func (s *GameServer) RefreshTokenHandler(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		sendError(c, "Refresh token missing", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := db.GetUserIDByRefreshToken(c.Request.Context(), refreshToken)
+	if err != nil {
+		sendError(c, "Invalid or expired refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := db.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		sendError(c, "User no longer exists", http.StatusUnauthorized)
+		return
+	}
+
+	accessToken, err := auth.GenerateToken(user.ID, user.Username)
+	if err != nil {
+		sendError(c, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	auth.SetSessionCookie(c, accessToken)
+	sendJSON(c, gin.H{"message": "Token refreshed"}, http.StatusOK)
 }
 
 // GetCurrentUserHandler returns the currently logged-in user

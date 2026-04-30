@@ -181,6 +181,7 @@ func (s *GameServer) StartServer(addr string) error {
 
 	// Health check
 	s.router.GET("/health", s.HealthHandler)
+	s.router.GET("/csrf-token", s.GetCSRFToken)
 
 	// Swagger documentation (Dev only)
 	if !utils.IsProduction() {
@@ -193,6 +194,7 @@ func (s *GameServer) StartServer(addr string) error {
 		users.POST("/register", s.RegisterUserHandler)
 		users.POST("/login", s.LoginHandler)
 		users.POST("/logout", s.LogoutHandler)
+		users.POST("/refresh", s.RefreshTokenHandler)
 
 		// Authenticated user routes
 		me := users.Group("/me")

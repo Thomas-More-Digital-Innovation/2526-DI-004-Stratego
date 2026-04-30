@@ -1,3 +1,6 @@
 package auth
 
-const maxCookieAge = 30 * 24 * 60 * 60
+const (
+	MaxCookieAge        = 2 * 60 * 60           // 2 hours
+	MaxRefreshTokenAge = 30 * 24 * 60 * 60     // 30 days
+)

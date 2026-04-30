@@ -1,6 +1,7 @@
 package api
 
 import (
+	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"net/http"
 
@@ -48,4 +49,16 @@ func (s *GameServer) GamesPlayedCountHandler(c *gin.Context) {
 		return
 	}
 	sendJSON(c, gin.H{"count": count}, http.StatusOK)
+}
+
+// GetCSRFToken provides a new CSRF token to guests
+// @Summary Get CSRF token
+// @Description Set the XSRF-TOKEN cookie and return the token
+// @Tags auth
+// @Produce json
+// @Success 200 {object} map[string]string "CSRF token"
+// @Router /csrf-token [get]
+func (s *GameServer) GetCSRFToken(c *gin.Context) {
+	token := auth.SetCSRFCookie(c)
+	c.JSON(http.StatusOK, gin.H{"csrf_token": token})
 }
