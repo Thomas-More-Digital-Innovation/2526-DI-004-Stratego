@@ -84,6 +84,9 @@ func (s *GameServer) CreateGame(gameID string, gameType string, ai1, ai2 string)
 	session := game.NewGameSession(gameID, controller1, controller2)
 
 	hub := NewWSHub(session, gameType)
+	hub.OnCleanup = func() {
+		s.RemoveSession(gameID)
+	}
 
 	handler := &GameSessionHandler{
 		Session:  session,
@@ -108,6 +111,17 @@ func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
 	defer s.mutex.RUnlock()
 	handler, exists := s.sessions[gameID]
 	return handler, exists
+}
+
+// RemoveSession removes a game session from the server
+func (s *GameServer) RemoveSession(gameID string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if _, exists := s.sessions[gameID]; exists {
+		delete(s.sessions, gameID)
+		log.Printf("Removed session %s from GameServer", gameID)
+	}
 }
 
 // PrintRoutes prints an overview of all registered routes

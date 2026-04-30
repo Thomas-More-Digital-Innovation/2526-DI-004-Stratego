@@ -19,7 +19,15 @@ func (h *WSHub) BroadcastMessage(msgType string, data any) {
 		return
 	}
 
-	h.broadcast <- jsonData
+	if h.IsStopped() {
+		return
+	}
+
+	select {
+	case h.broadcast <- jsonData:
+	default:
+		log.Printf("Warning: Broadcast dropped for game %s (buffer full or hub stopping)", h.session.ID)
+	}
 }
 
 // BroadcastSetupBoard sends the setup board state to all clients

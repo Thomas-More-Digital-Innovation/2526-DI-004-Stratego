@@ -20,6 +20,9 @@ type WSHub struct {
 	cleanupTimer  *time.Timer
 	timerMutex    sync.Mutex
 	cleanupPeriod time.Duration
+	OnCleanup     func() // Callback to remove session from GameServer
+	stop          chan bool
+	stopped       bool
 }
 
 func NewWSHub(session *game.GameSession, gameType string) *WSHub {
@@ -31,6 +34,7 @@ func NewWSHub(session *game.GameSession, gameType string) *WSHub {
 		session:       session,
 		gameType:      gameType,
 		cleanupPeriod: 1 * time.Minute, // 1 minute grace period for reconnection
+		stop:          make(chan bool),
 	}
 }
 
@@ -61,20 +65,25 @@ func (h *WSHub) Run() {
 			h.mutex.Unlock()
 
 			if clientCount == 0 {
+				if h.session.GetGameState().IsGameOver {
+					h.cleanupPeriod = 30 * time.Second
+				} else {
+					h.cleanupPeriod = 1 * time.Minute
+				}
+
 				switch h.gameType {
 				case models.AiVsAi:
 					// Stop AI vs AI games immediately - no point running without observers
 					log.Printf("WSHub: All clients disconnected from AI vs AI game, stopping game immediately")
 					h.session.Stop()
+					if h.OnCleanup != nil {
+						h.OnCleanup()
+					}
+					h.Stop()
 
-				case models.HumanVsAi:
-					// Start cleanup timer for Human vs AI - allow reconnection grace period
-					log.Printf("WSHub: All clients disconnected from Human vs AI game, starting cleanup timer")
-					h.startCleanupTimer()
-
-				case models.HumanVsHuman:
-					// For Human vs Human, start timer to allow reconnection if both players leave
-					log.Printf("WSHub: All clients disconnected from Human vs Human game, starting cleanup timer")
+				case models.HumanVsAi, models.HumanVsHuman:
+					// Start cleanup timer with appropriate grace period
+					log.Printf("WSHub: All clients disconnected from %s game, starting cleanup timer (%v)", h.gameType, h.cleanupPeriod)
 					h.startCleanupTimer()
 				}
 			}
@@ -91,8 +100,34 @@ func (h *WSHub) Run() {
 				}
 			}
 			h.mutex.RUnlock()
+		case <-h.stop:
+			log.Printf("WSHub: Stopping hub loop for game %s", h.session.ID)
+			return
 		}
 	}
+}
+
+func (h *WSHub) Stop() {
+	h.mutex.Lock()
+	if h.stopped {
+		h.mutex.Unlock()
+		return
+	}
+	h.stopped = true
+	h.mutex.Unlock()
+
+	select {
+	case h.stop <- true:
+	default:
+		// Already stopped or no one listening
+	}
+}
+
+// IsStopped returns whether the hub is stopped
+func (h *WSHub) IsStopped() bool {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+	return h.stopped
 }
 
 // startCleanupTimer starts a timer to stop the game after the cleanup period
@@ -107,8 +142,12 @@ func (h *WSHub) startCleanupTimer() {
 	log.Printf("WSHub: Starting cleanup timer for %s game (will stop in %v)", h.gameType, h.cleanupPeriod)
 
 	h.cleanupTimer = time.AfterFunc(h.cleanupPeriod, func() {
-		log.Printf("WSHub: Cleanup timer expired for %s game, stopping game", h.gameType)
+		log.Printf("WSHub: Cleanup timer expired for %s game, stopping and cleaning up", h.gameType)
 		h.session.Stop()
+		if h.OnCleanup != nil {
+			h.OnCleanup()
+		}
+		h.Stop()
 	})
 }
 

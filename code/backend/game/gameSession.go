@@ -28,6 +28,7 @@ type GameSession struct {
 	animationCompleteChan chan bool
 	moveNotifyChan        chan bool // Signals when a move has been executed
 	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
+	aborted               bool      // Signals that game was manually stopped
 	// User ID for players (nil if guest/AI)
 	Player1UserID *int
 	Player2UserID *int
@@ -94,20 +95,31 @@ func (gs *GameSession) Start() error {
 // Stop forcefully stops the game session
 func (gs *GameSession) Stop() {
 	gs.mutex.Lock()
-	if !gs.running {
+	if gs.aborted {
 		gs.mutex.Unlock()
 		return
 	}
+	gs.aborted = true
+	wasRunning := gs.running
 	gs.mutex.Unlock()
 
-	log.Printf("GameSession %s: Stopping game", gs.ID)
+	log.Printf("GameSession %s: Stopping game (wasRunning=%v)", gs.ID, wasRunning)
 
-	select {
-	case gs.stopChan <- true:
-		log.Printf("GameSession %s: Stop signal sent", gs.ID)
-	default:
-		log.Printf("GameSession %s: Stop channel full or already stopped", gs.ID)
+	if wasRunning {
+		select {
+		case gs.stopChan <- true:
+			log.Printf("GameSession %s: Stop signal sent to runner", gs.ID)
+		default:
+			log.Printf("GameSession %s: Stop channel full or already stopped", gs.ID)
+		}
 	}
+}
+
+// IsAborted returns whether the game was aborted
+func (gs *GameSession) IsAborted() bool {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.aborted
 }
 
 // Pause pauses the game session

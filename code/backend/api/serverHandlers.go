@@ -196,8 +196,7 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	// Save game stats to database
 	go s.saveGameStats(session, winnerID, hub.gameType)
 
-	// Wait longer before stopping monitoring so users can see results
-	time.Sleep(30 * time.Second)
+	log.Printf("Game %s over. Waiting for users to disconnect before cleaning up.", session.ID)
 }
 
 // saveGameStats saves game statistics to the database
