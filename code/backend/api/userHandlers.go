@@ -18,14 +18,18 @@ func isStrongPassword(password string) bool {
 	if len(password) < 8 {
 		return false
 	}
-	var hasNumber bool
+	var hasNumber, hasUpper, hasLower bool
 	for _, char := range password {
-		if unicode.IsDigit(char) {
+		switch {
+		case unicode.IsDigit(char):
 			hasNumber = true
-			break
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
 		}
 	}
-	return hasNumber
+	return hasNumber && hasUpper && hasLower
 }
 
 // RegisterUserHandler handles user registration

@@ -15,6 +15,13 @@ import (
 // CSRFMiddleware requires a custom header for non-safe methods
 func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Exempt login and register from CSRF validation to support "cold start"
+		path := c.Request.URL.Path
+		if path == "/users/login" || path == "/users/register" {
+			c.Next()
+			return
+		}
+
 		// Skip for safe methods
 		if c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead || c.Request.Method == http.MethodOptions {
 			c.Next()
@@ -76,8 +83,8 @@ func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 	if !exists {
 		// Hard cap at 10,000 IPs to prevent OOM
 		if len(i.ips) >= 10000 {
-			// If we're at capacity, return a strict one-time limiter 
-			// or we could evict a random entry. For simplicity, we just 
+			// If we're at capacity, return a strict one-time limiter
+			// or we could evict a random entry. For simplicity, we just
 			// don't track the new IP until the next cleanup.
 			return rate.NewLimiter(i.r, i.b)
 		}
