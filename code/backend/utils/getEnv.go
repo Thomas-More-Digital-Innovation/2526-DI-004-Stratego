@@ -1,12 +1,22 @@
 package utils
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 func GetEnv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
 	return fallback
+}
+
+func GetEnvOrError(key string) (string, error) {
+	if value := os.Getenv(key); value == "" {
+		return "", errors.New("environment variable " + key + " not set")
+	}
+	return os.Getenv(key), nil
 }
 
 var isProd bool

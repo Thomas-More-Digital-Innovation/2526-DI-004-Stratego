@@ -13,7 +13,15 @@ import (
 	"time"
 )
 
-var jwtSecret = []byte(utils.GetEnv("JWT_SECRET", "dev_secret_only_for_local_development_123"))
+var jwtSecret []byte
+
+func init() {
+	secret, err := utils.GetEnvOrError("JWT_SECRET")
+	if err != nil {
+		panic(err)
+	}
+	jwtSecret = []byte(secret)
+}
 
 type JWTHeader struct {
 	Alg string `json:"alg"`
