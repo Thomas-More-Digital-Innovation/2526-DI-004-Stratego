@@ -165,6 +165,15 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 		return errors.New("failed to cast to human controller")
 	}
 
+	// Validate piece ownership
+	piece := gs.game.Board.GetPieceAt(move.GetFrom())
+	if piece == nil {
+		return errors.New("no piece at source position")
+	}
+	if piece.GetOwner() == nil || piece.GetOwner().GetID() != playerID {
+		return errors.New("piece at source position does not belong to current player")
+	}
+
 	// Validate move legality
 	validMoves, err := gs.game.Board.ListMoves(move.GetFrom())
 	if err != nil {
