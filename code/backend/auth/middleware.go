@@ -20,16 +20,11 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		session, exists := Store.GetSession(cookie)
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Invalid or expired session"})
+		user, err := VerifyToken(cookie)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized Token"})
 			c.Abort()
 			return
-		}
-
-		user := &models.User{
-			ID:       session.UserID,
-			Username: session.Username,
 		}
 
 		// Add user to context for handlers to use
@@ -44,11 +39,7 @@ func OptionalAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Cookie("session_id")
 		if err == nil {
-			if session, exists := Store.GetSession(cookie); exists {
-				user := &models.User{
-					ID:       session.UserID,
-					Username: session.Username,
-				}
+			if user, err := VerifyToken(cookie); err == nil {
 				c.Set(UserContextKey, user)
 			}
 		}
@@ -69,13 +60,11 @@ func GetCurrentUser(c *gin.Context) *models.User {
 	return user
 }
 
-const cookieMaxAge = 7 * 24 * 60 * 60
-
 var cookieSecure = utils.IsProduction()
 
 // SetSessionCookie sets the session cookie in response
 func SetSessionCookie(c *gin.Context, sessionID string) {
-	c.SetCookie("session_id", sessionID, cookieMaxAge, "/", "", cookieSecure, true)
+	c.SetCookie("session_id", sessionID, maxCookieAge, "/", "", cookieSecure, true)
 }
 
 // ClearSessionCookie removes the session cookie

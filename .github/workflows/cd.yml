@@ -35,14 +35,20 @@ jobs:
         with:
           context: ./code/backend
           push: true
-          tags: ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:${{ github.ref_name }},ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
+          tags: |
+            ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:${{ github.ref_name
+            }},
+            ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./code/frontend
           push: true
-          tags: ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:${{ github.ref_name }},ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:latest
+          tags: |
+            ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:${{ github.ref_name
+            }},
+            ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:latest
           build-args: |
             VITE_API_BASE=${{ vars.VITE_API_BASE }}
             VITE_WS_BASE=${{ vars.VITE_WS_BASE }}
@@ -86,6 +92,7 @@ jobs:
             echo "DB_NAME=${{ vars.DB_NAME }}" >> .env
             echo "DB_HOST=${{ vars.DB_HOST }}" >> .env
             echo "DB_PORT=${{ vars.DB_PORT }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             # Pull and restart
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d

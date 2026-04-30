@@ -66,14 +66,14 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 		return
 	}
 
-	session, err := auth.Store.CreateSession(user.ID, user.Username)
+	token, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		log.Printf("Failed to create session: %v", err)
-		sendError(c, "Failed to create session", http.StatusInternalServerError)
+		log.Printf("Failed to generate token: %v", err)
+		sendError(c, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
-	auth.SetSessionCookie(c, session.ID)
+	auth.SetSessionCookie(c, token)
 
 	sendJSON(c, user, http.StatusCreated)
 }
@@ -103,14 +103,14 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	session, err := auth.Store.CreateSession(user.ID, user.Username)
+	token, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		log.Printf("Failed to create session: %v", err)
+		log.Printf("Failed to generate token: %v", err)
 		sendError(c, "Failed to create session", http.StatusInternalServerError)
 		return
 	}
 
-	auth.SetSessionCookie(c, session.ID)
+	auth.SetSessionCookie(c, token)
 
 	sendJSON(c, user, http.StatusOK)
 }
@@ -123,13 +123,7 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 // @Success 200 {object} map[string]string "Logged out successfully"
 // @Router /users/logout [post]
 func (s *GameServer) LogoutHandler(c *gin.Context) {
-	cookie, err := c.Cookie("session_id")
-	if err == nil {
-		auth.Store.DeleteSession(cookie)
-	}
-
 	auth.ClearSessionCookie(c)
-
 	sendJSON(c, gin.H{"message": "Logged out successfully"}, http.StatusOK)
 }
 

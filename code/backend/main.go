@@ -3,7 +3,6 @@ package main
 import (
 	aivsai "digital-innovation/stratego/ai/AIvsAI"
 	"digital-innovation/stratego/api"
-	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
@@ -51,8 +50,6 @@ func main() {
 				log.Printf("Error closing database: %v", err)
 			}
 		}()
-
-		auth.Store.StartCleanupRoutine()
 
 		runServer(*addr) // websocket server
 	} else {
