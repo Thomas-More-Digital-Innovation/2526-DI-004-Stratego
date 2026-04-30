@@ -16,13 +16,13 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	s.broadcastFullState(hub, gameType)
 
 	// WAIT IN SETUP PHASE - WebSocket handlers will broadcast when user acts
-	for session.IsSetupPhase() {
-		if session.IsAborted() {
-			log.Printf("GameMonitor %s: Session aborted during setup, cleaning up", session.ID)
-			s.RemoveSession(session.ID)
-			return
-		}
-		time.Sleep(100 * time.Millisecond)
+	select {
+	case <-session.GetSetupCompleteChan():
+		log.Printf("GameMonitor %s: Setup complete signal received", session.ID)
+	case <-session.IsAbortedChan():
+		log.Printf("GameMonitor %s: Session aborted during setup, cleaning up", session.ID)
+		s.RemoveSession(session.ID)
+		return
 	}
 
 	log.Printf("GameMonitor %s: Exiting setup phase, game starting", session.ID)

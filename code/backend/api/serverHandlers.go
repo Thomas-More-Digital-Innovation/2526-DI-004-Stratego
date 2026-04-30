@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/game"
@@ -208,7 +207,7 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	g := session.GetGame()
 	initialState := g.GetInitialBoardState()
 
-	ctx := context.Background()
+	ctx := s.ctx
 	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
 		log.Printf("Failed to save game metadata for %s: %v", session.ID, err)
 	} else {

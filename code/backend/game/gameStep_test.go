@@ -31,7 +31,7 @@ func TestStepWhilePaused(t *testing.T) {
 	initialMoveHistory := len(g.MoveHistory)
 
 	// Attempt to step while paused
-	success := runner.Step(true)
+	success := runner.Step()
 
 	if !success {
 		t.Error("Step should have succeeded even when paused")

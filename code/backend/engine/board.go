@@ -17,6 +17,17 @@ func NewBoard() *Board {
 	}
 }
 
+// Clone creates a shallow copy of the board's field and lakes.
+// Since pieces are mostly immutable during AI move calculation, shallow copying is sufficient
+// to prevent concurrent access to the board's field array.
+func (b *Board) Clone() *Board {
+	newBoard := &Board{
+		field: b.field,
+		lakes: b.lakes,
+	}
+	return newBoard
+}
+
 // SetPieceAt sets the piece at the given position on the board.
 // The piece is updated in the board's internal field, which is a 10x10 2D slice of pointers to Piece.
 // The function does not check if the move is valid, it simply updates the board state.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	AIhandler "digital-innovation/stratego/ai/handler"
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/engine"
@@ -27,6 +28,8 @@ type GameServer struct {
 	sessions map[string]*GameSessionHandler
 	mutex    sync.RWMutex
 	router   *gin.Engine
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 // GameSessionHandler wraps a game session with its WebSocket hub
@@ -42,9 +45,13 @@ func NewGameServer() *GameServer {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &GameServer{
 		sessions: make(map[string]*GameSessionHandler),
 		router:   gin.New(),
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 }
 
@@ -144,9 +151,16 @@ func (s *GameServer) StartServer(addr string) error {
 
 	// Configure CORS
 	corsConfig := cors.DefaultConfig()
-	// Whitelist allowed origins
-	allowedOrigins := utils.GetEnv("ALLOWED_ORIGINS", "")
-	corsConfig.AllowOrigins = strings.Split(allowedOrigins, ",")
+	allowedOrigins, err := utils.GetEnvOrError("ALLOWED_ORIGINS")
+	if err == nil {
+		corsConfig.AllowOrigins = strings.Split(allowedOrigins, ",")
+	} else {
+		if !utils.IsProduction() {
+			corsConfig.AllowOrigins = []string{"http://localhost:5000"}
+		} else {
+			corsConfig.AllowOrigins = []string{"https://stratego.dotsem.be"}
+		}
+	}
 	corsConfig.AllowCredentials = true
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Content-Type", "Authorization", "X-Requested-With", "X-XSRF-TOKEN"}

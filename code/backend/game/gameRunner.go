@@ -75,7 +75,7 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 			continue
 		}
 
-		executed := gr.ExecuteTurn(logging)
+		executed := gr.ExecuteTurn()
 
 		if executed {
 			turnCount++
@@ -126,58 +126,57 @@ func (gr *GameRunner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
 }
 
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
-func (gr *GameRunner) ExecuteTurn(logging bool) bool {
-	return gr.executeTurn(logging, false)
+func (gr *GameRunner) ExecuteTurn() bool {
+	return gr.executeTurn(false)
 }
 
-func (gr *GameRunner) executeTurn(logging bool, ignorePause bool) bool {
+func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 	if gr.locker != nil {
 		gr.locker.Lock()
-		defer gr.locker.Unlock()
 	}
 
 	if gr.game.IsGameOver() {
-		if logging {
-			log.Printf("GameRunner.ExecuteTurn: Game is over")
+		if gr.locker != nil {
+			gr.locker.Unlock()
 		}
 		return false
 	}
 
 	if !ignorePause && gr.IsPaused() {
-		if logging {
-			log.Printf("GameRunner.ExecuteTurn: Game is paused")
+		if gr.locker != nil {
+			gr.locker.Unlock()
 		}
 		return false
 	}
 
 	controller := gr.game.GetCurrentController()
-	if logging {
-		log.Printf("GameRunner.ExecuteTurn: Current player=%s, controllerType=%d",
-			gr.game.CurrentPlayer.GetName(), controller.GetControllerType())
-	}
 
 	// Human controller - wait for input or handle move
-	// Check if human controller and if it has a pending move
 	if controller.GetControllerType() == engine.HumanController {
 		humanController, ok := controller.(*engine.HumanPlayerController)
 		if !ok || !humanController.HasPendingMove() {
 			if !gr.waitingForHumanInput {
-				if logging {
-					log.Printf("GameRunner.ExecuteTurn: Waiting for human input")
-				}
 				gr.waitingForHumanInput = true
 			}
-			return false // Wait for human input
+			if gr.locker != nil {
+				gr.locker.Unlock()
+			}
+			return false
 		}
 
 		move := humanController.GetPendingMove()
 		if move == nil {
+			if gr.locker != nil {
+				gr.locker.Unlock()
+			}
 			return false
 		}
 
 		piece := gr.game.Board.GetPieceAt(move.GetFrom())
 		if piece == nil {
-			fmt.Println("Invalid move: no piece at from position")
+			if gr.locker != nil {
+				gr.locker.Unlock()
+			}
 			return false
 		}
 
@@ -187,54 +186,63 @@ func (gr *GameRunner) executeTurn(logging bool, ignorePause bool) bool {
 		if gr.onMoveExecuted != nil {
 			gr.onMoveExecuted()
 		}
+
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return true
 	}
 
 	// AI controller - make move
-	// Calculate AI move first so we can subtract its thinking time from the pacing delay
+	// Clone board for thread-safe calculation
+	boardCopy := gr.game.Board.Clone()
+	currentPlayer := gr.game.CurrentPlayer
+
+	// Release lock while AI thinks -> avoid blocking other goroutines
+	if gr.locker != nil {
+		gr.locker.Unlock()
+	}
+
 	start := time.Now()
-	move := controller.MakeMove(gr.game.Board)
+	move := controller.MakeMove(boardCopy)
 	elapsed := time.Since(start)
 
-	// Add delay for pacing if requested, compensating for AI thinking time
+	// Pacing delay (outside the lock)
 	if !ignorePause && gr.turnDelay > 0 {
-		// If turnDelay is tiny (like 1ns), we use it as is
-		// Otherwise we add some random variance for pacing if it's substantial
 		delay := gr.turnDelay
 		if gr.turnDelay >= 100*time.Millisecond {
 			delay = time.Duration(float64(gr.turnDelay)*0.8 + float64(rand.Intn(int(gr.turnDelay)))*0.4)
 		}
-
 		sleepTime := delay - elapsed
 		if sleepTime > 0 {
 			time.Sleep(sleepTime)
 		}
 
-		// Re-check pause after delay to ensure we haven't been paused in the meantime
+		// Re-check pause after delay
 		if !ignorePause && gr.IsPaused() {
-			return false // Abort execution, AI will safely recalculate when unpaused
+			return false
 		}
+	}
+
+	// Re-acquire lock to apply the move
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+
+	// Re-verify that the game is still on and it's still this AI's turn
+	if gr.game.IsGameOver() || gr.game.CurrentPlayer != currentPlayer {
+		return false
 	}
 
 	piece := gr.game.Board.GetPieceAt(move.GetFrom())
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
-		if logging {
-			log.Printf("AI %s has no valid moves (no piece at %v or wrong owner)",
-				gr.game.CurrentPlayer.GetName(), move.GetFrom())
-		}
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
-		if logging {
-			fmt.Printf("%s has no valid moves remaining - %s wins!\n",
-				gr.game.CurrentPlayer.GetName(), opponent.GetName())
-		}
 		return false
 	}
 
 	if !gr.game.Board.IsValidMove(&move) {
-		if logging {
-			log.Printf("AI %s provided invalid move: %v", gr.game.CurrentPlayer.GetName(), move)
-		}
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
 		return false
@@ -304,7 +312,7 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 
 	humanController.SetPendingMove(move)
 
-	gr.ExecuteTurn(true) // TODO assuming logging is true for human moves
+	gr.ExecuteTurn()
 
 	return nil
 }
@@ -325,8 +333,8 @@ func (gr *GameRunner) SetTurnDelay(delay time.Duration) {
 }
 
 // Step executes a single turn even if the game is paused
-func (gr *GameRunner) Step(logging bool) bool {
-	return gr.executeTurn(logging, true)
+func (gr *GameRunner) Step() bool {
+	return gr.executeTurn(true)
 }
 
 // IsPaused returns whether the game runner is paused
