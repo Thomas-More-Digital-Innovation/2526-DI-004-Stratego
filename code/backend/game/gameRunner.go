@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type GameRunner struct {
 	paused               bool // flag to indicate if game is paused
 	onMoveExecuted       func()
 	stopChan             chan bool
+	locker               sync.Locker // Mutex from GameSession to prevent race conditions
 }
 
 func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunner {
@@ -44,7 +46,19 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 		log.Printf("GameRunner: Starting RunToCompletion loop")
 	}
 
-	for !gr.game.IsGameOver() && turnCount < gr.maxTurns {
+	for {
+		var isGameOver bool
+		if gr.locker != nil {
+			gr.locker.Lock()
+			isGameOver = gr.game.IsGameOver()
+			gr.locker.Unlock()
+		} else {
+			isGameOver = gr.game.IsGameOver()
+		}
+
+		if isGameOver || turnCount >= gr.maxTurns {
+			break
+		}
 		// Check for stop signal
 		select {
 		case <-gr.stopChan:
@@ -89,10 +103,20 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 		return gr.calculateWinnerOnMaxTurnsExceeded()
 	}
 
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+		return gr.game.GetWinner()
+	}
+
 	return gr.game.GetWinner()
 }
 
 func (gr *GameRunner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
 	if float64(gr.game.Players[0].GetPieceScore())/float64(gr.game.Players[1].GetPieceScore()) > 1.15 {
 		gr.game.SetWinner(gr.game.Players[0], WinCauseMaxTurns)
 	} else if float64(gr.game.Players[1].GetPieceScore())/float64(gr.game.Players[0].GetPieceScore()) > 1.15 {
@@ -107,6 +131,11 @@ func (gr *GameRunner) ExecuteTurn(logging bool) bool {
 }
 
 func (gr *GameRunner) executeTurn(logging bool, ignorePause bool) bool {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+
 	if gr.game.IsGameOver() {
 		if logging {
 			log.Printf("GameRunner.ExecuteTurn: Game is over")
@@ -245,6 +274,11 @@ func (gr *GameRunner) GetGame() *Game {
 
 // SubmitHumanMove allows external code to submit a human player's move
 func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+
 	if !gr.waitingForHumanInput {
 		return fmt.Errorf("not waiting for input")
 	}

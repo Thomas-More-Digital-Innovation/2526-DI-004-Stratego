@@ -58,6 +58,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 	}
 
 	session.runner.stopChan = session.stopChan
+	session.runner.locker = &session.mutex
 
 	session.runner.SetMoveCallback(func() {
 		session.NotifyMoveExecuted()

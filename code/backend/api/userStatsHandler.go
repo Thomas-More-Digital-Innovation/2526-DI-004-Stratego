@@ -25,7 +25,7 @@ func (s *GameServer) GetUserStatsHandler(c *gin.Context) {
 		return
 	}
 
-	stats, err := db.GetUserStats(userID)
+	stats, err := db.GetUserStats(c.Request.Context(), userID)
 	if err != nil {
 		sendError(c, "Stats not found", http.StatusNotFound)
 		return
@@ -50,7 +50,7 @@ func (s *GameServer) GetCurrentUserStatsHandler(c *gin.Context) {
 		return
 	}
 
-	stats, err := db.GetUserStats(user.ID)
+	stats, err := db.GetUserStats(c.Request.Context(), user.ID)
 	if err != nil {
 		sendError(c, "Stats not found", http.StatusNotFound)
 		return

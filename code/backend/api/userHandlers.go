@@ -55,7 +55,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := db.CreateUser(req.Username, req.Password, req.ProfilePicture)
+	user, err := db.CreateUser(c.Request.Context(), req.Username, req.Password, req.ProfilePicture)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
 			sendError(c, "Username already exists", http.StatusConflict)
@@ -97,7 +97,7 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := db.AuthenticateUser(req.Username, req.Password)
+	user, err := db.AuthenticateUser(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		sendError(c, "Invalid username or password", http.StatusUnauthorized)
 		return
@@ -143,7 +143,7 @@ func (s *GameServer) GetCurrentUserHandler(c *gin.Context) {
 		return
 	}
 
-	fullUser, err := db.GetUserByID(user.ID)
+	fullUser, err := db.GetUserByID(c.Request.Context(), user.ID)
 	if err != nil {
 		sendError(c, "User not found", http.StatusNotFound)
 		return
@@ -170,7 +170,7 @@ func (s *GameServer) GetUserHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := db.GetUserByID(userID)
+	user, err := db.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
 		sendError(c, "User not found", http.StatusNotFound)
 		return

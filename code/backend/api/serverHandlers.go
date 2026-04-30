@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/game"
@@ -207,11 +208,12 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	g := session.GetGame()
 	initialState := g.GetInitialBoardState()
 
-	if err := db.SaveGame(session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
+	ctx := context.Background()
+	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
 		log.Printf("Failed to save game metadata for %s: %v", session.ID, err)
 	} else {
 		for _, m := range g.HistoricalHistory {
-			if err := db.SaveMove(session.ID, m); err != nil {
+			if err := db.SaveMove(ctx, session.ID, m); err != nil {
 				log.Printf("Failed to save move %d for game %s: %v", m.MoveIndex, session.ID, err)
 			}
 		}
@@ -222,7 +224,7 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		userID := *session.Player1UserID
 		won := winnerID != nil && *winnerID == 0
 
-		if err := db.UpdateUserStats(userID, won, state.MoveCount, duration); err != nil {
+		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
 			log.Printf("Failed to update stats for user %d: %v", userID, err)
 		} else {
 			log.Printf("Updated stats for user %d (won=%v)", userID, won)
@@ -234,7 +236,7 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		userID := *session.Player2UserID
 		won := winnerID != nil && *winnerID == 1
 
-		if err := db.UpdateUserStats(userID, won, state.MoveCount, duration); err != nil {
+		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
 			log.Printf("Failed to update stats for user %d: %v", userID, err)
 		} else {
 			log.Printf("Updated stats for user %d (won=%v)", userID, won)

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"digital-innovation/stratego/models"
 	"encoding/json"
@@ -11,7 +12,7 @@ import (
 )
 
 // CreateUser creates a new user with hashed password
-func CreateUser(username, password, profilePicture string) (*models.User, error) {
+func CreateUser(ctx context.Context, username, password, profilePicture string) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -23,7 +24,7 @@ func CreateUser(username, password, profilePicture string) (*models.User, error)
 		VALUES ($1, $2, $3)
 		RETURNING id, username, profile_picture, created_at, updated_at
 	`
-	err = DB.QueryRow(query, username, string(hashedPassword), profilePicture).Scan(
+	err = DB.QueryRowContext(ctx, query, username, string(hashedPassword), profilePicture).Scan(
 		&user.ID, &user.Username, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -31,7 +32,7 @@ func CreateUser(username, password, profilePicture string) (*models.User, error)
 	}
 
 	// Create initial stats for the user
-	_, err = DB.Exec(`
+	_, err = DB.ExecContext(ctx, `
 		INSERT INTO user_stats (user_id)
 		VALUES ($1)
 	`, user.ID)
@@ -43,7 +44,7 @@ func CreateUser(username, password, profilePicture string) (*models.User, error)
 }
 
 // AuthenticateUser checks username and password, returns user if valid
-func AuthenticateUser(username, password string) (*models.User, error) {
+func AuthenticateUser(ctx context.Context, username, password string) (*models.User, error) {
 	var user models.User
 	var passwordHash string
 
@@ -52,7 +53,7 @@ func AuthenticateUser(username, password string) (*models.User, error) {
 		FROM users
 		WHERE username = $1
 	`
-	err := DB.QueryRow(query, username).Scan(
+	err := DB.QueryRowContext(ctx, query, username).Scan(
 		&user.ID, &user.Username, &passwordHash, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -72,14 +73,14 @@ func AuthenticateUser(username, password string) (*models.User, error) {
 }
 
 // GetUserByID retrieves a user by ID
-func GetUserByID(userID int) (*models.User, error) {
+func GetUserByID(ctx context.Context, userID int) (*models.User, error) {
 	var user models.User
 	query := `
 		SELECT id, username, profile_picture, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
-	err := DB.QueryRow(query, userID).Scan(
+	err := DB.QueryRowContext(ctx, query, userID).Scan(
 		&user.ID, &user.Username, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -89,7 +90,7 @@ func GetUserByID(userID int) (*models.User, error) {
 }
 
 // GetUserStats retrieves stats for a user
-func GetUserStats(userID int) (*models.UserStats, error) {
+func GetUserStats(ctx context.Context, userID int) (*models.UserStats, error) {
 	var stats models.UserStats
 	query := `
 		SELECT id, user_id, total_games, wins, losses, draws, 
@@ -97,7 +98,7 @@ func GetUserStats(userID int) (*models.UserStats, error) {
 		FROM user_stats
 		WHERE user_id = $1
 	`
-	err := DB.QueryRow(query, userID).Scan(
+	err := DB.QueryRowContext(ctx, query, userID).Scan(
 		&stats.ID, &stats.UserID, &stats.TotalGames, &stats.Wins, &stats.Losses,
 		&stats.Draws, &stats.TotalMoves, &stats.AvgGameDurationSecs,
 		&stats.CreatedAt, &stats.UpdatedAt,
@@ -109,7 +110,7 @@ func GetUserStats(userID int) (*models.UserStats, error) {
 }
 
 // UpdateUserStats updates game statistics for a user
-func UpdateUserStats(userID int, won bool, moveCount int, durationSecs float64) error {
+func UpdateUserStats(ctx context.Context, userID int, won bool, moveCount int, durationSecs float64) error {
 	query := `
 		UPDATE user_stats
 		SET total_games = total_games + 1,
@@ -127,7 +128,7 @@ func UpdateUserStats(userID int, won bool, moveCount int, durationSecs float64) 
 		lossesInc = 1
 	}
 
-	_, err := DB.Exec(query, winsInc, lossesInc, moveCount, durationSecs, userID)
+	_, err := DB.ExecContext(ctx, query, winsInc, lossesInc, moveCount, durationSecs, userID)
 	if err != nil {
 		return fmt.Errorf("failed to update user stats: %w", err)
 	}
@@ -135,14 +136,14 @@ func UpdateUserStats(userID int, won bool, moveCount int, durationSecs float64) 
 }
 
 // CreateBoardSetup saves a new board setup
-func CreateBoardSetup(userID int, name, description, setupData string, isDefault bool) (*models.BoardSetup, error) {
+func CreateBoardSetup(ctx context.Context, userID int, name, description, setupData string, isDefault bool) (*models.BoardSetup, error) {
 	var setup models.BoardSetup
 	query := `
 		INSERT INTO board_setups (user_id, name, description, setup_data, is_default)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, user_id, name, description, setup_data, is_default, created_at, updated_at
 	`
-	err := DB.QueryRow(query, userID, name, description, setupData, isDefault).Scan(
+	err := DB.QueryRowContext(ctx, query, userID, name, description, setupData, isDefault).Scan(
 		&setup.ID, &setup.UserID, &setup.Name, &setup.Description,
 		&setup.SetupData, &setup.IsDefault, &setup.CreatedAt, &setup.UpdatedAt,
 	)
@@ -153,14 +154,14 @@ func CreateBoardSetup(userID int, name, description, setupData string, isDefault
 }
 
 // GetBoardSetup retrieves a board setup by ID and verifying ownership
-func GetBoardSetup(setupID, userID int) (*models.BoardSetup, error) {
+func GetBoardSetup(ctx context.Context, setupID, userID int) (*models.BoardSetup, error) {
 	var setup models.BoardSetup
 	query := `
 		SELECT id, user_id, name, description, setup_data, is_default, created_at, updated_at
 		FROM board_setups
 		WHERE id = $1 AND user_id = $2
 	`
-	err := DB.QueryRow(query, setupID, userID).Scan(
+	err := DB.QueryRowContext(ctx, query, setupID, userID).Scan(
 		&setup.ID, &setup.UserID, &setup.Name, &setup.Description,
 		&setup.SetupData, &setup.IsDefault, &setup.CreatedAt, &setup.UpdatedAt,
 	)
@@ -171,14 +172,14 @@ func GetBoardSetup(setupID, userID int) (*models.BoardSetup, error) {
 }
 
 // GetUserBoardSetups retrieves all board setups for a user
-func GetUserBoardSetups(userID int) ([]models.BoardSetup, error) {
+func GetUserBoardSetups(ctx context.Context, userID int) ([]models.BoardSetup, error) {
 	query := `
 		SELECT id, user_id, name, description, setup_data, is_default, created_at, updated_at
 		FROM board_setups
 		WHERE user_id = $1
 		ORDER BY is_default DESC, created_at DESC
 	`
-	rows, err := DB.Query(query, userID)
+	rows, err := DB.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query board setups: %w", err)
 	}
@@ -200,7 +201,7 @@ func GetUserBoardSetups(userID int) ([]models.BoardSetup, error) {
 }
 
 // UpdateBoardSetup updates an existing board setup and verifying ownership
-func UpdateBoardSetup(setupID, userID int, name, description, setupData string, isDefault bool) error {
+func UpdateBoardSetup(ctx context.Context, setupID, userID int, name, description, setupData string, isDefault bool) error {
 	query := `
 		UPDATE board_setups
 		SET name = COALESCE(NULLIF($1, ''), name),
@@ -210,7 +211,7 @@ func UpdateBoardSetup(setupID, userID int, name, description, setupData string, 
 		    updated_at = $5
 		WHERE id = $6 AND user_id = $7
 	`
-	result, err := DB.Exec(query, name, description, setupData, isDefault, time.Now(), setupID, userID)
+	result, err := DB.ExecContext(ctx, query, name, description, setupData, isDefault, time.Now(), setupID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to update board setup: %w", err)
 	}
@@ -228,9 +229,9 @@ func UpdateBoardSetup(setupID, userID int, name, description, setupData string, 
 }
 
 // DeleteBoardSetup deletes a board setup
-func DeleteBoardSetup(setupID, userID int) error {
+func DeleteBoardSetup(ctx context.Context, setupID, userID int) error {
 	query := `DELETE FROM board_setups WHERE id = $1 AND user_id = $2`
-	result, err := DB.Exec(query, setupID, userID)
+	result, err := DB.ExecContext(ctx, query, setupID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete board setup: %w", err)
 	}
@@ -248,7 +249,7 @@ func DeleteBoardSetup(setupID, userID int) error {
 }
 
 // SaveGame persists the game metadata and initial state
-func SaveGame(gameID string, p1ID, p2ID *int, gameType string, initialState interface{}, winnerID *int) error {
+func SaveGame(ctx context.Context, gameID string, p1ID, p2ID *int, gameType string, initialState interface{}, winnerID *int) error {
 	stateJSON, err := json.Marshal(initialState)
 	if err != nil {
 		return fmt.Errorf("failed to marshal initial state: %w", err)
@@ -258,7 +259,7 @@ func SaveGame(gameID string, p1ID, p2ID *int, gameType string, initialState inte
 		INSERT INTO games (id, player1_user_id, player2_user_id, winner_id, game_type, initial_state, finished_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
-	_, err = DB.Exec(query, gameID, p1ID, p2ID, winnerID, gameType, stateJSON, time.Now())
+	_, err = DB.ExecContext(ctx, query, gameID, p1ID, p2ID, winnerID, gameType, stateJSON, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to save game: %w", err)
 	}
@@ -266,7 +267,7 @@ func SaveGame(gameID string, p1ID, p2ID *int, gameType string, initialState inte
 }
 
 // SaveMove persists a single move in a game's history
-func SaveMove(gameID string, move models.HistoricalMove) error {
+func SaveMove(ctx context.Context, gameID string, move models.HistoricalMove) error {
 	attackerJSON, err := json.Marshal(move.Attacker)
 	if err != nil {
 		return fmt.Errorf("failed to marshal attacker data: %w", err)
@@ -280,7 +281,7 @@ func SaveMove(gameID string, move models.HistoricalMove) error {
 		INSERT INTO game_moves (game_id, move_index, player_id, from_x, from_y, to_x, to_y, attacker_data, defender_data, result)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	_, err = DB.Exec(query, gameID, move.MoveIndex, move.PlayerID,
+	_, err = DB.ExecContext(ctx, query, gameID, move.MoveIndex, move.PlayerID,
 		move.FromX, move.FromY, move.ToX, move.ToY,
 		attackerJSON, defenderJSON, move.Result)
 	if err != nil {
@@ -288,7 +289,7 @@ func SaveMove(gameID string, move models.HistoricalMove) error {
 	}
 	return nil
 }
-func GetGameHistory(gameID string) (*models.GameHistory, error) {
+func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, error) {
 	var history models.GameHistory
 	history.GameID = gameID
 
@@ -298,7 +299,7 @@ func GetGameHistory(gameID string) (*models.GameHistory, error) {
 		FROM games
 		WHERE id = $1
 	`
-	err := DB.QueryRow(query, gameID).Scan(&initialStateJSON, &history.WinnerID)
+	err := DB.QueryRowContext(ctx, query, gameID).Scan(&initialStateJSON, &history.WinnerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get game history metadata: %w", err)
 	}
@@ -313,7 +314,7 @@ func GetGameHistory(gameID string) (*models.GameHistory, error) {
 		WHERE game_id = $1
 		ORDER BY move_index ASC
 	`
-	rows, err := DB.Query(query, gameID)
+	rows, err := DB.QueryContext(ctx, query, gameID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query game moves: %w", err)
 	}
