@@ -22,7 +22,7 @@ func RequireAuth() gin.HandlerFunc {
 
 		user, err := VerifyToken(cookie)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: " + err.Error()})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized Token"})
 			c.Abort()
 			return
 		}
