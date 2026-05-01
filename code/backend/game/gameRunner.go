@@ -178,12 +178,12 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 		gr.game.MakeMove(move, piece)
 		gr.waitingForHumanInput = false
 
-		if gr.onMoveExecuted != nil {
-			gr.onMoveExecuted()
-		}
-
 		if gr.locker != nil {
 			gr.locker.Unlock()
+		}
+
+		if gr.onMoveExecuted != nil {
+			gr.onMoveExecuted()
 		}
 		return true
 	}
@@ -222,17 +222,22 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 	// Re-acquire lock to apply the move
 	if gr.locker != nil {
 		gr.locker.Lock()
-		defer gr.locker.Unlock()
 	}
 
 	// Re-verify that the game is still on and it's still this AI's turn
 	if gr.game.IsGameOver() || gr.game.CurrentPlayer != currentPlayer {
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return false
 	}
 
 	// Check if game was stopped while AI was thinking
 	select {
 	case <-gr.stopChan:
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return false
 	default:
 	}
@@ -241,16 +246,26 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return false
 	}
 
 	if !gr.game.Board.IsValidMove(&move) {
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
 		gr.game.SetWinner(opponent, WinCauseNoMovablePieces)
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return false
 	}
 
 	gr.game.MakeMove(&move, piece)
+
+	if gr.locker != nil {
+		gr.locker.Unlock()
+	}
 
 	if gr.onMoveExecuted != nil {
 		gr.onMoveExecuted()
@@ -286,33 +301,51 @@ func (gr *GameRunner) GetGame() *Game {
 func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 	if gr.locker != nil {
 		gr.locker.Lock()
-		defer gr.locker.Unlock()
 	}
 
 	if !gr.waitingForHumanInput {
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return fmt.Errorf("not waiting for input")
 	}
 
 	controller := gr.game.GetCurrentController()
 	if controller.GetControllerType() != engine.HumanController {
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return fmt.Errorf("current player is not human")
 	}
 
 	humanController, ok := controller.(*engine.HumanPlayerController)
 	if !ok {
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return fmt.Errorf("invalid controller type")
 	}
 
 	// Check that the move's player matches the current player
 	if move.GetPlayer() != gr.game.CurrentPlayer {
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return fmt.Errorf("move player does not match current player")
 	}
 
 	if !gr.game.Board.IsValidMove(&move) {
+		if gr.locker != nil {
+			gr.locker.Unlock()
+		}
 		return fmt.Errorf("invalid move")
 	}
 
 	humanController.SetPendingMove(move)
+
+	if gr.locker != nil {
+		gr.locker.Unlock()
+	}
 
 	gr.ExecuteTurn()
 
