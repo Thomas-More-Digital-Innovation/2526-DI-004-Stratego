@@ -159,6 +159,10 @@ func (gs *GameSession) Stop() {
 		// We don't necessarily know WHO stopped it here easily, but we'll log the session ID
 		logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
 	}
+
+	if gs.setupTimer != nil {
+		gs.setupTimer.Stop()
+	}
 }
 
 // IsAborted returns whether the game was aborted

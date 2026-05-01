@@ -39,8 +39,14 @@ func NewWSHub(session *game.GameSession, gameType string) *WSHub {
 }
 
 // Run starts the hub's main loop
-// If user disconnects, the hub will stop the game after 1 minute, if human is playing
 func (h *WSHub) Run() {
+	// Start an initial cleanup timer to prevent zombie sessions if no one ever connects
+	// We give 2 minutes for the initial connection
+	originalPeriod := h.cleanupPeriod
+	h.cleanupPeriod = 2 * time.Minute
+	h.startCleanupTimer()
+	h.cleanupPeriod = originalPeriod
+
 	for {
 		select {
 		case client := <-h.register:
