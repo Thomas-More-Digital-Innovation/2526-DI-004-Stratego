@@ -2,11 +2,11 @@ package api
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -125,7 +125,7 @@ func (c *WSClient) handleGetValidMoves(data any) {
 
 	jsonResponse, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling valid moves: %v", err)
+		logging.Error("Error marshaling valid moves", err)
 		return
 	}
 
@@ -134,7 +134,6 @@ func (c *WSClient) handleGetValidMoves(data any) {
 
 // handleAnimationComplete processes animation complete message from client
 func (c *WSClient) handleAnimationComplete() {
-	log.Printf("Animation complete received from client %d", c.seatIndex)
 	c.session.SignalAnimationComplete()
 }
 
@@ -176,8 +175,6 @@ func (c *WSClient) handleSwapPieces(data interface{}) {
 		return
 	}
 
-	log.Printf("Pieces swapped: %v <-> %v", pos1, pos2)
-
 	c.hub.BroadcastSetupBoard()
 }
 
@@ -211,8 +208,6 @@ func (c *WSClient) handleRandomizeSetup(data interface{}) {
 		return
 	}
 
-	log.Printf("Setup randomized for player %d", targetPlayer)
-
 	c.hub.BroadcastSetupBoard()
 }
 
@@ -236,8 +231,6 @@ func (c *WSClient) handleStartGame(data interface{}) {
 		c.sendError(fmt.Sprintf("Failed to start game: %v", err))
 		return
 	}
-
-	log.Printf("Game started (client: %d, headless: %v)", c.seatIndex, headless)
 
 	c.hub.BroadcastGameTransition()
 }
@@ -288,8 +281,6 @@ func (c *WSClient) handleLoadSetup(data interface{}) {
 		return
 	}
 
-	log.Printf("Setup loaded for player %d", targetPlayer)
-
 	c.hub.BroadcastSetupBoard()
 }
 
@@ -300,7 +291,6 @@ func (c *WSClient) handlePause() {
 		return
 	}
 	c.session.Pause()
-	log.Printf("Game paused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
 	c.hub.BroadcastGameState()
 }
 
@@ -311,7 +301,6 @@ func (c *WSClient) handleUnpause() {
 		return
 	}
 	c.session.Unpause()
-	log.Printf("Game unpaused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
 	c.hub.BroadcastGameState()
 }
 
@@ -338,7 +327,6 @@ func (c *WSClient) handleSetSpeed(data interface{}) {
 	}
 
 	c.session.SetTurnDelay(time.Duration(speed) * time.Millisecond)
-	log.Printf("Game speed set to %dms", speed)
 }
 
 // handleStep processes a manual step message
@@ -349,7 +337,6 @@ func (c *WSClient) handleStep() {
 	}
 
 	if c.session.StepAI() {
-		log.Printf("Manual AI step executed")
 		c.hub.BroadcastGameState()
 	} else {
 		c.sendError("Failed to execute step (maybe already running or not AI turn)")

@@ -3,6 +3,7 @@ package api
 import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"log"
 	"net/http"
@@ -66,7 +67,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 			sendError(c, "Username already exists", http.StatusConflict)
 			return
 		}
-		log.Printf("Failed to create user: %v", err)
+		logging.Error("Failed to create user", err)
 		sendError(c, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
@@ -96,6 +97,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 	auth.SetSessionCookie(c, accessToken)
 	auth.SetRefreshTokenCookie(c, refreshToken)
 
+	logging.UserRegistered(user.Username, user.ID)
 	sendJSON(c, user, http.StatusCreated)
 }
 
@@ -149,6 +151,7 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 	auth.SetSessionCookie(c, accessToken)
 	auth.SetRefreshTokenCookie(c, refreshToken)
 
+	logging.UserLoggedIn(user.Username, user.ID)
 	sendJSON(c, user, http.StatusOK)
 }
 

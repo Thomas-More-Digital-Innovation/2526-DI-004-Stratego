@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"fmt"
 	"log"
@@ -72,7 +73,7 @@ func (s *GameServer) HandleCreateGame(c *gin.Context) {
 
 	sendJSON(c, response, http.StatusOK)
 
-	log.Printf("Created game %s (type: %s) by user %d", req.GameID, req.GameType, userID)
+	logging.GameStarted(req.GameID, req.GameType, userID)
 }
 
 // HandleWebSocketConnection handles WebSocket connections
@@ -136,7 +137,7 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 		}
 	}
 
-	log.Printf("WebSocket connection for game %s (player %d, user %v)", gameID, playerID, currentUserID)
+	logging.GameStarted(gameID, "WebSocket Join", playerID)
 
 	HandleWebSocket(c.Writer, c.Request, handler.Session, handler.Hub, playerID)
 }
@@ -195,7 +196,7 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	// Save game stats to database
 	go s.saveGameStats(session, winnerID, hub.gameType)
 
-	log.Printf("Game %s over. Waiting for users to disconnect before cleaning up.", session.ID)
+	logging.GameFinished(session.ID, winnerName, state.Round)
 }
 
 // saveGameStats saves game statistics to the database

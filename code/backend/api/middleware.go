@@ -2,6 +2,7 @@ package api
 
 import (
 	"digital-innovation/stratego/auth"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
 	"log"
 	"net/http"
@@ -39,7 +40,7 @@ func CSRFMiddleware() gin.HandlerFunc {
 		tokenCookie, err := c.Cookie("XSRF-TOKEN")
 
 		if tokenHeader == "" || err != nil || tokenHeader != tokenCookie {
-			log.Printf("CSRF validation failed: header=%s, cookie=%s, err=%v", tokenHeader, tokenCookie, err)
+			logging.SecurityWarning("CSRF validation failed", "Path: "+path)
 			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF validation failed"})
 			c.Abort()
 			return
@@ -120,6 +121,7 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		if !limiter.GetLimiter(ip).Allow() {
+			logging.SecurityWarning("Rate limit triggered", "IP: "+ip)
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
 			c.Abort()
 			return

@@ -2,6 +2,7 @@ package game
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"errors"
 	"fmt"
@@ -84,11 +85,13 @@ func (gs *GameSession) Start() error {
 	gs.running = true
 	gs.mutex.Unlock()
 
-	log.Printf("GameSession %s: Starting game loop", gs.ID)
-
 	go func() {
-		winner := gs.runner.RunToCompletion(true) // TODO maybe conditionally set logging?
-		log.Printf("GameSession %s: Game finished, winner=%v", gs.ID, winner)
+		winner := gs.runner.RunToCompletion(false) // no noisy logging
+		winnerName := "Draw"
+		if winner != nil {
+			winnerName = winner.GetName()
+		}
+		logging.GameFinished(gs.ID, winnerName, gs.game.GetRound())
 		gs.doneChan <- winner
 		gs.mutex.Lock()
 		gs.running = false
@@ -109,11 +112,9 @@ func (gs *GameSession) Stop() {
 	wasRunning := gs.running
 	gs.mutex.Unlock()
 
-	log.Printf("GameSession %s: Stopping game (wasRunning=%v)", gs.ID, wasRunning)
-
 	if wasRunning {
 		close(gs.stopChan)
-		log.Printf("GameSession %s: Stop signal (close) sent to all listeners", gs.ID)
+		logging.GameAborted(gs.ID, "Manual stop requested")
 	}
 }
 
@@ -339,9 +340,7 @@ func (gs *GameSession) WaitForAnimationComplete(timeout time.Duration) {
 
 	select {
 	case <-gs.animationCompleteChan:
-		log.Printf("GameSession %s: Animation complete signal received", gs.ID)
 	case <-time.After(timeout):
-		log.Printf("GameSession %s: Animation timeout", gs.ID)
 	}
 
 	gs.mutex.Lock()
@@ -358,9 +357,7 @@ func (gs *GameSession) SignalAnimationComplete() {
 	if waiting {
 		select {
 		case gs.animationCompleteChan <- true:
-			log.Printf("GameSession %s: Animation complete signal sent", gs.ID)
 		default:
-			log.Printf("GameSession %s: Animation complete channel full", gs.ID)
 		}
 	}
 }
@@ -384,7 +381,6 @@ func (gs *GameSession) NotifyMoveExecuted() {
 	select {
 	case gs.moveNotifyChan <- true:
 	default:
-		log.Printf("GameSession %s: Move notification channel full", gs.ID)
 	}
 }
 
@@ -491,8 +487,6 @@ func (gs *GameSession) SwapSetupPieces(playerID int, pos1, pos2 engine.Position)
 
 	// Swap the pieces
 	pieces[idx1], pieces[idx2] = pieces[idx2], pieces[idx1]
-
-	log.Printf("Swapped pieces for player %d: index %d <-> %d", playerID, idx1, idx2)
 	return nil
 }
 
@@ -586,8 +580,6 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 		return errors.New("not in setup phase")
 	}
 
-	log.Printf("Game %s: Starting game from setup - placing pieces on board (headless=%v)", gs.ID, headless)
-
 	// Set initial speed based on headless mode
 	if headless {
 		gs.runner.SetTurnDelay(0)
@@ -614,12 +606,9 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	default:
 	}
 
-	log.Printf("Game %s: Setup phase marked complete", gs.ID)
-
 	gs.mutex.Unlock()
 
 	// Start the game (now outside the lock)
-	log.Printf("Game %s: Calling Start() to begin game loop", gs.ID)
 	if err := gs.Start(); err != nil {
 		log.Printf("Error starting game: %v", err)
 		return err
