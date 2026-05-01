@@ -235,6 +235,13 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 		return false
 	}
 
+	// Check if game was stopped while AI was thinking
+	select {
+	case <-gr.stopChan:
+		return false
+	default:
+	}
+
 	piece := gr.game.Board.GetPieceAt(move.GetFrom())
 	if piece == nil || piece.GetOwner() != gr.game.CurrentPlayer {
 		opponent := gr.getOpponent(gr.game.CurrentPlayer)
