@@ -301,12 +301,12 @@ func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
 	defer gs.mutex.RUnlock()
 
 	return models.GameSummary{
-		GameID:       gs.ID,
-		Round:        gs.game.GetRound(),
-		IsRunning:    gs.running,
-		IsGameOver:   gs.game.IsGameOver(),
-		IsSetupPhase: gs.isSetupPhase,
-		GameType:     gameType,
+		GameID:          gs.ID,
+		Round:           gs.game.GetRound(),
+		IsRunning:       gs.running,
+		IsGameOver:      gs.game.IsGameOver(),
+		IsSetupPhase:    gs.isSetupPhase,
+		GameType:        gameType,
 		Player1Username: gs.Player1Username,
 		Player2Username: gs.Player2Username,
 	}
