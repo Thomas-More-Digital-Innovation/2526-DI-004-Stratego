@@ -109,11 +109,13 @@ func TestWSHub_Broadcast(t *testing.T) {
 	}
 	hub.register <- client
 
-	// Drain the initial game state message sent upon registration
-	select {
-	case <-client.send:
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Timed out waiting for initial game state")
+	// Drain the initial messages (gameState and boardState) sent upon registration
+	for range 2 {
+		select {
+		case <-client.send:
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("Timed out waiting for initial messages")
+		}
 	}
 
 	message := []byte("test message")
