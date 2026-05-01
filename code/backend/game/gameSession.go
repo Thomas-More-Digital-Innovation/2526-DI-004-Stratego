@@ -39,9 +39,25 @@ type GameSession struct {
 	setupCompleteChan chan bool
 	setupTimer        *time.Timer
 	setupExpiresAt    time.Time
+	setupTimeout      time.Duration
+	setupWarning      time.Duration
 }
 
-func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
+// SessionOption is a function that configures a GameSession
+type SessionOption func(*GameSession)
+
+// WithSetupTimeout set a custom setup phase timeout
+func WithSetupTimeout(d time.Duration) SessionOption {
+	return func(gs *GameSession) { gs.setupTimeout = d }
+}
+
+// WithSetupWarning sets a custom delay for the setup phase warning
+// d is the duration from the start of the session until the warning fires
+func WithSetupWarning(d time.Duration) SessionOption {
+	return func(gs *GameSession) { gs.setupWarning = d }
+}
+
+func NewGameSession(id string, controller1, controller2 engine.PlayerController, opts ...SessionOption) *GameSession {
 	g := NewGame(controller1, controller2)
 
 	// Generate initial piece setups for both players
@@ -62,6 +78,12 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		moveAckChan:           make(chan bool, 1),
 		StartTime:             time.Now(),
 		setupCompleteChan:     make(chan bool, 1),
+		setupTimeout:          5 * time.Minute, // Default
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(session)
 	}
 
 	session.runner.stopChan = session.stopChan
@@ -75,8 +97,16 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		}
 	})
 
-	// Add setup warning (1 minute left)
-	time.AfterFunc(4*time.Minute, func() {
+	// Calculate logical warning delay if not explicitly set
+	warningDelay := session.setupWarning
+	if warningDelay == 0 {
+		warningDelay = session.setupTimeout - (1 * time.Minute)
+		if warningDelay <= 0 {
+			warningDelay = session.setupTimeout / 2
+		}
+	}
+
+	time.AfterFunc(warningDelay, func() {
 		session.mutex.Lock()
 		if !session.isSetupPhase {
 			session.mutex.Unlock()
@@ -86,9 +116,9 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		session.NotifySetupUpdate()
 	})
 
-	// Add setup timeout (5 minutes)
-	session.setupExpiresAt = time.Now().Add(5 * time.Minute)
-	session.setupTimer = time.AfterFunc(5*time.Minute, func() {
+	// Add setup timeout
+	session.setupExpiresAt = time.Now().Add(session.setupTimeout)
+	session.setupTimer = time.AfterFunc(session.setupTimeout, func() {
 		session.mutex.Lock()
 		if !session.isSetupPhase {
 			session.mutex.Unlock()

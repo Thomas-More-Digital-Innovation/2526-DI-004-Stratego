@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
+	"sync"
 )
 
 // WSClient represents a WebSocket client connection
@@ -19,6 +20,39 @@ type WSClient struct {
 	Username  string
 	UserID    int
 	limiter   *rate.Limiter
+	mu        sync.Mutex
+	closed    bool
+}
+
+func (c *WSClient) Close() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.closed {
+		c.closed = true
+		close(c.send)
+	}
+}
+
+func (c *WSClient) IsClosed() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.closed
+}
+
+func (c *WSClient) Send(data []byte, timeout time.Duration) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.closed {
+		return false
+	}
+
+	select {
+	case c.send <- data:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // readPump pumps messages from the websocket connection to the hub

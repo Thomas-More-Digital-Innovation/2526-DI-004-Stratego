@@ -78,7 +78,8 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 		if executed {
 			turnCount++
 
-			logging.Debug(logging.TagGame, "GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
+			// TODO: figure out what to do with this or delete
+			// logging.Debug(logging.TagGame, "GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
 
 		} else {
 			if gr.game.IsGameOver() {

@@ -52,9 +52,7 @@ func (h *WSHub) sendGameState(client *WSClient) {
 		return
 	}
 
-	select {
-	case client.send <- jsonData:
-	case <-time.After(time.Second):
+	if !client.Send(jsonData, time.Second) {
 		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending game state")
 	}
 
@@ -123,9 +121,7 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 		return
 	}
 
-	select {
-	case client.send <- jsonData:
-	case <-time.After(time.Second):
+	if !client.Send(jsonData, time.Second) {
 		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending board state")
 	}
 }
@@ -144,9 +140,7 @@ func (h *WSHub) sendSetupBoard(client *WSClient) {
 		return
 	}
 
-	select {
-	case client.send <- jsonData:
-	case <-time.After(time.Second):
+	if !client.Send(jsonData, time.Second) {
 		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending setup board state")
 	}
 }
@@ -204,9 +198,7 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 		return
 	}
 
-	select {
-	case client.send <- jsonData:
-	case <-time.After(time.Second):
+	if !client.Send(jsonData, time.Second) {
 		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending move history")
 	}
 }
