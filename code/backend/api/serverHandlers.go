@@ -214,10 +214,10 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	} else {
 		for _, m := range g.HistoricalHistory {
 			if err := db.SaveMove(ctx, session.ID, m); err != nil {
-				log.Printf("Failed to save move %d for game %s: %v", m.MoveIndex, session.ID, err)
+				logging.Error(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), err)
 			}
 		}
-		log.Printf("Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
+		logging.Debug(logging.TagGame, "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
 	}
 	// Track stats for player 1 if they have a user ID
 	if session.Player1UserID != nil {

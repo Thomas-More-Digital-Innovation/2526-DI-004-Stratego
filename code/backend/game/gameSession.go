@@ -340,7 +340,9 @@ func (gs *GameSession) WaitForAnimationComplete(timeout time.Duration) {
 
 	select {
 	case <-gs.animationCompleteChan:
+		logging.Debug(logging.TagGame, "GameSession %s: Animation complete signal received", gs.ID)
 	case <-time.After(timeout):
+		logging.Debug(logging.TagGame, "GameSession %s: Animation timeout", gs.ID)
 	}
 
 	gs.mutex.Lock()
@@ -357,7 +359,9 @@ func (gs *GameSession) SignalAnimationComplete() {
 	if waiting {
 		select {
 		case gs.animationCompleteChan <- true:
+			logging.Debug(logging.TagGame, "GameSession %s: Animation complete signal sent", gs.ID)
 		default:
+			logging.Debug(logging.TagGame, "GameSession %s: Animation complete channel full", gs.ID)
 		}
 	}
 }
@@ -381,6 +385,7 @@ func (gs *GameSession) NotifyMoveExecuted() {
 	select {
 	case gs.moveNotifyChan <- true:
 	default:
+		logging.Debug(logging.TagGame, "GameSession %s: Move notification channel full", gs.ID)
 	}
 }
 
@@ -487,6 +492,8 @@ func (gs *GameSession) SwapSetupPieces(playerID int, pos1, pos2 engine.Position)
 
 	// Swap the pieces
 	pieces[idx1], pieces[idx2] = pieces[idx2], pieces[idx1]
+
+	logging.Debug(logging.TagGame, "Swapped pieces for player %d: index %d <-> %d", playerID, idx1, idx2)
 	return nil
 }
 

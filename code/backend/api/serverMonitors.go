@@ -48,6 +48,9 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		session.AckMoveProcessed()
 
 		isHeadless := session.IsHeadless()
+		if !isHeadless {
+			logging.Debug(logging.TagGame, "Move executed in game %s", session.ID)
+		}
 
 		if isHeadless {
 			state := session.GetGameState()
@@ -64,11 +67,15 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		hasCombat := combat != nil && combat.Occurred
 
 		if hasCombat {
+			logging.Debug(logging.TagGame, "Combat detected! Broadcasting combat data and waiting for animation")
+
 			// Broadcast combat message (with piece info)
 			s.broadcastCombat(hub, combat, gameType)
 
 			// Wait for frontend animation to complete (3 second timeout)
 			session.WaitForAnimationComplete(3 * time.Second)
+
+			logging.Debug(logging.TagGame, "Animation complete, broadcasting updated state")
 
 			// Clear combat after animation
 			session.ClearLastCombat()

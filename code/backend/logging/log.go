@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"digital-innovation/stratego/utils"
 	"log"
 )
 
@@ -10,7 +11,20 @@ const (
 	TagWeb      = "🖥️ [   WEB    ]"
 	TagError    = "❌ [  ERROR   ]"
 	TagSecurity = "🛡️ [ SECURITY ]"
+	TagDebug    = "[ DEBUG ]"
 )
+
+var isDebugEnabled = utils.GetEnv("STRATEGO_DEBUG", "false") == "true"
+
+// Debug logs are only shown if STRATEGO_DEBUG environment variable is set to "true"
+func Debug(tag string, format string, v ...any) {
+	if !isDebugEnabled {
+		return
+	}
+	// Combine TagDebug with the provided category tag
+	msg := log.Prefix() + TagDebug + " " + tag + " " + format
+	log.Printf(msg, v...)
+}
 
 // Auth
 func UserRegistered(username string, userID int) {
