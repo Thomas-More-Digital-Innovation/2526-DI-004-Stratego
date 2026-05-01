@@ -118,9 +118,10 @@ func (h *WSHub) broadcastBoardStateRevealed() {
 	}
 
 	boardMsg := BoardStateMessage{
-		Board:  boardDTO,
-		Width:  10,
-		Height: 10,
+		Board:    boardDTO,
+		Width:    10,
+		Height:   10,
+		LastMove: h.session.GetLastHistoricalMove(),
 	}
 
 	h.BroadcastMessage(MsgTypeBoardState, boardMsg)
