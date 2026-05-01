@@ -13,22 +13,13 @@ import (
 	"time"
 )
 
-// @title Stratego API
-// @version 0.1.1
-// @description This is the API server for the Stratego game.
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name Sem Van Broekhoven
-// @contact.url https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego
-// @contact.email [EMAIL_ADDRESS]
-
-// @license.name MIT
-// @license.url https://opensource.org/license/mit/
-
-// @host localhost:8080
-// @BasePath /
-
 func main() {
+	if err := run(); err != nil {
+		logging.Fatalf("%v", err)
+	}
+}
+
+func run() error {
 	serverMode := flag.Bool("server", false, "Run in WebSocket server mode")
 	defaultAddr := fmt.Sprintf(":%s", utils.GetEnv("PORT", "8080"))
 	addr := flag.String("addr", defaultAddr, "Server address")
@@ -43,7 +34,7 @@ func main() {
 
 	if *serverMode {
 		if err := db.InitDB(); err != nil {
-			logging.Fatalf("Failed to initialize database: %v", err)
+			return fmt.Errorf("failed to initialize database: %w", err)
 		}
 		defer func() {
 			if err := db.CloseDB(); err != nil {
@@ -51,28 +42,30 @@ func main() {
 			}
 		}()
 
-		runServer(*addr) // websocket server
-	} else {
-		var ai1, ai2 string
-		if aiTypes == nil {
-			ai1, ai2 = models.Fato, models.Fato // TODO: choose the best AI by default
-		} else {
-			aiTypeSplit := strings.Split(*aiTypes, ":")
-			ai1, ai2 = aiTypeSplit[0], aiTypeSplit[1]
-		}
-		start := time.Now()
-		aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *loggingEnabled)
-		elapsed := time.Since(start)
-		fmt.Printf("\nAI vs AI matches completed in %.2f seconds\n", elapsed.Seconds())
+		return startServer(*addr)
 	}
+
+	var ai1, ai2 string
+	if aiTypes == nil {
+		ai1, ai2 = models.Fato, models.Fato
+	} else {
+		aiTypeSplit := strings.Split(*aiTypes, ":")
+		ai1, ai2 = aiTypeSplit[0], aiTypeSplit[1]
+	}
+
+	start := time.Now()
+	aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *loggingEnabled)
+	elapsed := time.Since(start)
+	fmt.Printf("\nAI vs AI matches completed in %.2f seconds\n", elapsed.Seconds())
+	return nil
 }
 
-// runServer starts the WebSocket server
-func runServer(addr string) {
+func startServer(addr string) error {
 	fmt.Printf("Starting Stratego Game Server on %s\n", addr)
 
 	server := api.NewGameServer()
 	if err := server.StartServer(addr); err != nil {
-		logging.Fatalf("Server error: %v", err)
+		return fmt.Errorf("server error: %w", err)
 	}
+	return nil
 }
