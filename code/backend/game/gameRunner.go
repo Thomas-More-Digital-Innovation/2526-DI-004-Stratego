@@ -366,7 +366,11 @@ func (gr *GameRunner) Pause() {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
 	}
-	gr.paused = true
+	gr.setPaused(true)
+}
+
+func (gr *GameRunner) setPaused(paused bool) {
+	gr.paused = paused
 }
 
 // Unpause unpauses the game runner
@@ -375,7 +379,7 @@ func (gr *GameRunner) Unpause() {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
 	}
-	gr.paused = false
+	gr.setPaused(false)
 }
 
 // SetTurnDelay sets the delay between AI turns

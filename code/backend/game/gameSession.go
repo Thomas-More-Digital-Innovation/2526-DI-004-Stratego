@@ -176,7 +176,7 @@ func (gs *GameSession) IsAborted() bool {
 func (gs *GameSession) Pause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
-	gs.runner.Pause()
+	gs.runner.setPaused(true)
 	logging.Debug(logging.TagGame, "GameSession %s: Paused", gs.ID)
 }
 
@@ -184,7 +184,7 @@ func (gs *GameSession) Pause() {
 func (gs *GameSession) Unpause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
-	gs.runner.Unpause()
+	gs.runner.setPaused(false)
 	logging.Debug(logging.TagGame, "GameSession %s: Unpaused", gs.ID)
 }
 
