@@ -146,11 +146,12 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 	}
 
 	username := "Spectator"
-	if playerID == 0 {
+	switch {
+	case playerID == 0:
 		username = handler.Session.Player1Username
-	} else if playerID == 1 {
+	case playerID == 1:
 		username = handler.Session.Player2Username
-	} else if user != nil {
+	case user != nil:
 		username = user.Username
 	}
 
