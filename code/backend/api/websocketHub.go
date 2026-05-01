@@ -65,7 +65,7 @@ func (h *WSHub) Run() {
 			h.mutex.Lock()
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
-				close(client.send)
+				client.Close()
 			}
 			clientCount := len(h.clients)
 			h.mutex.Unlock()
@@ -97,11 +97,9 @@ func (h *WSHub) Run() {
 		case message := <-h.broadcast:
 			h.mutex.RLock()
 			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
+				if !client.Send(message, 100*time.Millisecond) {
 					// Client is slow or disconnected
-					close(client.send)
+					client.Close()
 					delete(h.clients, client)
 				}
 			}

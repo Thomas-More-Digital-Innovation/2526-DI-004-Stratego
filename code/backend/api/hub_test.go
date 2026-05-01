@@ -61,10 +61,10 @@ func TestWSHub_AICleanup(t *testing.T) {
 	c2 := engine.NewHumanPlayerController(&player2)
 	session := game.NewGameSession("test-ai-cleanup", c1, c2)
 
-	cleanedUp := false
+	cleanupSignal := make(chan bool, 1)
 	hub := NewWSHub(session, models.AiVsAi)
 	hub.OnCleanup = func() {
-		cleanedUp = true
+		cleanupSignal <- true
 	}
 
 	go hub.Run()
@@ -78,11 +78,15 @@ func TestWSHub_AICleanup(t *testing.T) {
 	hub.register <- client
 	time.Sleep(10 * time.Millisecond)
 	hub.unregister <- client
-	time.Sleep(10 * time.Millisecond)
 
-	if !cleanedUp {
-		t.Error("Expected OnCleanup to be called for AI vs AI game when last client disconnects")
+	// Wait for cleanup with timeout
+	select {
+	case <-cleanupSignal:
+		// Success
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for OnCleanup to be called")
 	}
+
 	if !hub.IsStopped() {
 		t.Error("Expected hub to be stopped")
 	}
