@@ -83,7 +83,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 			return
 		}
 		session.mutex.Unlock()
-		session.NotifyMoveExecuted() // This triggers a broadcast in serverMonitors.go
+		session.NotifySetupUpdate()
 	})
 
 	// Add setup timeout (5 minutes)
@@ -267,14 +267,16 @@ func (gs *GameSession) GetGameState() models.GameState {
 		WinnerID:           getPlayerIDOrNil(gs.game.GetWinner()),
 		Player1Score:       gs.game.Players[0].GetPieceScore(),
 		Player2Score:       gs.game.Players[1].GetPieceScore(),
-		WaitingForInput:    gs.runner.IsWaitingForInput(),
-		Paused:             gs.runner.IsPaused(),
+		WaitingForInput:    gs.runner.isWaitingForInput(),
+		Paused:             gs.runner.isPaused(),
 		MoveCount:          len(gs.game.MoveHistory),
 		Player1AlivePieces: len(gs.game.Players[0].GetAlivePieces()),
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),
 		IsSetupPhase:       gs.isSetupPhase,
 		Headless:           gs.headless,
 		SetupRemainingSecs: gs.getSetupRemainingSecs(),
+		Player1Username:    gs.Player1Username,
+		Player2Username:    gs.Player2Username,
 	}
 }
 
@@ -301,6 +303,8 @@ func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
 		IsGameOver:   gs.game.IsGameOver(),
 		IsSetupPhase: gs.isSetupPhase,
 		GameType:     gameType,
+		Player1Username: gs.Player1Username,
+		Player2Username: gs.Player2Username,
 	}
 }
 
@@ -479,6 +483,34 @@ func getPlayerIDOrNil(player *engine.Player) *int {
 	}
 	id := player.GetID()
 	return &id
+}
+
+// SetPlayer1Associate associates a user with Player 1 slot
+func (gs *GameSession) SetPlayer1Associate(userID int, username string) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.Player1UserID = &userID
+	gs.Player1Username = username
+}
+
+// SetPlayer2Associate associates a user with Player 2 slot
+func (gs *GameSession) SetPlayer2Associate(userID int, username string) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.Player2UserID = &userID
+	gs.Player2Username = username
+}
+
+// GetPlayerIDs returns the user IDs associated with both players
+func (gs *GameSession) GetPlayerIDs() (p1 *int, p2 *int) {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.Player1UserID, gs.Player2UserID
+}
+
+// NotifySetupUpdate signals that the setup phase state has changed (e.g. timer)
+func (gs *GameSession) NotifySetupUpdate() {
+	gs.NotifyMoveExecuted() // Currently reuse this to trigger broadcast
 }
 
 // IsSetupPhase returns whether the game is in setup phase

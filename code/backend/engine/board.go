@@ -81,7 +81,14 @@ func (b *Board) IsValidMove(move *Move) bool {
 	if b.IsLake(move.GetTo()) {
 		return false
 	}
-	if b.GetPieceAt(move.GetTo()) != nil && b.GetPieceAt(move.GetTo()).GetOwner() == b.GetPieceAt(move.GetFrom()).GetOwner() {
+
+	sourcePiece := b.GetPieceAt(move.GetFrom())
+	if sourcePiece == nil {
+		return false
+	}
+
+	targetPiece := b.GetPieceAt(move.GetTo())
+	if targetPiece != nil && targetPiece.GetOwner() == sourcePiece.GetOwner() {
 		return false
 	}
 	return true

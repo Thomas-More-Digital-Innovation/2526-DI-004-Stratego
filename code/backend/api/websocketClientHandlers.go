@@ -138,7 +138,7 @@ func (c *WSClient) handleAnimationComplete() {
 }
 
 // handleSwapPieces processes a swap pieces message during setup
-func (c *WSClient) handleSwapPieces(data interface{}) {
+func (c *WSClient) handleSwapPieces(data any) {
 	// Let the validation happen below so we can infer the player ID
 
 	dataBytes, err := json.Marshal(data)
@@ -158,7 +158,10 @@ func (c *WSClient) handleSwapPieces(data interface{}) {
 
 	playerID := c.seatIndex
 	if playerID < 0 {
-		if c.hub.gameType == models.AiVsAi {
+		p1ID, _ := c.session.GetPlayerIDs()
+		isCreator := p1ID == nil || c.UserID == *p1ID
+
+		if c.hub.gameType == models.AiVsAi && isCreator {
 			if pos1.Y >= 6 {
 				playerID = 0 // Bottom rows belong to player 0 (Red)
 			} else {
@@ -180,8 +183,11 @@ func (c *WSClient) handleSwapPieces(data interface{}) {
 }
 
 // handleRandomizeSetup processes a randomize setup message
-func (c *WSClient) handleRandomizeSetup(data interface{}) {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+func (c *WSClient) handleRandomizeSetup(data any) {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot randomize setup")
 		return
 	}
@@ -214,8 +220,11 @@ func (c *WSClient) handleRandomizeSetup(data interface{}) {
 }
 
 // handleStartGame processes a start game message
-func (c *WSClient) handleStartGame(data interface{}) {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+func (c *WSClient) handleStartGame(data any) {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot start game")
 		return
 	}
@@ -239,8 +248,11 @@ func (c *WSClient) handleStartGame(data interface{}) {
 }
 
 // handleLoadSetup processes a load setup message from saved board setups
-func (c *WSClient) handleLoadSetup(data interface{}) {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+func (c *WSClient) handleLoadSetup(data any) {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot load setups")
 		return
 	}
@@ -290,7 +302,10 @@ func (c *WSClient) handleLoadSetup(data interface{}) {
 
 // handlePause processes a pause game message
 func (c *WSClient) handlePause() {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot pause the game")
 		return
 	}
@@ -301,7 +316,10 @@ func (c *WSClient) handlePause() {
 
 // handleUnpause processes an unpause game message
 func (c *WSClient) handleUnpause() {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot unpause the game")
 		return
 	}
@@ -311,8 +329,11 @@ func (c *WSClient) handleUnpause() {
 }
 
 // handleSetSpeed processes a set speed message
-func (c *WSClient) handleSetSpeed(data interface{}) {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+func (c *WSClient) handleSetSpeed(data any) {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot change speed")
 		return
 	}
@@ -338,7 +359,10 @@ func (c *WSClient) handleSetSpeed(data interface{}) {
 
 // handleStep processes a manual step message
 func (c *WSClient) handleStep() {
-	if c.seatIndex < 0 && c.hub.gameType != models.AiVsAi {
+	p1ID, _ := c.session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+
+	if c.seatIndex < 0 && (c.hub.gameType != models.AiVsAi || !isCreator) {
 		c.sendError("Spectators cannot step the game")
 		return
 	}
