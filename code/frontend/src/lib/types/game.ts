@@ -36,6 +36,7 @@ export interface GameState {
     player2AlivePieces: number;
     isSetupPhase: boolean;
     headless: boolean;
+    setupRemainingSecs?: number;
 }
 
 export type MoveVisualizationHighlightState = 'move' | 'win' | 'loss'

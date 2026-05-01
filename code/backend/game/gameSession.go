@@ -37,6 +37,8 @@ type GameSession struct {
 	Player2Username   string
 	StartTime         time.Time
 	setupCompleteChan chan bool
+	setupTimer        *time.Timer
+	setupExpiresAt    time.Time
 }
 
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
@@ -71,6 +73,31 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		if !session.headless {
 			session.WaitForMoveAck(10 * time.Second)
 		}
+	})
+
+	// Add setup warning (1 minute left)
+	time.AfterFunc(4*time.Minute, func() {
+		session.mutex.Lock()
+		if !session.isSetupPhase {
+			session.mutex.Unlock()
+			return
+		}
+		session.mutex.Unlock()
+		session.NotifyMoveExecuted() // This triggers a broadcast in serverMonitors.go
+	})
+
+	// Add setup timeout (5 minutes)
+	session.setupExpiresAt = time.Now().Add(5 * time.Minute)
+	session.setupTimer = time.AfterFunc(5*time.Minute, func() {
+		session.mutex.Lock()
+		if !session.isSetupPhase {
+			session.mutex.Unlock()
+			return
+		}
+		session.mutex.Unlock()
+
+		logging.Debug(logging.TagGame, "GameSession %s: Setup timeout reached. Starting game with current/random setups.", session.ID)
+		_ = session.StartGameFromSetup(false)
 	})
 
 	return session
@@ -247,7 +274,19 @@ func (gs *GameSession) GetGameState() models.GameState {
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),
 		IsSetupPhase:       gs.isSetupPhase,
 		Headless:           gs.headless,
+		SetupRemainingSecs: gs.getSetupRemainingSecs(),
 	}
+}
+
+func (gs *GameSession) getSetupRemainingSecs() int {
+	if !gs.isSetupPhase {
+		return 0
+	}
+	remaining := time.Until(gs.setupExpiresAt)
+	if remaining < 0 {
+		return 0
+	}
+	return int(remaining.Seconds())
 }
 
 // GetGameSummary returns a lightweight summary of the game state
@@ -453,6 +492,11 @@ func (gs *GameSession) IsSetupPhase() bool {
 func (gs *GameSession) SetSetupPhaseComplete() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
+
+	if gs.setupTimer != nil {
+		gs.setupTimer.Stop()
+	}
+
 	gs.isSetupPhase = false
 	select {
 	case gs.setupCompleteChan <- true:
@@ -615,6 +659,10 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	if err := SetupGame(gs.game, gs.player1Pieces, gs.player2Pieces); err != nil {
 		gs.mutex.Unlock()
 		return fmt.Errorf("failed to setup game: %v", err)
+	}
+
+	if gs.setupTimer != nil {
+		gs.setupTimer.Stop()
 	}
 
 	gs.game.InitialState = gs.game.GetInitialBoardState()

@@ -37,6 +37,8 @@ func (h *WSHub) sendGameState(client *WSClient) {
 		Player1AlivePieces: state.Player1AlivePieces,
 		Player2AlivePieces: state.Player2AlivePieces,
 		IsSetupPhase:       state.IsSetupPhase,
+		Headless:           state.Headless,
+		SetupRemainingSecs: state.SetupRemainingSecs,
 	}
 
 	msg := WSMessage{

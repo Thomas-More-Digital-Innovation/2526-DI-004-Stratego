@@ -16,6 +16,7 @@ type GameState struct {
 	Player2AlivePieces int    `json:"player2AlivePieces"`
 	IsSetupPhase       bool   `json:"isSetupPhase"`
 	Headless           bool   `json:"headless"`
+	SetupRemainingSecs int    `json:"setupRemainingSecs,omitempty"`
 }
 
 // GameSummary represents a lightweight overview of a game
