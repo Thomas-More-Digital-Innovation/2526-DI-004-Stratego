@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"errors"
 	"fmt"
 	"log"
@@ -30,9 +31,11 @@ type GameSession struct {
 	moveNotifyChan        chan bool // Signals when a move has been executed
 	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
 	aborted               bool      // Signals that game was manually stopped
-	// User ID for players (nil if guest/AI)
+	// User info for players (nil/empty if guest/AI)
 	Player1UserID     *int
+	Player1Username   string
 	Player2UserID     *int
+	Player2Username   string
 	StartTime         time.Time
 	setupCompleteChan chan bool
 }
@@ -87,11 +90,24 @@ func (gs *GameSession) Start() error {
 
 	go func() {
 		winner := gs.runner.RunToCompletion(false) // no noisy logging
-		winnerName := "Draw"
+
+		winnerLabel := "Draw"
+		loserLabel := "Draw"
+
+		p1 := logging.FormatUser(gs.Player1Username, utils.GetIntSafe(gs.Player1UserID))
+		p2 := logging.FormatUser(gs.Player2Username, utils.GetIntSafe(gs.Player2UserID))
+
 		if winner != nil {
-			winnerName = winner.GetName()
+			if winner.GetID() == 0 {
+				winnerLabel = p1
+				loserLabel = p2
+			} else {
+				winnerLabel = p2
+				loserLabel = p1
+			}
 		}
-		logging.GameFinished(gs.ID, winnerName, gs.game.GetRound())
+
+		logging.GameFinished(gs.ID, winnerLabel, loserLabel, gs.game.GetRound())
 		gs.doneChan <- winner
 		gs.mutex.Lock()
 		gs.running = false
@@ -114,7 +130,8 @@ func (gs *GameSession) Stop() {
 
 	if wasRunning {
 		close(gs.stopChan)
-		logging.GameAborted(gs.ID, "Manual stop requested")
+		// We don't necessarily know WHO stopped it here easily, but we'll log the session ID
+		logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
 	}
 }
 

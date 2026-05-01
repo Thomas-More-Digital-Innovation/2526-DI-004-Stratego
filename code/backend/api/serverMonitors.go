@@ -19,7 +19,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	case <-session.GetSetupCompleteChan():
 		// Game starting
 	case <-session.IsAbortedChan():
-		logging.GameAborted(session.ID, "Aborted during setup")
+		logging.GameAborted(session.ID, "Aborted during setup", "", 0)
 		s.RemoveSession(session.ID)
 		return
 	}
@@ -30,7 +30,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		if !session.WaitForMoveNotification(5 * time.Second) {
 			// Check if session was aborted while waiting
 			if session.IsAborted() {
-				logging.GameAborted(session.ID, "Aborted during gameplay")
+				logging.GameAborted(session.ID, "Aborted during gameplay", "", 0)
 				s.RemoveSession(session.ID)
 				return
 			}

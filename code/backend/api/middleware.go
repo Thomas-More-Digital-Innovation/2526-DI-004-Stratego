@@ -40,7 +40,13 @@ func CSRFMiddleware() gin.HandlerFunc {
 		tokenCookie, err := c.Cookie("XSRF-TOKEN")
 
 		if tokenHeader == "" || err != nil || tokenHeader != tokenCookie {
-			logging.SecurityWarning("CSRF validation failed", "Path: "+path)
+			user := auth.GetCurrentUser(c)
+			username, userID, err := utils.TryGetUserOrError(user)
+			if err != nil {
+				logging.SecurityWarningIP("CSRF validation failed", "Path: "+path, c.ClientIP())
+			} else {
+				logging.SecurityWarning("CSRF validation failed", "Path: "+path, username, userID)
+			}
 			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF validation failed"})
 			c.Abort()
 			return
@@ -121,7 +127,13 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		if !limiter.GetLimiter(ip).Allow() {
-			logging.SecurityWarning("Rate limit triggered", "IP: "+ip)
+			user := auth.GetCurrentUser(c)
+			username, userID, err := utils.TryGetUserOrError(user)
+			if err != nil {
+				logging.SecurityWarningIP("Rate limit triggered", "IP: "+ip, c.ClientIP())
+			} else {
+				logging.SecurityWarning("Rate limit triggered", "IP: "+ip, username, userID)
+			}
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
 			c.Abort()
 			return

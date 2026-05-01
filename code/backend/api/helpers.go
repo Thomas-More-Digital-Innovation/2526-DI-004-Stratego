@@ -10,25 +10,31 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// parseID extracts an integer ID from a path or query parameter
-func parseID(c *gin.Context, key string) (int, error) {
-	// First check path parameter
-	idStr := c.Param(key)
-	if idStr == "" {
-		// Then check query parameter
-		idStr = c.Query(key)
-	}
+// sendError helper to be used when shifting from net/http to Gin (optional, can just use c.JSON)
+// But for now, we'll keep it to maintain similar API structure if needed
+func sendError(c *gin.Context, message string, statusCode int) {
+	c.JSON(statusCode, gin.H{"error": message})
+}
 
-	if idStr == "" {
-		return 0, nil // Optional path or query
-	}
+// sendJSON helper (optional, can just use c.JSON)
+func sendJSON(c *gin.Context, data interface{}, statusCode int) {
+	c.JSON(statusCode, data)
+}
 
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return 0, err
+// ensureAuthenticated checks if a user is logged in, otherwise sends an error
+func ensureAuthenticated(c *gin.Context) *models.User {
+	user := auth.GetCurrentUser(c)
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Please login"})
+		c.Abort()
+		return nil
 	}
+	return user
+}
 
-	return id, nil
+// sendNoContent helper
+func sendNoContent(c *gin.Context) {
+	c.Status(http.StatusNoContent)
 }
 
 // SecurityMiddleware adds security headers to the response
@@ -48,29 +54,23 @@ func SecurityMiddleware() gin.HandlerFunc {
 	}
 }
 
-// ensureAuthenticated checks if a user is logged in, otherwise sends an error
-func ensureAuthenticated(c *gin.Context) *models.User {
-	user := auth.GetCurrentUser(c)
-	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Please login"})
-		c.Abort()
-		return nil
+// parseID extracts an integer ID from a path or query parameter
+func parseID(c *gin.Context, key string) (int, error) {
+	// First check path parameter
+	idStr := c.Param(key)
+	if idStr == "" {
+		// Then check query parameter
+		idStr = c.Query(key)
 	}
-	return user
-}
 
-// sendError helper to be used when shifting from net/http to Gin (optional, can just use c.JSON)
-// But for now, we'll keep it to maintain similar API structure if needed
-func sendError(c *gin.Context, message string, statusCode int) {
-	c.JSON(statusCode, gin.H{"error": message})
-}
+	if idStr == "" {
+		return 0, nil // Optional path or query
+	}
 
-// sendJSON helper (optional, can just use c.JSON)
-func sendJSON(c *gin.Context, data interface{}, statusCode int) {
-	c.JSON(statusCode, data)
-}
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, err
+	}
 
-// sendNoContent helper
-func sendNoContent(c *gin.Context) {
-	c.Status(http.StatusNoContent)
+	return id, nil
 }
