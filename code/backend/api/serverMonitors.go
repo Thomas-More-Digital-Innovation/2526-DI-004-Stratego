@@ -47,13 +47,16 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		}
 
 		// Move was executed
-		if !session.IsHeadless() {
+		// Signal that move has been processed - GameRunner can continue
+		session.AckMoveProcessed()
+
+		isHeadless := session.IsHeadless()
+
+		if !isHeadless {
 			log.Printf("Move executed in game %s", session.ID)
 		}
 
-		if session.IsHeadless() {
-			session.AckMoveProcessed()
-
+		if isHeadless {
 			state := session.GetGameState()
 			if state.IsGameOver {
 				time.Sleep(100 * time.Millisecond) // Brief delay to ensure runner completes
@@ -87,9 +90,6 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 			// No combat - broadcast state immediately
 			s.broadcastFullState(hub, gameType)
 		}
-
-		// Signal that move has been processed - GameRunner can continue
-		session.AckMoveProcessed()
 
 		// Check if game is over
 		state := session.GetGameState()
