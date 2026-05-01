@@ -12,8 +12,8 @@ func Debug(tag string, format string, v ...any) {
 		return
 	}
 
-	msg := fmt.Sprintf(TagDebug+" "+format, v...)
-	log.Printf("%s %s", tag, sanitize(msg))
+	msg := fmt.Sprintf(format, v...)
+	log.Printf("%s %s %s", tag, TagDebug, sanitize(msg))
 }
 
 // DebugWithUser logs a debug message with standardized user information
@@ -23,6 +23,6 @@ func DebugWithUser(tag string, username string, userID int, format string, v ...
 	}
 
 	userPart := fmt.Sprintf("[User: %s] ", FormatUser(username, userID))
-	msg := fmt.Sprintf(TagDebug+" "+userPart+format, v...)
-	log.Printf("%s %s", tag, sanitize(msg))
+	msg := fmt.Sprintf(userPart+format, v...)
+	log.Printf("%s %s %s", tag, TagDebug, sanitize(msg))
 }

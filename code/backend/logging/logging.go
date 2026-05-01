@@ -11,13 +11,27 @@ import (
 var nonPrintableRegex = regexp.MustCompile(`[[:cntrl:]]`)
 
 const (
-	TagAuth     = "🔐 [   AUTH   ]"
-	TagGame     = "🎮 [   GAME   ]"
-	TagWeb      = "🖥️ [   WEB    ]"
-	TagError    = "❌ [  ERROR   ]"
-	TagSecurity = "🛡️ [ SECURITY ]"
-	TagDebug    = "{DEBUG}"
+	colorReset  = "\033[0m"
+	colorRed    = "\033[41m"
+	colorYellow = "\033[43m"
+	colorBlue   = "\033[44m"
+	colorPurple = "\033[45m"
+	colorGreen  = "\033[42m"
+	colorBlack  = "\033[30m"
+	colorWhite  = "\033[37m"
+	colorBold   = "\033[1m"
 )
+
+const (
+	TagDebug    = colorBold + colorBlack + colorGreen + "[ DEBUG ]" + colorReset
+	TagAuth     = colorBold + colorWhite + colorBlue + "[  AUTH  ]" + colorReset
+	TagGame     = colorBold + colorWhite + colorBlue + "[  GAME  ]" + colorReset
+	TagWeb      = colorBold + colorWhite + colorBlue + "[  WEB   ]" + colorReset
+	TagSecurity = colorBold + colorBlack + colorYellow + "[SECURITY]" + colorReset
+	TagError    = colorBold + colorWhite + colorRed + "[ ERROR  ]" + colorReset
+	TagFatal    = colorBold + colorWhite + colorPurple + "[ FATAL  ]" + colorReset
+)
+
 
 func init() {
 	// Only set time flags, we will handle the location manually for custom ordering
@@ -147,14 +161,14 @@ func SecurityWarningWithIP(message string, details string, ip string) {
 
 // Fatal logs a message and exits the application
 func Fatal(message string, err error) {
-	logOutput(TagError, fmt.Sprintf("FATAL: %s: %v", sanitize(message), err))
+	logOutput(TagFatal, fmt.Sprintf("%s: %v", sanitize(message), err))
 	panic(err)
 }
 
 // Fatalf logs a formatted message and exits the application
 func Fatalf(format string, v ...any) {
 	msg := fmt.Sprintf(format, v...)
-	logOutput(TagError, fmt.Sprintf("FATAL: %s", msg))
+	logOutput(TagFatal, sanitize(msg))
 	panic(msg)
 }
 
