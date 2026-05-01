@@ -24,7 +24,7 @@ func TestRunAIvsAI(t *testing.T) {
 func TestRunAIvsAIDraw(t *testing.T) {
 	// Test with 0 matches just to check edge case
 	summary := runAIvsAI("fato", "fato", 0, false)
-	
+
 	if summary.Matches != 0 {
 		t.Errorf("Expected 0 matches, got %d", summary.Matches)
 	}

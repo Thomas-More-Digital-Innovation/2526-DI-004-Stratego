@@ -31,7 +31,7 @@ func TestRequireAuth(t *testing.T) {
 		if c.IsAborted() {
 			t.Error("Expected context not to be aborted")
 		}
-		
+
 		user := GetCurrentUser(c)
 		if user == nil {
 			t.Fatal("Expected user in context, got nil")
@@ -118,7 +118,7 @@ func TestOptionalAuth(t *testing.T) {
 
 func TestGetCurrentUser(t *testing.T) {
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	
+
 	// Test empty context
 	if GetCurrentUser(c) != nil {
 		t.Error("Expected nil for empty context")

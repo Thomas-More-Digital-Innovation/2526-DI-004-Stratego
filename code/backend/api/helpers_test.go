@@ -14,7 +14,7 @@ func TestParseID(t *testing.T) {
 	t.Run("Valid Path Param", func(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		c.Params = gin.Params{{Key: "id", Value: "123"}}
-		
+
 		id, err := parseID(c, "id")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
@@ -28,7 +28,7 @@ func TestParseID(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		req, _ := http.NewRequest("GET", "/?user_id=456", nil)
 		c.Request = req
-		
+
 		id, err := parseID(c, "user_id")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
@@ -41,7 +41,7 @@ func TestParseID(t *testing.T) {
 	t.Run("Invalid ID", func(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		c.Params = gin.Params{{Key: "id", Value: "abc"}}
-		
+
 		_, err := parseID(c, "id")
 		if err == nil {
 			t.Error("Expected error for invalid ID, got nil")
@@ -50,7 +50,7 @@ func TestParseID(t *testing.T) {
 
 	t.Run("Missing ID", func(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		
+
 		id, err := parseID(c, "id")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)

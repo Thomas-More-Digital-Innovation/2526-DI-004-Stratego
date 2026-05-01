@@ -96,9 +96,9 @@ func TestGameSession_SetupWarning(t *testing.T) {
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	
+
 	// Set warning at 50ms, timeout at 200ms
-	session := NewGameSession("test-warning", c1, c2, 
+	session := NewGameSession("test-warning", c1, c2,
 		WithSetupTimeout(200*time.Millisecond),
 		WithSetupWarning(50*time.Millisecond),
 	)

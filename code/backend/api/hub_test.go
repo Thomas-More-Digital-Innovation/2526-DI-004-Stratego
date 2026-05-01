@@ -29,7 +29,7 @@ func TestWSHub_RegisterUnregister(t *testing.T) {
 
 	// Register
 	hub.register <- client
-	
+
 	// Wait a bit for processing
 	time.Sleep(10 * time.Millisecond)
 
@@ -60,7 +60,7 @@ func TestWSHub_AICleanup(t *testing.T) {
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
 	session := game.NewGameSession("test-ai-cleanup", c1, c2)
-	
+
 	cleanedUp := false
 	hub := NewWSHub(session, models.AiVsAi)
 	hub.OnCleanup = func() {
@@ -104,7 +104,7 @@ func TestWSHub_Broadcast(t *testing.T) {
 		send: make(chan []byte, 10),
 	}
 	hub.register <- client
-	
+
 	// Drain the initial game state message sent upon registration
 	select {
 	case <-client.send:
