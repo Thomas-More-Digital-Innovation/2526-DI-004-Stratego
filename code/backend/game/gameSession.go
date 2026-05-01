@@ -37,6 +37,8 @@ type GameSession struct {
 	Player2Username   string
 	StartTime         time.Time
 	setupCompleteChan chan bool
+	setupTimer        *time.Timer
+	setupExpiresAt    time.Time
 }
 
 func NewGameSession(id string, controller1, controller2 engine.PlayerController) *GameSession {
@@ -71,6 +73,31 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController)
 		if !session.headless {
 			session.WaitForMoveAck(10 * time.Second)
 		}
+	})
+
+	// Add setup warning (1 minute left)
+	time.AfterFunc(4*time.Minute, func() {
+		session.mutex.Lock()
+		if !session.isSetupPhase {
+			session.mutex.Unlock()
+			return
+		}
+		session.mutex.Unlock()
+		session.NotifySetupUpdate()
+	})
+
+	// Add setup timeout (5 minutes)
+	session.setupExpiresAt = time.Now().Add(5 * time.Minute)
+	session.setupTimer = time.AfterFunc(5*time.Minute, func() {
+		session.mutex.Lock()
+		if !session.isSetupPhase {
+			session.mutex.Unlock()
+			return
+		}
+		session.mutex.Unlock()
+
+		logging.Debug(logging.TagGame, "GameSession %s: Setup timeout reached. Starting game with current/random setups.", session.ID)
+		_ = session.StartGameFromSetup(false)
 	})
 
 	return session
@@ -132,6 +159,10 @@ func (gs *GameSession) Stop() {
 		// We don't necessarily know WHO stopped it here easily, but we'll log the session ID
 		logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
 	}
+
+	if gs.setupTimer != nil {
+		gs.setupTimer.Stop()
+	}
 }
 
 // IsAborted returns whether the game was aborted
@@ -145,7 +176,7 @@ func (gs *GameSession) IsAborted() bool {
 func (gs *GameSession) Pause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
-	gs.runner.Pause()
+	gs.runner.setPaused(true)
 	logging.Debug(logging.TagGame, "GameSession %s: Paused", gs.ID)
 }
 
@@ -153,7 +184,7 @@ func (gs *GameSession) Pause() {
 func (gs *GameSession) Unpause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
-	gs.runner.Unpause()
+	gs.runner.setPaused(false)
 	logging.Debug(logging.TagGame, "GameSession %s: Unpaused", gs.ID)
 }
 
@@ -240,14 +271,28 @@ func (gs *GameSession) GetGameState() models.GameState {
 		WinnerID:           getPlayerIDOrNil(gs.game.GetWinner()),
 		Player1Score:       gs.game.Players[0].GetPieceScore(),
 		Player2Score:       gs.game.Players[1].GetPieceScore(),
-		WaitingForInput:    gs.runner.IsWaitingForInput(),
-		Paused:             gs.runner.IsPaused(),
+		WaitingForInput:    gs.runner.isWaitingForInput(),
+		Paused:             gs.runner.isPaused(),
 		MoveCount:          len(gs.game.MoveHistory),
 		Player1AlivePieces: len(gs.game.Players[0].GetAlivePieces()),
 		Player2AlivePieces: len(gs.game.Players[1].GetAlivePieces()),
 		IsSetupPhase:       gs.isSetupPhase,
 		Headless:           gs.headless,
+		SetupRemainingSecs: gs.getSetupRemainingSecs(),
+		Player1Username:    gs.Player1Username,
+		Player2Username:    gs.Player2Username,
 	}
+}
+
+func (gs *GameSession) getSetupRemainingSecs() int {
+	if !gs.isSetupPhase {
+		return 0
+	}
+	remaining := time.Until(gs.setupExpiresAt)
+	if remaining < 0 {
+		return 0
+	}
+	return int(remaining.Seconds())
 }
 
 // GetGameSummary returns a lightweight summary of the game state
@@ -256,12 +301,14 @@ func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
 	defer gs.mutex.RUnlock()
 
 	return models.GameSummary{
-		GameID:       gs.ID,
-		Round:        gs.game.GetRound(),
-		IsRunning:    gs.running,
-		IsGameOver:   gs.game.IsGameOver(),
-		IsSetupPhase: gs.isSetupPhase,
-		GameType:     gameType,
+		GameID:          gs.ID,
+		Round:           gs.game.GetRound(),
+		IsRunning:       gs.running,
+		IsGameOver:      gs.game.IsGameOver(),
+		IsSetupPhase:    gs.isSetupPhase,
+		GameType:        gameType,
+		Player1Username: gs.Player1Username,
+		Player2Username: gs.Player2Username,
 	}
 }
 
@@ -442,6 +489,34 @@ func getPlayerIDOrNil(player *engine.Player) *int {
 	return &id
 }
 
+// SetPlayer1Associate associates a user with Player 1 slot
+func (gs *GameSession) SetPlayer1Associate(userID int, username string) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.Player1UserID = &userID
+	gs.Player1Username = username
+}
+
+// SetPlayer2Associate associates a user with Player 2 slot
+func (gs *GameSession) SetPlayer2Associate(userID int, username string) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.Player2UserID = &userID
+	gs.Player2Username = username
+}
+
+// GetPlayerIDs returns the user IDs associated with both players
+func (gs *GameSession) GetPlayerIDs() (p1 *int, p2 *int) {
+	gs.mutex.RLock()
+	defer gs.mutex.RUnlock()
+	return gs.Player1UserID, gs.Player2UserID
+}
+
+// NotifySetupUpdate signals that the setup phase state has changed (e.g. timer)
+func (gs *GameSession) NotifySetupUpdate() {
+	gs.NotifyMoveExecuted() // Currently reuse this to trigger broadcast
+}
+
 // IsSetupPhase returns whether the game is in setup phase
 func (gs *GameSession) IsSetupPhase() bool {
 	gs.mutex.RLock()
@@ -453,6 +528,11 @@ func (gs *GameSession) IsSetupPhase() bool {
 func (gs *GameSession) SetSetupPhaseComplete() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
+
+	if gs.setupTimer != nil {
+		gs.setupTimer.Stop()
+	}
+
 	gs.isSetupPhase = false
 	select {
 	case gs.setupCompleteChan <- true:
@@ -615,6 +695,10 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	if err := SetupGame(gs.game, gs.player1Pieces, gs.player2Pieces); err != nil {
 		gs.mutex.Unlock()
 		return fmt.Errorf("failed to setup game: %v", err)
+	}
+
+	if gs.setupTimer != nil {
+		gs.setupTimer.Stop()
 	}
 
 	gs.game.InitialState = gs.game.GetInitialBoardState()

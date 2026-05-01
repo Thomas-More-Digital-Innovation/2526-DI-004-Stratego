@@ -16,14 +16,19 @@ type GameState struct {
 	Player2AlivePieces int    `json:"player2AlivePieces"`
 	IsSetupPhase       bool   `json:"isSetupPhase"`
 	Headless           bool   `json:"headless"`
+	SetupRemainingSecs int    `json:"setupRemainingSecs,omitempty"`
+	Player1Username    string `json:"player1Username"`
+	Player2Username    string `json:"player2Username"`
 }
 
 // GameSummary represents a lightweight overview of a game
 type GameSummary struct {
-	GameID       string `json:"gameId"`
-	Round        int    `json:"round"`
-	IsRunning    bool   `json:"isRunning"`
-	IsGameOver   bool   `json:"isGameOver"`
-	IsSetupPhase bool   `json:"isSetupPhase"`
-	GameType     string `json:"gameType"`
+	GameID          string `json:"gameId"`
+	Round           int    `json:"round"`
+	IsRunning       bool   `json:"isRunning"`
+	IsGameOver      bool   `json:"isGameOver"`
+	IsSetupPhase    bool   `json:"isSetupPhase"`
+	GameType        string `json:"gameType"`
+	Player1Username string `json:"player1Username"`
+	Player2Username string `json:"player2Username"`
 }

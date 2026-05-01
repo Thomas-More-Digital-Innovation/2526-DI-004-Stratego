@@ -14,6 +14,8 @@ class GameStore {
     lastLiveBoard = $state<BoardState | null>(null);
     rawHistory = $state<GameHistory | null>(null);
     lastMove = $state<HistoricalMove | null>(null);
+    setupRemainingSecs = $state<number | null>(null);
+    private setupCountdownInterval: any = null;
 
 
     get isPaused() {
@@ -23,6 +25,33 @@ class GameStore {
     updateGameState(state: GameState) {
         this.gameState = state;
         this.isStepping = false;
+
+        if (state.isSetupPhase && state.setupRemainingSecs !== undefined) {
+            this.setupRemainingSecs = state.setupRemainingSecs;
+            this.startSetupCountdown();
+        } else {
+            this.stopSetupCountdown();
+        }
+    }
+
+    private startSetupCountdown() {
+        if (this.setupCountdownInterval) return;
+
+        this.setupCountdownInterval = setInterval(() => {
+            if (this.setupRemainingSecs !== null && this.setupRemainingSecs > 0) {
+                this.setupRemainingSecs--;
+            } else if (this.setupRemainingSecs === 0) {
+                this.stopSetupCountdown();
+            }
+        }, 1000);
+    }
+
+    private stopSetupCountdown() {
+        if (this.setupCountdownInterval) {
+            clearInterval(this.setupCountdownInterval);
+            this.setupCountdownInterval = null;
+        }
+        this.setupRemainingSecs = null;
     }
 
     updateBoardState(board: BoardState, viewerId: number = -1) {
@@ -195,6 +224,7 @@ class GameStore {
         this.gameMode = gamemodes.unknown;
         this.rawHistory = null;
         this.lastMove = null;
+        this.stopSetupCountdown();
     }
 
 

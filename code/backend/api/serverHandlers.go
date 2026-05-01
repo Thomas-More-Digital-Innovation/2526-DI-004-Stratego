@@ -119,35 +119,32 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 		currentUserID = &user.ID
 	}
 
+	p1ID, p2ID := handler.Session.GetPlayerIDs()
 	switch playerID {
 	case 0:
-		if handler.Session.Player1UserID != nil {
-			if currentUserID == nil || *currentUserID != *handler.Session.Player1UserID {
+		if p1ID != nil {
+			if currentUserID == nil || *currentUserID != *p1ID {
 				sendError(c, "Unauthorized: You are not Player 1", http.StatusForbidden)
 				return
 			}
 		} else if currentUserID != nil {
-			// Associate if vacant
-			handler.Session.Player1UserID = currentUserID
-			handler.Session.Player1Username = user.Username
+			handler.Session.SetPlayer1Associate(*currentUserID, user.Username)
 		}
 	case 1:
-		if handler.Session.Player2UserID != nil {
-			if currentUserID == nil || *currentUserID != *handler.Session.Player2UserID {
+		if p2ID != nil {
+			if currentUserID == nil || *currentUserID != *p2ID {
 				sendError(c, "Unauthorized: You are not Player 2", http.StatusForbidden)
 				return
 			}
 		} else if currentUserID != nil {
-			// Associate if vacant
-			handler.Session.Player2UserID = currentUserID
-			handler.Session.Player2Username = user.Username
+			handler.Session.SetPlayer2Associate(*currentUserID, user.Username)
 		}
 	}
 
 	username, userID := utils.TryGetUser(user)
 	logging.GameStarted(gameID, "WebSocket Join", username, userID)
 
-	HandleWebSocket(c.Writer, c.Request, handler.Session, handler.Hub, playerID)
+	HandleWebSocket(c.Writer, c.Request, handler.Session, handler.Hub, playerID, username, userID)
 }
 
 // HandleListGames handles GET /games
@@ -237,10 +234,8 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
 		logging.ErrorWith2Users(fmt.Sprintf("Failed to save game metadata for %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 	} else {
-		for _, m := range g.HistoricalHistory {
-			if err := db.SaveMove(ctx, session.ID, m); err != nil {
-				logging.ErrorWith2Users(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
-			}
+		if err := db.SaveMoves(ctx, session.ID, g.HistoricalHistory); err != nil {
+			logging.ErrorWith2Users(fmt.Sprintf("Failed to save moves for game %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 		}
 		logging.DebugWithUser(logging.TagGame, session.Player1Username, utils.GetIntSafe(session.Player1UserID), "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
 	}

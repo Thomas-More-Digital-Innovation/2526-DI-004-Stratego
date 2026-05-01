@@ -16,11 +16,20 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
-			return true // Allow non-browser clients
+			// In production, we strictly require an Origin header for browser safety
+			if utils.IsProduction() {
+				logging.SecurityWarningWithIP("WebSocket: Rejected connection with missing Origin header", "", r.RemoteAddr)
+				return false
+			}
+			return true // Allow non-browser clients in dev
 		}
 
 		// Get allowed origins from env
 		allowedOrigins := utils.GetEnv("ALLOWED_ORIGINS", "")
+		if allowedOrigins == "" && !utils.IsProduction() {
+			return true // Default allow for local dev if not set
+		}
+
 		for _, allowed := range strings.Split(allowedOrigins, ",") {
 			if origin == allowed {
 				return true
@@ -33,7 +42,7 @@ var upgrader = websocket.Upgrader{
 }
 
 // HandleWebSocket handles WebSocket connections
-func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameSession, hub *WSHub, seatIndex int) {
+func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameSession, hub *WSHub, seatIndex int, username string, userID int) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logging.ConnectionError(session.ID, "", 0, err)
@@ -46,18 +55,8 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameS
 		session:   session,
 		seatIndex: seatIndex,
 		hub:       hub,
-		Username:  "",
-		UserID:    0,
-	}
-
-	// Try to get user info from the session/hub if available
-	switch seatIndex {
-	case 0:
-		client.Username = session.Player1Username
-		client.UserID = utils.GetIntSafe(session.Player1UserID)
-	case 1:
-		client.Username = session.Player2Username
-		client.UserID = utils.GetIntSafe(session.Player2UserID)
+		Username:  username,
+		UserID:    userID,
 	}
 
 	hub.register <- client

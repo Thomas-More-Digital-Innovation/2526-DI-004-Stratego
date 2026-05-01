@@ -137,7 +137,7 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 		return false
 	}
 
-	if !ignorePause && gr.IsPaused() {
+	if !ignorePause && gr.paused {
 		if gr.locker != nil {
 			gr.locker.Unlock()
 		}
@@ -214,7 +214,7 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 		}
 
 		// Re-check pause after delay
-		if !ignorePause && gr.IsPaused() {
+		if !ignorePause && gr.paused {
 			return false
 		}
 	}
@@ -283,6 +283,14 @@ func (gr *GameRunner) getOpponent(player *engine.Player) *engine.Player {
 
 // IsWaitingForInput returns true if the game is waiting for human input
 func (gr *GameRunner) IsWaitingForInput() bool {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	return gr.isWaitingForInput()
+}
+
+func (gr *GameRunner) isWaitingForInput() bool {
 	return gr.waitingForHumanInput
 }
 
@@ -354,12 +362,24 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 
 // Pause pauses the game runner
 func (gr *GameRunner) Pause() {
-	gr.paused = true
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	gr.setPaused(true)
+}
+
+func (gr *GameRunner) setPaused(paused bool) {
+	gr.paused = paused
 }
 
 // Unpause unpauses the game runner
 func (gr *GameRunner) Unpause() {
-	gr.paused = false
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	gr.setPaused(false)
 }
 
 // SetTurnDelay sets the delay between AI turns
@@ -374,5 +394,13 @@ func (gr *GameRunner) Step() bool {
 
 // IsPaused returns whether the game runner is paused
 func (gr *GameRunner) IsPaused() bool {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	return gr.isPaused()
+}
+
+func (gr *GameRunner) isPaused() bool {
 	return gr.paused
 }

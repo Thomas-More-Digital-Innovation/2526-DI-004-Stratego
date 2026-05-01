@@ -7,6 +7,7 @@
     import BoardSetupCard from "$lib/components/setup/BoardSetupCard.svelte";
     import type { GameMode } from "$lib/types/game";
     import { gamemodes } from "$lib/data/gamemodes.data";
+    import { gameStore } from "$lib/state/game.svelte";
 
     interface Props {
         onRandomize: (player?: number) => void;
@@ -65,6 +66,13 @@
         );
         showSelector = false;
     }
+
+    function formatTime(seconds: number | null): string {
+        if (seconds === null) return "00:00";
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
 </script>
 
 <div class="fixed top-0 left-0 right-0 z-50 pointer-events-none">
@@ -104,10 +112,32 @@
                             AI Blue
                         </Button>
                     </div>
-                {:else}
-                    <p class="text-white/50 text-sm">
-                        Arrange your pieces or load a saved configuration
+                    <p
+                        class="text-white/30 text-[10px] font-medium uppercase tracking-widest flex items-center gap-1 group cursor-help w-fit mt-1"
+                    >
+                        ⏳ Setup Time Limited (5m)
+                        <span
+                            class="opacity-0 group-hover:opacity-100 transition-opacity text-brand-accent font-bold"
+                        >
+                            {formatTime(gameStore.setupRemainingSecs)} left
+                        </span>
                     </p>
+                {:else}
+                    <div class="flex flex-col gap-0.5">
+                        <p class="text-white/50 text-sm">
+                            Arrange your pieces or load a saved configuration
+                        </p>
+                        <p
+                            class="text-white/30 text-[10px] font-medium uppercase tracking-widest flex items-center gap-1 group cursor-help w-fit"
+                        >
+                            ⏳ Setup Time Limited (5m)
+                            <span
+                                class="opacity-0 group-hover:opacity-100 transition-opacity text-brand-accent font-bold"
+                            >
+                                {formatTime(gameStore.setupRemainingSecs)} left
+                            </span>
+                        </p>
+                    </div>
                 {/if}
             </div>
         </div>
