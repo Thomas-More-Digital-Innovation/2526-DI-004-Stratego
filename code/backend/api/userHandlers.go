@@ -56,7 +56,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 		return
 	}
 	if !isStrongPassword(req.Password) {
-		sendError(c, "Password must be at least 8 characters and contain at least one number", http.StatusBadRequest)
+		sendError(c, "Password must be at least 8 characters and contain at least one number, one uppercase and one lowercase letter", http.StatusBadRequest)
 		return
 	}
 
