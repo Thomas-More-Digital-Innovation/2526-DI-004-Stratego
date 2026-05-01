@@ -45,9 +45,10 @@ func (s *GameServer) broadcastBoardState(hub *WSHub, viewerID int) {
 	}
 
 	boardMsg := BoardStateMessage{
-		Board:  boardDTO,
-		Width:  10,
-		Height: 10,
+		Board:    boardDTO,
+		Width:    10,
+		Height:   10,
+		LastMove: hub.session.GetLastHistoricalMove(),
 	}
 
 	hub.BroadcastMessage(MsgTypeBoardState, boardMsg)
@@ -126,9 +127,10 @@ func (s *GameServer) broadcastBoardStateRevealed(hub *WSHub) {
 	}
 
 	boardMsg := BoardStateMessage{
-		Board:  boardDTO,
-		Width:  10,
-		Height: 10,
+		Board:    boardDTO,
+		Width:    10,
+		Height:   10,
+		LastMove: hub.session.GetLastHistoricalMove(),
 	}
 
 	hub.BroadcastMessage(MsgTypeBoardState, boardMsg)

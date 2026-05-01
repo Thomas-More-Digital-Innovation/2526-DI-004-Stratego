@@ -33,12 +33,20 @@ class GameStore {
             this.lastMove = board.lastMove ?? null;
         }
 
-        if (this.gameState && !this.gameState.isSetupPhase) {
-            this.addToHistory(board.board, board.lastMove ?? null, viewerId);
+        if (this.gameState && !this.gameState.isSetupPhase && board.lastMove) {
+            this.addToHistory(board.board, board.lastMove, viewerId);
         }
     }
 
-    private addToHistory(board: Piece[][], lastMove: HistoricalMove | null, viewerId: number) {
+    private addToHistory(board: Piece[][], lastMove: HistoricalMove, viewerId: number) {
+        // Prevent duplicate history entries for the same move index
+        if (this.history.length > 0) {
+            const lastEntry = this.history[this.history.length - 1];
+            if (lastEntry.move.moveIndex === lastMove.moveIndex) {
+                return;
+            }
+        }
+
         const boardCopy = board.map(row => row.map(cell => {
             const newCell = { ...cell };
             // Strip opponent piece identity in history if it's Human vs AI (viewerId !== -1)
@@ -52,26 +60,20 @@ class GameStore {
         }));
 
         // Redact opponent piece info in history move to prevent leakage when scrubbing back
-        let historyMove = lastMove;
-        if (historyMove && viewerId !== -1) {
+        let historyMove = { ...lastMove };
+        if (viewerId !== -1) {
             if (historyMove.attacker && historyMove.attacker.ownerId !== viewerId) {
-                historyMove = {
-                    ...historyMove,
-                    attacker: { ...historyMove.attacker, type: '', rank: '' }
-                };
+                historyMove.attacker = { ...historyMove.attacker, type: '', rank: '' };
             }
             if (historyMove.defender && historyMove.defender.ownerId !== viewerId) {
-                historyMove = {
-                    ...historyMove,
-                    defender: { ...historyMove.defender, type: '', rank: '' }
-                };
+                historyMove.defender = { ...historyMove.defender, type: '', rank: '' };
             }
         }
 
         this.history.push({
             moveNumber: this.history.length,
             boardState: boardCopy,
-            move: historyMove || { fromX: 0, fromY: 0, toX: 0, toY: 0, result: 'move', playerId: 0, moveIndex: this.history.length },
+            move: historyMove,
         });
 
         if (!this.isReplaying) {
