@@ -51,10 +51,16 @@ func InitDB() error {
 
 	// Test the connection with retries
 	maxRetries := 10
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		err = DB.Ping()
 		if err == nil {
 			logging.Debug(logging.TagAuth, "Database connection established")
+
+			// Run migrations automatically on startup
+			if err := RunMigrations(context.Background()); err != nil {
+				return fmt.Errorf("failed to run migrations: %w", err)
+			}
+
 			return nil
 		}
 		logging.Error(fmt.Sprintf("Failed to connect to database (attempt %d/%d)", i+1, maxRetries), err)
