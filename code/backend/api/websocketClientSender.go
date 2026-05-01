@@ -1,8 +1,8 @@
 package api
 
 import (
+	"digital-innovation/stratego/logging"
 	"encoding/json"
-	"log"
 )
 
 // sendMoveResult sends a move result message
@@ -19,7 +19,7 @@ func (c *WSClient) sendMoveResult(success bool, error string) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling move result: %v", err)
+		logging.ErrorWithUser("Error marshaling move result", c.Username, c.UserID, err)
 		return
 	}
 
@@ -35,7 +35,7 @@ func (c *WSClient) sendError(errMsg string) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling error message: %v", err)
+		logging.ErrorWithUser("Error marshaling error message", c.Username, c.UserID, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func (c *WSClient) sendPong() {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling pong: %v", err)
+		logging.ErrorWithUser("Error marshaling pong", c.Username, c.UserID, err)
 		return
 	}
 

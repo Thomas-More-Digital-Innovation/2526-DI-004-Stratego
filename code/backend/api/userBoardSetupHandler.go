@@ -2,8 +2,8 @@ package api
 
 import (
 	"digital-innovation/stratego/db"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -40,7 +40,7 @@ func (s *GameServer) CreateBoardSetupHandler(c *gin.Context) {
 
 	setup, err := db.CreateBoardSetup(c.Request.Context(), user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
-		log.Printf("Failed to create board setup: %v", err)
+		logging.ErrorWithUser("Failed to create board setup", user.Username, user.ID, err)
 		sendError(c, "Failed to create board setup", http.StatusInternalServerError)
 		return
 	}
@@ -65,7 +65,7 @@ func (s *GameServer) GetUserBoardSetupsHandler(c *gin.Context) {
 
 	setups, err := db.GetUserBoardSetups(c.Request.Context(), user.ID)
 	if err != nil {
-		log.Printf("Failed to get board setups: %v", err)
+		logging.ErrorWithUser("Failed to get board setups", user.Username, user.ID, err)
 		sendError(c, "Failed to get board setups", http.StatusInternalServerError)
 		return
 	}
@@ -138,7 +138,7 @@ func (s *GameServer) UpdateBoardSetupHandler(c *gin.Context) {
 
 	err = db.UpdateBoardSetup(c.Request.Context(), setupID, user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
-		log.Printf("Failed to update board setup: %v", err)
+		logging.ErrorWithUser("Failed to update board setup", user.Username, user.ID, err)
 		sendError(c, "Failed to update board setup", http.StatusInternalServerError)
 		return
 	}
@@ -170,7 +170,7 @@ func (s *GameServer) DeleteBoardSetupHandler(c *gin.Context) {
 
 	err = db.DeleteBoardSetup(c.Request.Context(), setupID, user.ID)
 	if err != nil {
-		log.Printf("Failed to delete board setup: %v", err)
+		logging.ErrorWithUser("Failed to delete board setup", user.Username, user.ID, err)
 		sendError(c, "Failed to delete board setup", http.StatusInternalServerError)
 		return
 	}

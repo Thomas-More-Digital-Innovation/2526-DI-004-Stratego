@@ -1,7 +1,9 @@
 package api
 
 import (
-	"log"
+	"digital-innovation/stratego/logging"
+	"digital-innovation/stratego/utils"
+	"fmt"
 	"time"
 )
 
@@ -9,7 +11,6 @@ import (
 func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	session := handler.Session
 	hub := handler.Hub
-	log.Printf("Starting game monitor for %s (type: %s)", handler.Session.ID, gameType)
 
 	// Send initial state to all connected clients
 	time.Sleep(100 * time.Millisecond) // Brief delay for clients to connect
@@ -18,14 +19,12 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	// WAIT IN SETUP PHASE - WebSocket handlers will broadcast when user acts
 	select {
 	case <-session.GetSetupCompleteChan():
-		log.Printf("GameMonitor %s: Setup complete signal received", session.ID)
+		// Game starting
 	case <-session.IsAbortedChan():
-		log.Printf("GameMonitor %s: Session aborted during setup, cleaning up", session.ID)
+		logging.ErrorWith2Users(fmt.Sprintf("Game aborted during setup: %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), nil)
 		s.RemoveSession(session.ID)
 		return
 	}
-
-	log.Printf("GameMonitor %s: Exiting setup phase, game starting", session.ID)
 
 	// NOW we enter the game loop
 	for {
@@ -33,7 +32,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		if !session.WaitForMoveNotification(5 * time.Second) {
 			// Check if session was aborted while waiting
 			if session.IsAborted() {
-				log.Printf("GameMonitor %s: Session aborted, cleaning up", session.ID)
+				logging.ErrorWith2Users(fmt.Sprintf("Game aborted during gameplay: %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), nil)
 				s.RemoveSession(session.ID)
 				return
 			}
@@ -51,9 +50,8 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		session.AckMoveProcessed()
 
 		isHeadless := session.IsHeadless()
-
 		if !isHeadless {
-			log.Printf("Move executed in game %s", session.ID)
+			logging.Debug(logging.TagGame, "Move executed in game %s", session.ID)
 		}
 
 		if isHeadless {
@@ -71,7 +69,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		hasCombat := combat != nil && combat.Occurred
 
 		if hasCombat {
-			log.Printf("Combat detected! Broadcasting combat data and waiting for animation")
+			logging.Debug(logging.TagGame, "Combat detected! Broadcasting combat data and waiting for animation")
 
 			// Broadcast combat message (with piece info)
 			s.broadcastCombat(hub, combat, gameType)
@@ -79,7 +77,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 			// Wait for frontend animation to complete (3 second timeout)
 			session.WaitForAnimationComplete(3 * time.Second)
 
-			log.Printf("Animation complete, broadcasting updated state")
+			logging.Debug(logging.TagGame, "Animation complete, broadcasting updated state")
 
 			// Clear combat after animation
 			session.ClearLastCombat()

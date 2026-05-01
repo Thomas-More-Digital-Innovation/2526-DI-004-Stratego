@@ -1,9 +1,9 @@
 package api
 
 import (
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"encoding/json"
-	"log"
 )
 
 // BroadcastMessage sends a message to all connected clients
@@ -15,7 +15,7 @@ func (h *WSHub) BroadcastMessage(msgType string, data any) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling message: %v", err)
+		logging.Error("Error marshaling broadcast message", err)
 		return
 	}
 
@@ -26,7 +26,7 @@ func (h *WSHub) BroadcastMessage(msgType string, data any) {
 	select {
 	case h.broadcast <- jsonData:
 	default:
-		log.Printf("Warning: Broadcast dropped for game %s (buffer full or hub stopping)", h.session.ID)
+		logging.Debug(logging.TagWeb, "Warning: Broadcast dropped for game %s (buffer full or hub stopping)", h.session.ID)
 	}
 }
 

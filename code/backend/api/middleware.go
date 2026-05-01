@@ -2,9 +2,11 @@ package api
 
 import (
 	"digital-innovation/stratego/auth"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
-	"log"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,7 +41,13 @@ func CSRFMiddleware() gin.HandlerFunc {
 		tokenCookie, err := c.Cookie("XSRF-TOKEN")
 
 		if tokenHeader == "" || err != nil || tokenHeader != tokenCookie {
-			log.Printf("CSRF validation failed: header=%s, cookie=%s, err=%v", tokenHeader, tokenCookie, err)
+			user := auth.GetCurrentUser(c)
+			username, userID, err := utils.TryGetUserOrError(user)
+			if err != nil {
+				logging.SecurityWarningWithIP("CSRF validation failed", "Path: "+path, c.ClientIP())
+			} else {
+				logging.SecurityWarning("CSRF validation failed", "Path: "+path, username, userID)
+			}
 			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF validation failed"})
 			c.Abort()
 			return
@@ -120,6 +128,13 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		if !limiter.GetLimiter(ip).Allow() {
+			user := auth.GetCurrentUser(c)
+			username, userID, err := utils.TryGetUserOrError(user)
+			if err != nil {
+				logging.SecurityWarningWithIP("Rate limit triggered", "Too many requests from this IP", ip)
+			} else {
+				logging.SecurityWarning("Rate limit triggered", "Too many requests", username, userID)
+			}
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
 			c.Abort()
 			return
@@ -128,12 +143,30 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 	}
 }
 
+// maskSensitiveParams redacts values of potentially sensitive query parameters
+func maskSensitiveParams(query string) string {
+	if query == "" {
+		return ""
+	}
+	params := strings.Split(query, "&")
+	for i, p := range params {
+		kv := strings.SplitN(p, "=", 2)
+		if len(kv) == 2 {
+			key := strings.ToLower(kv[0])
+			if strings.Contains(key, "token") || strings.Contains(key, "password") || strings.Contains(key, "secret") || strings.Contains(key, "key") {
+				params[i] = kv[0] + "=[REDACTED]"
+			}
+		}
+	}
+	return strings.Join(params, "&")
+}
+
 // JSONLoggerMiddleware logs requests in JSON format
 func JSONLoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
+		raw := maskSensitiveParams(c.Request.URL.RawQuery)
 
 		// Skip logging for health check because it is used by docker compose health check
 		if path == "/health" {
@@ -144,27 +177,27 @@ func JSONLoggerMiddleware() gin.HandlerFunc {
 		// Process request
 		c.Next()
 
+		fullPath := path
 		if raw != "" {
-			path = path + "?" + raw
+			fullPath = path + "?" + raw
 		}
 
 		user := auth.GetCurrentUser(c)
-		userName := "anonymous"
-		if user != nil {
-			userName = user.Username
+		username, userID := utils.TryGetUser(user)
+
+		logData := map[string]any{
+			"time":    time.Now().Format(time.RFC3339),
+			"latency": time.Since(start).String(),
+			"ip":      c.ClientIP(),
+			"method":  c.Request.Method,
+			"path":    fullPath,
+			"status":  c.Writer.Status(),
+			"user":    logging.FormatUser(username, userID),
+			"agent":   c.Request.UserAgent(),
 		}
 
-		// Use standard log package which we've redirected to both stdout and file
-		// Gin will already log its own format, but this gives us a clean JSON object for Loki
-		log.Printf(`{"time":"%s", "latency":"%s", "ip":"%s", "method":"%s", "path":"%s", "status":%d, "user":"%s", "agent":"%s"}`+"\n",
-			time.Now().Format(time.RFC3339),
-			time.Since(start),
-			c.ClientIP(),
-			c.Request.Method,
-			path,
-			c.Writer.Status(),
-			userName,
-			c.Request.UserAgent(),
-		)
+		if jsonBytes, err := json.Marshal(logData); err == nil {
+			logging.LogRaw(string(jsonBytes))
+		}
 	}
 }

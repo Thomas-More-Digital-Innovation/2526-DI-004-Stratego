@@ -2,8 +2,8 @@ package api
 
 import (
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
-	"log"
 	"net/http"
 	"strings"
 
@@ -27,7 +27,7 @@ var upgrader = websocket.Upgrader{
 			}
 		}
 
-		log.Printf("WebSocket: Rejected connection from unauthorized origin: %s", origin)
+		logging.SecurityWarningWithIP("WebSocket: Rejected connection from unauthorized origin", "Origin: "+origin, r.RemoteAddr)
 		return false
 	},
 }
@@ -36,7 +36,7 @@ var upgrader = websocket.Upgrader{
 func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameSession, hub *WSHub, seatIndex int) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade error: %v", err)
+		logging.ConnectionError(session.ID, "", 0, err)
 		return
 	}
 
@@ -46,6 +46,18 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameS
 		session:   session,
 		seatIndex: seatIndex,
 		hub:       hub,
+		Username:  "",
+		UserID:    0,
+	}
+
+	// Try to get user info from the session/hub if available
+	switch seatIndex {
+	case 0:
+		client.Username = session.Player1Username
+		client.UserID = utils.GetIntSafe(session.Player1UserID)
+	case 1:
+		client.Username = session.Player2Username
+		client.UserID = utils.GetIntSafe(session.Player2UserID)
 	}
 
 	hub.register <- client

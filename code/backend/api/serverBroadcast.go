@@ -2,8 +2,8 @@ package api
 
 import (
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
-	"log"
 )
 
 // broadcastFullState sends complete game state and board to all clients
@@ -102,7 +102,7 @@ func (s *GameServer) broadcastCombat(hub *WSHub, combat *game.CombatResult, game
 	}
 
 	hub.BroadcastMessage(MsgTypeCombat, combatMsg)
-	log.Printf("Combat message sent: %+v", combatMsg)
+	logging.Debug(logging.TagGame, "Combat message sent for game %s: %+v", hub.session.ID, combatMsg)
 }
 
 // broadcastBoardStateRevealed sends board state with all pieces revealed (for AI vs AI spectating)

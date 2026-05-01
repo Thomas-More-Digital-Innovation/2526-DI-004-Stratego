@@ -1,9 +1,9 @@
 package api
 
 import (
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"encoding/json"
-	"log"
 	"time"
 )
 
@@ -46,14 +46,14 @@ func (h *WSHub) sendGameState(client *WSClient) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling game state: %v", err)
+		logging.ErrorWithUser("Error marshaling game state", client.Username, client.UserID, err)
 		return
 	}
 
 	select {
 	case client.send <- jsonData:
 	case <-time.After(time.Second):
-		log.Printf("Timeout sending game state to client")
+		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending game state")
 	}
 
 	h.sendBoardState(client)
@@ -117,14 +117,14 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling board state: %v", err)
+		logging.ErrorWithUser("Error marshaling board state", client.Username, client.UserID, err)
 		return
 	}
 
 	select {
 	case client.send <- jsonData:
 	case <-time.After(time.Second):
-		log.Printf("Timeout sending board state to client")
+		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending board state")
 	}
 }
 
@@ -138,14 +138,14 @@ func (h *WSHub) sendSetupBoard(client *WSClient) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling setup board state: %v", err)
+		logging.ErrorWithUser("Error marshaling setup board state", client.Username, client.UserID, err)
 		return
 	}
 
 	select {
 	case client.send <- jsonData:
 	case <-time.After(time.Second):
-		log.Printf("Timeout sending setup board state to client")
+		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending setup board state")
 	}
 }
 
@@ -198,14 +198,14 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling move history: %v", err)
+		logging.ErrorWithUser("Error marshaling move history", client.Username, client.UserID, err)
 		return
 	}
 
 	select {
 	case client.send <- jsonData:
 	case <-time.After(time.Second):
-		log.Printf("Timeout sending move history to client")
+		logging.DebugWithUser(logging.TagWeb, client.Username, client.UserID, "Timeout sending move history")
 	}
 }
 

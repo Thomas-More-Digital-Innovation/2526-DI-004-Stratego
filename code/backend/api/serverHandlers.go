@@ -4,9 +4,10 @@ import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -72,7 +73,12 @@ func (s *GameServer) HandleCreateGame(c *gin.Context) {
 
 	sendJSON(c, response, http.StatusOK)
 
-	log.Printf("Created game %s (type: %s) by user %d", req.GameID, req.GameType, userID)
+	username := "Guest"
+	if user != nil {
+		username = user.Username
+		handler.Session.Player1Username = username
+	}
+	logging.GameStarted(req.GameID, req.GameType, username, userID)
 }
 
 // HandleWebSocketConnection handles WebSocket connections
@@ -123,6 +129,7 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 		} else if currentUserID != nil {
 			// Associate if vacant
 			handler.Session.Player1UserID = currentUserID
+			handler.Session.Player1Username = user.Username
 		}
 	case 1:
 		if handler.Session.Player2UserID != nil {
@@ -133,10 +140,12 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 		} else if currentUserID != nil {
 			// Associate if vacant
 			handler.Session.Player2UserID = currentUserID
+			handler.Session.Player2Username = user.Username
 		}
 	}
 
-	log.Printf("WebSocket connection for game %s (player %d, user %v)", gameID, playerID, currentUserID)
+	username, userID := utils.TryGetUser(user)
+	logging.GameStarted(gameID, "WebSocket Join", username, userID)
 
 	HandleWebSocket(c.Writer, c.Request, handler.Session, handler.Hub, playerID)
 }
@@ -195,7 +204,24 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	// Save game stats to database
 	go s.saveGameStats(session, winnerID, hub.gameType)
 
-	log.Printf("Game %s over. Waiting for users to disconnect before cleaning up.", session.ID)
+	// Determine labels for logging
+	p1 := logging.FormatUser(session.Player1Username, utils.GetIntSafe(session.Player1UserID))
+	p2 := logging.FormatUser(session.Player2Username, utils.GetIntSafe(session.Player2UserID))
+
+	winnerLabel := "Draw"
+	loserLabel := "Draw"
+
+	if winner != nil {
+		if winner.GetID() == 0 {
+			winnerLabel = p1
+			loserLabel = p2
+		} else {
+			winnerLabel = p2
+			loserLabel = p1
+		}
+	}
+
+	logging.GameFinished(session.ID, winnerLabel, loserLabel, state.Round)
 }
 
 // saveGameStats saves game statistics to the database
@@ -209,25 +235,27 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 
 	ctx := s.ctx
 	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
-		log.Printf("Failed to save game metadata for %s: %v", session.ID, err)
+		logging.ErrorWith2Users(fmt.Sprintf("Failed to save game metadata for %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 	} else {
 		for _, m := range g.HistoricalHistory {
 			if err := db.SaveMove(ctx, session.ID, m); err != nil {
-				log.Printf("Failed to save move %d for game %s: %v", m.MoveIndex, session.ID, err)
+				logging.ErrorWith2Users(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 			}
 		}
-		log.Printf("Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
+		logging.DebugWithUser(logging.TagGame, session.Player1Username, utils.GetIntSafe(session.Player1UserID), "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
 	}
+
 	// Track stats for player 1 if they have a user ID
 	if session.Player1UserID != nil {
 		userID := *session.Player1UserID
 		won := winnerID != nil && *winnerID == 0
 
 		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
-			log.Printf("Failed to update stats for user %d: %v", userID, err)
+			logging.ErrorWithUser("Failed to update stats", session.Player1Username, userID, err)
 		} else {
-			log.Printf("Updated stats for user %d (won=%v)", userID, won)
+			logging.DebugWithUser(logging.TagGame, session.Player1Username, userID, "Updated stats (won=%v)", won)
 		}
+
 	}
 
 	// Track stats for player 2 if they have a user ID
@@ -236,9 +264,10 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		won := winnerID != nil && *winnerID == 1
 
 		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
-			log.Printf("Failed to update stats for user %d: %v", userID, err)
+			logging.ErrorWithUser("Failed to update stats", session.Player2Username, userID, err)
 		} else {
-			log.Printf("Updated stats for user %d (won=%v)", userID, won)
+			logging.DebugWithUser(logging.TagGame, session.Player2Username, userID, "Updated stats (won=%v)", won)
 		}
+
 	}
 }

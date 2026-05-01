@@ -2,10 +2,11 @@ package game
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
+	"digital-innovation/stratego/utils"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 )
@@ -29,9 +30,11 @@ type GameSession struct {
 	moveNotifyChan        chan bool // Signals when a move has been executed
 	moveAckChan           chan bool // Signals that move has been processed (for synchronization)
 	aborted               bool      // Signals that game was manually stopped
-	// User ID for players (nil if guest/AI)
+	// User info for players (nil/empty if guest/AI)
 	Player1UserID     *int
+	Player1Username   string
 	Player2UserID     *int
+	Player2Username   string
 	StartTime         time.Time
 	setupCompleteChan chan bool
 }
@@ -84,11 +87,26 @@ func (gs *GameSession) Start() error {
 	gs.running = true
 	gs.mutex.Unlock()
 
-	log.Printf("GameSession %s: Starting game loop", gs.ID)
-
 	go func() {
-		winner := gs.runner.RunToCompletion(true) // TODO maybe conditionally set logging?
-		log.Printf("GameSession %s: Game finished, winner=%v", gs.ID, winner)
+		winner := gs.runner.RunToCompletion()
+
+		winnerLabel := "Draw"
+		loserLabel := "Draw"
+
+		p1 := logging.FormatUser(gs.Player1Username, utils.GetIntSafe(gs.Player1UserID))
+		p2 := logging.FormatUser(gs.Player2Username, utils.GetIntSafe(gs.Player2UserID))
+
+		if winner != nil {
+			if winner.GetID() == 0 {
+				winnerLabel = p1
+				loserLabel = p2
+			} else {
+				winnerLabel = p2
+				loserLabel = p1
+			}
+		}
+
+		logging.GameFinished(gs.ID, winnerLabel, loserLabel, gs.game.GetRound())
 		gs.doneChan <- winner
 		gs.mutex.Lock()
 		gs.running = false
@@ -109,11 +127,10 @@ func (gs *GameSession) Stop() {
 	wasRunning := gs.running
 	gs.mutex.Unlock()
 
-	log.Printf("GameSession %s: Stopping game (wasRunning=%v)", gs.ID, wasRunning)
-
 	if wasRunning {
 		close(gs.stopChan)
-		log.Printf("GameSession %s: Stop signal (close) sent to all listeners", gs.ID)
+		// We don't necessarily know WHO stopped it here easily, but we'll log the session ID
+		logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
 	}
 }
 
@@ -129,7 +146,7 @@ func (gs *GameSession) Pause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.Pause()
-	log.Printf("GameSession %s: Paused", gs.ID)
+	logging.Debug(logging.TagGame, "GameSession %s: Paused", gs.ID)
 }
 
 // Unpause unpauses the game session
@@ -137,7 +154,7 @@ func (gs *GameSession) Unpause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.Unpause()
-	log.Printf("GameSession %s: Unpaused", gs.ID)
+	logging.Debug(logging.TagGame, "GameSession %s: Unpaused", gs.ID)
 }
 
 // SetTurnDelay sets the delay between AI turns
@@ -158,7 +175,7 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
-	log.Printf("SubmitMove called: gameID=%s, playerID=%d, running=%v, currentPlayerID=%d, isGameOver=%v",
+	logging.Debug(logging.TagGame, "SubmitMove called: gameID=%s, playerID=%d, running=%v, currentPlayerID=%d, isGameOver=%v",
 		gs.ID, playerID, gs.running, gs.game.CurrentPlayer.GetID(), gs.game.IsGameOver())
 
 	if !gs.running {
@@ -339,9 +356,9 @@ func (gs *GameSession) WaitForAnimationComplete(timeout time.Duration) {
 
 	select {
 	case <-gs.animationCompleteChan:
-		log.Printf("GameSession %s: Animation complete signal received", gs.ID)
+		logging.Debug(logging.TagGame, "GameSession %s: Animation complete signal received", gs.ID)
 	case <-time.After(timeout):
-		log.Printf("GameSession %s: Animation timeout", gs.ID)
+		logging.Debug(logging.TagGame, "GameSession %s: Animation timeout", gs.ID)
 	}
 
 	gs.mutex.Lock()
@@ -358,9 +375,9 @@ func (gs *GameSession) SignalAnimationComplete() {
 	if waiting {
 		select {
 		case gs.animationCompleteChan <- true:
-			log.Printf("GameSession %s: Animation complete signal sent", gs.ID)
+			logging.Debug(logging.TagGame, "GameSession %s: Animation complete signal sent", gs.ID)
 		default:
-			log.Printf("GameSession %s: Animation complete channel full", gs.ID)
+			logging.Debug(logging.TagGame, "GameSession %s: Animation complete channel full", gs.ID)
 		}
 	}
 }
@@ -384,7 +401,7 @@ func (gs *GameSession) NotifyMoveExecuted() {
 	select {
 	case gs.moveNotifyChan <- true:
 	default:
-		log.Printf("GameSession %s: Move notification channel full", gs.ID)
+		logging.Debug(logging.TagGame, "GameSession %s: Move notification channel full", gs.ID)
 	}
 }
 
@@ -492,7 +509,7 @@ func (gs *GameSession) SwapSetupPieces(playerID int, pos1, pos2 engine.Position)
 	// Swap the pieces
 	pieces[idx1], pieces[idx2] = pieces[idx2], pieces[idx1]
 
-	log.Printf("Swapped pieces for player %d: index %d <-> %d", playerID, idx1, idx2)
+	logging.Debug(logging.TagGame, "Swapped pieces for player %d: index %d <-> %d", playerID, idx1, idx2)
 	return nil
 }
 
@@ -548,7 +565,7 @@ func (gs *GameSession) LoadSetup(playerID int, data []byte) error {
 		gs.player2Pieces = pieces
 	}
 
-	log.Printf("Loaded custom setup for player %d", playerID)
+	logging.Debug(logging.TagGame, "Loaded custom setup for player %d in game %s", playerID, gs.ID)
 	return nil
 }
 
@@ -573,7 +590,7 @@ func (gs *GameSession) RandomizeSetup(playerID int) error {
 		return errors.New("invalid player ID")
 	}
 
-	log.Printf("Randomized setup for player %d", playerID)
+	logging.Debug(logging.TagGame, "Randomized setup for player %d in game %s", playerID, gs.ID)
 	return nil
 }
 
@@ -585,8 +602,6 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 		gs.mutex.Unlock()
 		return errors.New("not in setup phase")
 	}
-
-	log.Printf("Game %s: Starting game from setup - placing pieces on board (headless=%v)", gs.ID, headless)
 
 	// Set initial speed based on headless mode
 	if headless {
@@ -614,14 +629,11 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 	default:
 	}
 
-	log.Printf("Game %s: Setup phase marked complete", gs.ID)
-
 	gs.mutex.Unlock()
 
 	// Start the game (now outside the lock)
-	log.Printf("Game %s: Calling Start() to begin game loop", gs.ID)
 	if err := gs.Start(); err != nil {
-		log.Printf("Error starting game: %v", err)
+		logging.Error("Error starting game "+gs.ID, err)
 		return err
 	}
 

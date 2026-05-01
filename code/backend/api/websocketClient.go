@@ -2,7 +2,7 @@ package api
 
 import (
 	"digital-innovation/stratego/game"
-	"log"
+	"digital-innovation/stratego/logging"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -15,6 +15,8 @@ type WSClient struct {
 	session   *game.GameSession
 	seatIndex int // -1 for spectator, 0 or 1 for player
 	hub       *WSHub
+	Username  string
+	UserID    int
 }
 
 // readPump pumps messages from the websocket connection to the hub
@@ -26,13 +28,13 @@ func (c *WSClient) readPump() {
 
 	err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	if err != nil {
-		log.Printf("Error setting read deadline: %v", err)
+		logging.ConnectionError(c.session.ID, c.Username, c.UserID, err)
 		return
 	}
 	c.conn.SetPongHandler(func(string) error {
 		err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		if err != nil {
-			log.Printf("Error setting read deadline: %v", err)
+			logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Error setting read deadline: %v", err)
 		}
 		return nil
 	})
@@ -41,7 +43,9 @@ func (c *WSClient) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
+				logging.ConnectionError(c.session.ID, c.Username, c.UserID, err)
+			} else {
+				logging.ConnectionClosed(c.session.ID, c.Username, c.UserID)
 			}
 			break
 		}
@@ -63,13 +67,13 @@ func (c *WSClient) writePump() {
 		case message, ok := <-c.send:
 			err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err != nil {
-				log.Printf("Error setting write deadline: %v", err)
+				logging.ConnectionError(c.session.ID, c.Username, c.UserID, err)
 				return
 			}
 			if !ok {
 				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Printf("Error writing close message: %v", err)
+					logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Error writing close message: %v", err)
 				}
 				return
 			}
@@ -81,7 +85,7 @@ func (c *WSClient) writePump() {
 		case <-ticker.C:
 			err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err != nil {
-				log.Printf("Error setting write deadline: %v", err)
+				logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Error setting write deadline: %v", err)
 				return
 			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {

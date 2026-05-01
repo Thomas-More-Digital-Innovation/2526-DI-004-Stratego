@@ -6,10 +6,10 @@ import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/engine"
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
@@ -127,7 +127,7 @@ func (s *GameServer) RemoveSession(gameID string) {
 
 	if _, exists := s.sessions[gameID]; exists {
 		delete(s.sessions, gameID)
-		log.Printf("Removed session %s from GameServer", gameID)
+		logging.Debug(logging.TagWeb, "Removed session %s from GameServer", gameID)
 	}
 }
 
@@ -235,6 +235,6 @@ func (s *GameServer) StartServer(addr string) error {
 
 	s.PrintRoutes()
 
-	log.Printf("Starting game server on %s", addr)
+	logging.Debug(logging.TagWeb, "Starting game server on %s", addr)
 	return s.router.Run(addr)
 }

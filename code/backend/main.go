@@ -4,11 +4,11 @@ import (
 	aivsai "digital-innovation/stratego/ai/AIvsAI"
 	"digital-innovation/stratego/api"
 	"digital-innovation/stratego/db"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -35,7 +35,7 @@ func main() {
 	aiTypes := flag.String("ai", "fafo:fafo", "Run AI vs AI matches instead of server")
 	matches := flag.Int("matches", 100, "Number of AI vs AI matches to run")
 	format := flag.String("format", "none", "The format used to print the results of an AI vs AI competition, either none or md")
-	logging := flag.Bool("logging", true, "Show logs in stdout")
+	loggingEnabled := flag.Bool("logging", true, "Show logs in stdout")
 
 	flag.Parse()
 
@@ -43,11 +43,11 @@ func main() {
 
 	if *serverMode {
 		if err := db.InitDB(); err != nil {
-			log.Fatalf("Failed to initialize database: %v", err)
+			logging.Fatalf("Failed to initialize database: %v", err)
 		}
 		defer func() {
 			if err := db.CloseDB(); err != nil {
-				log.Printf("Error closing database: %v", err)
+				logging.Error("Error closing database", err)
 			}
 		}()
 
@@ -61,7 +61,7 @@ func main() {
 			ai1, ai2 = aiTypeSplit[0], aiTypeSplit[1]
 		}
 		start := time.Now()
-		aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *logging)
+		aivsai.RunAIvsAI(ai1, ai2, *matches, *format, *loggingEnabled)
 		elapsed := time.Since(start)
 		fmt.Printf("\nAI vs AI matches completed in %.2f seconds\n", elapsed.Seconds())
 	}
@@ -73,6 +73,6 @@ func runServer(addr string) {
 
 	server := api.NewGameServer()
 	if err := server.StartServer(addr); err != nil {
-		log.Fatalf("Server error: %v", err)
+		logging.Fatalf("Server error: %v", err)
 	}
 }

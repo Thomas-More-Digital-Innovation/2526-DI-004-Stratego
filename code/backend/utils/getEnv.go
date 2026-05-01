@@ -25,12 +25,3 @@ func GetEnvOrErrorInProduction(key string, devFallback string) (string, error) {
 	}
 	return GetEnvOrError(key)
 }
-
-var isProd bool
-
-func init() {
-	isProd = os.Getenv("APP_ENV") == "production"
-}
-func IsProduction() bool {
-	return isProd
-}
