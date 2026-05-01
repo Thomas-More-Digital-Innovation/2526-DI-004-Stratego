@@ -32,7 +32,6 @@ const (
 	TagFatal    = colorBold + colorWhite + colorPurple + "[ FATAL  ]" + colorReset
 )
 
-
 func init() {
 	// Only set time flags, we will handle the location manually for custom ordering
 	log.SetFlags(log.LstdFlags)

@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -52,10 +51,11 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameS
 	}
 
 	// Try to get user info from the session/hub if available
-	if seatIndex == 0 {
+	switch seatIndex {
+	case 0:
 		client.Username = session.Player1Username
 		client.UserID = utils.GetIntSafe(session.Player1UserID)
-	} else if seatIndex == 1 {
+	case 1:
 		client.Username = session.Player2Username
 		client.UserID = utils.GetIntSafe(session.Player2UserID)
 	}

@@ -6,7 +6,6 @@ import (
 	"digital-innovation/stratego/models"
 )
 
-
 // broadcastFullState sends complete game state and board to all clients
 func (s *GameServer) broadcastFullState(hub *WSHub, gameType string) {
 	state := hub.session.GetGameState()

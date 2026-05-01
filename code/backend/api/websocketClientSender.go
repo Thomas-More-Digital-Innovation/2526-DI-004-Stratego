@@ -56,4 +56,3 @@ func (c *WSClient) sendPong() {
 
 	c.send <- jsonData
 }
-

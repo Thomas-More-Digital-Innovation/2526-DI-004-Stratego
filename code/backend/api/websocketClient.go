@@ -39,7 +39,6 @@ func (c *WSClient) readPump() {
 		return nil
 	})
 
-
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {

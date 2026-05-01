@@ -201,4 +201,3 @@ func JSONLoggerMiddleware() gin.HandlerFunc {
 		}
 	}
 }
-
