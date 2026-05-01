@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
 	"encoding/json"
 	"fmt"
@@ -316,7 +317,11 @@ func SaveMoves(ctx context.Context, gameID string, moves []models.HistoricalMove
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			logging.Error("failed to rollback transaction: %s", err)
+		}
+	}()
 
 	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO game_moves (game_id, move_index, player_id, from_x, from_y, to_x, to_y, attacker_data, defender_data, result)
