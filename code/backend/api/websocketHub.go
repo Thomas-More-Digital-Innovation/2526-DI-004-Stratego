@@ -2,8 +2,8 @@ package api
 
 import (
 	"digital-innovation/stratego/game"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
-	"log"
 	"sync"
 	"time"
 )
@@ -74,7 +74,7 @@ func (h *WSHub) Run() {
 				switch h.gameType {
 				case models.AiVsAi:
 					// Stop AI vs AI games immediately - no point running without observers
-					log.Printf("WSHub: All clients disconnected from AI vs AI game, stopping game immediately")
+					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, stopping game immediately: %s", h.session.ID)
 					h.session.Stop()
 					if h.OnCleanup != nil {
 						h.OnCleanup()
@@ -83,7 +83,7 @@ func (h *WSHub) Run() {
 
 				case models.HumanVsAi, models.HumanVsHuman:
 					// Start cleanup timer with appropriate grace period
-					log.Printf("WSHub: All clients disconnected from %s game, starting cleanup timer (%v)", h.gameType, h.cleanupPeriod)
+					logging.Debug(logging.TagWeb, "All clients disconnected from %s game, starting cleanup timer (%v): %s", h.gameType, h.cleanupPeriod, h.session.ID)
 					h.startCleanupTimer()
 				}
 			}
@@ -101,7 +101,7 @@ func (h *WSHub) Run() {
 			}
 			h.mutex.RUnlock()
 		case <-h.stop:
-			log.Printf("WSHub: Stopping hub loop for game %s", h.session.ID)
+			logging.Debug(logging.TagWeb, "Stopping hub loop for game %s", h.session.ID)
 			return
 		}
 	}
@@ -139,10 +139,10 @@ func (h *WSHub) startCleanupTimer() {
 		h.cleanupTimer.Stop()
 	}
 
-	log.Printf("WSHub: Starting cleanup timer for %s game (will stop in %v)", h.gameType, h.cleanupPeriod)
+	logging.Debug(logging.TagWeb, "Starting cleanup timer for %s game (will stop in %v): %s", h.gameType, h.cleanupPeriod, h.session.ID)
 
 	h.cleanupTimer = time.AfterFunc(h.cleanupPeriod, func() {
-		log.Printf("WSHub: Cleanup timer expired for %s game, stopping and cleaning up", h.gameType)
+		logging.Debug(logging.TagWeb, "Cleanup timer expired for %s game, stopping and cleaning up: %s", h.gameType, h.session.ID)
 		h.session.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
@@ -159,7 +159,7 @@ func (h *WSHub) cancelCleanupTimer() {
 	if h.cleanupTimer != nil {
 		wasActive := h.cleanupTimer.Stop()
 		if wasActive {
-			log.Printf("WSHub: Cleanup timer cancelled for %s game (client reconnected)", h.gameType)
+			logging.Debug(logging.TagWeb, "Cleanup timer cancelled for %s game (client reconnected): %s", h.gameType, h.session.ID)
 		}
 		h.cleanupTimer = nil
 	}

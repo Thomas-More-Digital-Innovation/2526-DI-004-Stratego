@@ -2,8 +2,8 @@ package game
 
 import (
 	"digital-innovation/stratego/engine"
+	"digital-innovation/stratego/logging"
 	"fmt"
-	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -40,11 +40,9 @@ func (gr *GameRunner) SetMoveCallback(callback func()) {
 
 // RunToCompletion runs the game until it's over (for AI vs AI)
 // Winner can be nil when max turns are reached and both AIs have a similar piece count
-func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
+func (gr *GameRunner) RunToCompletion() *engine.Player {
 	turnCount := 0
-	if logging {
-		log.Printf("GameRunner: Starting RunToCompletion loop")
-	}
+	logging.Debug(logging.TagGame, "GameRunner: Starting RunToCompletion loop")
 
 	for {
 		var isGameOver bool
@@ -62,9 +60,9 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 		// Check for stop signal
 		select {
 		case <-gr.stopChan:
-			if logging {
-				log.Printf("GameRunner: Stop signal received, ending game")
-			}
+
+			logging.Debug(logging.TagGame, "GameRunner: Stop signal received, ending game")
+
 			return nil
 		default:
 			// No stop signal, continue
@@ -79,14 +77,13 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 
 		if executed {
 			turnCount++
-			if logging {
-				log.Printf("GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
-			}
+
+			logging.Debug(logging.TagGame, "GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
+
 		} else {
 			if gr.game.IsGameOver() {
-				if logging {
-					log.Printf("GameRunner: Game ended during ExecuteTurn")
-				}
+				logging.Debug(logging.TagGame, "GameRunner: Game ended during ExecuteTurn")
+
 				break
 			}
 			time.Sleep(100 * time.Millisecond)
@@ -97,9 +94,7 @@ func (gr *GameRunner) RunToCompletion(logging bool) *engine.Player {
 	}
 
 	if turnCount >= gr.maxTurns {
-		if logging {
-			fmt.Println("Game ended: Maximum turns reached")
-		}
+		logging.Debug(logging.TagGame, "GameRunner: Game ended: Maximum turns reached")
 		return gr.calculateWinnerOnMaxTurnsExceeded()
 	}
 

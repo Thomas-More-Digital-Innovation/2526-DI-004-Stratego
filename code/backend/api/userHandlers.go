@@ -5,7 +5,6 @@ import (
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/models"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -74,14 +73,14 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 
 	accessToken, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		log.Printf("Failed to generate access token: %v", err)
+		logging.ErrorWithUser("Failed to generate access token", user.Username, user.ID, err)
 		sendError(c, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken()
 	if err != nil {
-		log.Printf("Failed to generate refresh token: %v", err)
+		logging.ErrorWithUser("Failed to generate refresh token", user.Username, user.ID, err)
 		sendError(c, "Failed to generate session", http.StatusInternalServerError)
 		return
 	}
@@ -89,7 +88,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 	// Save refresh token to DB
 	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
 	if err := db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt); err != nil {
-		log.Printf("Failed to save refresh token: %v", err)
+		logging.ErrorWithUser("Failed to save refresh token", user.Username, user.ID, err)
 		sendError(c, "Failed to persist session", http.StatusInternalServerError)
 		return
 	}
@@ -128,14 +127,14 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 
 	accessToken, err := auth.GenerateToken(user.ID, user.Username)
 	if err != nil {
-		log.Printf("Failed to generate access token: %v", err)
+		logging.ErrorWithUser("Failed to generate access token", user.Username, user.ID, err)
 		sendError(c, "Failed to create session", http.StatusInternalServerError)
 		return
 	}
 
 	refreshToken, err := auth.GenerateRefreshToken()
 	if err != nil {
-		log.Printf("Failed to generate refresh token: %v", err)
+		logging.ErrorWithUser("Failed to generate refresh token", user.Username, user.ID, err)
 		sendError(c, "Failed to create session", http.StatusInternalServerError)
 		return
 	}
@@ -143,7 +142,7 @@ func (s *GameServer) LoginHandler(c *gin.Context) {
 	// Save refresh token to DB
 	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
 	if err := db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt); err != nil {
-		log.Printf("Failed to save refresh token: %v", err)
+		logging.ErrorWithUser("Failed to save refresh token", user.Username, user.ID, err)
 		sendError(c, "Failed to persist session", http.StatusInternalServerError)
 		return
 	}

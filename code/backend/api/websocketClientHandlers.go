@@ -174,7 +174,7 @@ func (c *WSClient) handleSwapPieces(data interface{}) {
 		c.sendError(fmt.Sprintf("Failed to swap pieces: %v", err))
 		return
 	}
-	logging.Debug(logging.TagWeb, "Pieces swapped: %v <-> %v", pos1, pos2)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Pieces swapped: %v <-> %v", pos1, pos2)
 
 	c.hub.BroadcastSetupBoard()
 }
@@ -208,7 +208,7 @@ func (c *WSClient) handleRandomizeSetup(data interface{}) {
 		c.sendError(fmt.Sprintf("Failed to randomize setup: %v", err))
 		return
 	}
-	logging.Debug(logging.TagWeb, "Setup randomized for player %d", targetPlayer)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Setup randomized for player %d", targetPlayer)
 
 	c.hub.BroadcastSetupBoard()
 }
@@ -233,7 +233,7 @@ func (c *WSClient) handleStartGame(data interface{}) {
 		c.sendError(fmt.Sprintf("Failed to start game: %v", err))
 		return
 	}
-	logging.Debug(logging.TagWeb, "Game started (client: %d, headless: %v)", c.seatIndex, headless)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Game started (client seat: %d, headless: %v)", c.seatIndex, headless)
 
 	c.hub.BroadcastGameTransition()
 }
@@ -283,7 +283,7 @@ func (c *WSClient) handleLoadSetup(data interface{}) {
 		c.sendError(fmt.Sprintf("Failed to load setup: %v", err))
 		return
 	}
-	logging.Debug(logging.TagWeb, "Setup loaded for player %d", targetPlayer)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Setup loaded for player %d", targetPlayer)
 
 	c.hub.BroadcastSetupBoard()
 }
@@ -295,7 +295,7 @@ func (c *WSClient) handlePause() {
 		return
 	}
 	c.session.Pause()
-	logging.Debug(logging.TagWeb, "Game paused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Game paused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
 	c.hub.BroadcastGameState()
 }
 
@@ -306,7 +306,7 @@ func (c *WSClient) handleUnpause() {
 		return
 	}
 	c.session.Unpause()
-	logging.Debug(logging.TagWeb, "Game unpaused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Game unpaused (client seat: %d, type: %s)", c.seatIndex, c.hub.gameType)
 	c.hub.BroadcastGameState()
 }
 
@@ -333,7 +333,7 @@ func (c *WSClient) handleSetSpeed(data interface{}) {
 	}
 
 	c.session.SetTurnDelay(time.Duration(speed) * time.Millisecond)
-	logging.Debug(logging.TagWeb, "Game speed set to %dms", speed)
+	logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Game speed set to %dms", speed)
 }
 
 // handleStep processes a manual step message
@@ -344,7 +344,7 @@ func (c *WSClient) handleStep() {
 	}
 
 	if c.session.StepAI() {
-		logging.Debug(logging.TagWeb, "Manual AI step executed")
+		logging.DebugWithUser(logging.TagWeb, c.Username, c.UserID, "Manual AI step executed")
 		c.hub.BroadcastGameState()
 	} else {
 		c.sendError("Failed to execute step (maybe already running or not AI turn)")

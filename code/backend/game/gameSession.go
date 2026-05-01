@@ -7,7 +7,6 @@ import (
 	"digital-innovation/stratego/utils"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 )
@@ -89,7 +88,7 @@ func (gs *GameSession) Start() error {
 	gs.mutex.Unlock()
 
 	go func() {
-		winner := gs.runner.RunToCompletion(false) // no noisy logging
+		winner := gs.runner.RunToCompletion()
 
 		winnerLabel := "Draw"
 		loserLabel := "Draw"
@@ -147,7 +146,7 @@ func (gs *GameSession) Pause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.Pause()
-	log.Printf("GameSession %s: Paused", gs.ID)
+	logging.Debug(logging.TagGame, "GameSession %s: Paused", gs.ID)
 }
 
 // Unpause unpauses the game session
@@ -155,7 +154,7 @@ func (gs *GameSession) Unpause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.Unpause()
-	log.Printf("GameSession %s: Unpaused", gs.ID)
+	logging.Debug(logging.TagGame, "GameSession %s: Unpaused", gs.ID)
 }
 
 // SetTurnDelay sets the delay between AI turns
@@ -176,7 +175,7 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
-	log.Printf("SubmitMove called: gameID=%s, playerID=%d, running=%v, currentPlayerID=%d, isGameOver=%v",
+	logging.Debug(logging.TagGame, "SubmitMove called: gameID=%s, playerID=%d, running=%v, currentPlayerID=%d, isGameOver=%v",
 		gs.ID, playerID, gs.running, gs.game.CurrentPlayer.GetID(), gs.game.IsGameOver())
 
 	if !gs.running {
@@ -566,7 +565,7 @@ func (gs *GameSession) LoadSetup(playerID int, data []byte) error {
 		gs.player2Pieces = pieces
 	}
 
-	log.Printf("Loaded custom setup for player %d", playerID)
+	logging.Debug(logging.TagGame, "Loaded custom setup for player %d in game %s", playerID, gs.ID)
 	return nil
 }
 
@@ -591,7 +590,7 @@ func (gs *GameSession) RandomizeSetup(playerID int) error {
 		return errors.New("invalid player ID")
 	}
 
-	log.Printf("Randomized setup for player %d", playerID)
+	logging.Debug(logging.TagGame, "Randomized setup for player %d in game %s", playerID, gs.ID)
 	return nil
 }
 
@@ -634,7 +633,7 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 
 	// Start the game (now outside the lock)
 	if err := gs.Start(); err != nil {
-		log.Printf("Error starting game: %v", err)
+		logging.Error("Error starting game "+gs.ID, err)
 		return err
 	}
 

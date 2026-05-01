@@ -4,12 +4,12 @@ import (
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/websocket"
 )
+
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -28,7 +28,7 @@ var upgrader = websocket.Upgrader{
 			}
 		}
 
-		log.Printf("WebSocket: Rejected connection from unauthorized origin: %s", origin)
+		logging.SecurityWarningWithIP("WebSocket: Rejected connection from unauthorized origin", "Origin: "+origin, r.RemoteAddr)
 		return false
 	},
 }

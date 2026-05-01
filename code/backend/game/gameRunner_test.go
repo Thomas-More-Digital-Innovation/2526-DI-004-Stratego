@@ -43,7 +43,7 @@ func TestRunToCompletion(t *testing.T) {
 		}
 
 		runner := game.NewGameRunner(g, 0, 1000)
-		winner := runner.RunToCompletion(false) // we don't want cluttered logging in pipeline
+		winner := runner.RunToCompletion() // we don't want cluttered logging in pipeline
 		rounds := g.GetRound()
 
 		winCause := g.GetWinCause()
@@ -200,7 +200,7 @@ func TestGameRunnerWithDelay(t *testing.T) {
 	runner := game.NewGameRunner(g, 5*time.Millisecond, 10)
 
 	start := time.Now()
-	runner.RunToCompletion(false)
+	runner.RunToCompletion()
 	elapsed := time.Since(start)
 
 	// With 5ms delay per turn and up to 10 turns, should take at least 50ms

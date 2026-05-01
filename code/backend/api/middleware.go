@@ -5,8 +5,8 @@ import (
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
 	"encoding/json"
-	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -143,12 +143,30 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 	}
 }
 
+// maskSensitiveParams redacts values of potentially sensitive query parameters
+func maskSensitiveParams(query string) string {
+	if query == "" {
+		return ""
+	}
+	params := strings.Split(query, "&")
+	for i, p := range params {
+		kv := strings.SplitN(p, "=", 2)
+		if len(kv) == 2 {
+			key := strings.ToLower(kv[0])
+			if strings.Contains(key, "token") || strings.Contains(key, "password") || strings.Contains(key, "secret") || strings.Contains(key, "key") {
+				params[i] = kv[0] + "=[REDACTED]"
+			}
+		}
+	}
+	return strings.Join(params, "&")
+}
+
 // JSONLoggerMiddleware logs requests in JSON format
 func JSONLoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
+		raw := maskSensitiveParams(c.Request.URL.RawQuery)
 
 		// Skip logging for health check because it is used by docker compose health check
 		if path == "/health" {
@@ -159,8 +177,9 @@ func JSONLoggerMiddleware() gin.HandlerFunc {
 		// Process request
 		c.Next()
 
+		fullPath := path
 		if raw != "" {
-			path = path + "?" + raw
+			fullPath = path + "?" + raw
 		}
 
 		user := auth.GetCurrentUser(c)
@@ -171,14 +190,15 @@ func JSONLoggerMiddleware() gin.HandlerFunc {
 			"latency": time.Since(start).String(),
 			"ip":      c.ClientIP(),
 			"method":  c.Request.Method,
-			"path":    path,
+			"path":    fullPath,
 			"status":  c.Writer.Status(),
 			"user":    logging.FormatUser(username, userID),
 			"agent":   c.Request.UserAgent(),
 		}
 
 		if jsonBytes, err := json.Marshal(logData); err == nil {
-			log.Println(string(jsonBytes))
+			logging.LogRaw(string(jsonBytes))
 		}
 	}
 }
+

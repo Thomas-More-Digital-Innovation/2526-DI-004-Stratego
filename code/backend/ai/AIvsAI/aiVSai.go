@@ -47,7 +47,7 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 		}
 
 		runner := game.NewGameRunner(g, 0, 1000)
-		winner := runner.RunToCompletion(logging)
+		winner := runner.RunToCompletion()
 		rounds := g.GetRound()
 		totalRounds += rounds
 

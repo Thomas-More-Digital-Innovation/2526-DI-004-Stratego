@@ -242,8 +242,9 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 				logging.ErrorWith2Users(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 			}
 		}
-		logging.Debug(logging.TagGame, "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
+		logging.DebugWithUser(logging.TagGame, session.Player1Username, utils.GetIntSafe(session.Player1UserID), "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
 	}
+
 	// Track stats for player 1 if they have a user ID
 	if session.Player1UserID != nil {
 		userID := *session.Player1UserID
@@ -252,8 +253,9 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
 			logging.ErrorWithUser("Failed to update stats", session.Player1Username, userID, err)
 		} else {
-			logging.Debug(logging.TagGame, "Updated stats for user %s (won=%v)", logging.FormatUser(session.Player1Username, userID), won)
+			logging.DebugWithUser(logging.TagGame, session.Player1Username, userID, "Updated stats (won=%v)", won)
 		}
+
 	}
 
 	// Track stats for player 2 if they have a user ID
@@ -264,7 +266,8 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
 			logging.ErrorWithUser("Failed to update stats", session.Player2Username, userID, err)
 		} else {
-			logging.Debug(logging.TagGame, "Updated stats for user %s (won=%v)", logging.FormatUser(session.Player2Username, userID), won)
+			logging.DebugWithUser(logging.TagGame, session.Player2Username, userID, "Updated stats (won=%v)", won)
 		}
+
 	}
 }

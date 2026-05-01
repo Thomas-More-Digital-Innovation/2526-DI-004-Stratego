@@ -9,7 +9,6 @@ import (
 	"digital-innovation/stratego/utils"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -44,7 +43,7 @@ func main() {
 
 	if *serverMode {
 		if err := db.InitDB(); err != nil {
-			log.Fatalf("Failed to initialize database: %v", err)
+			logging.Fatalf("Failed to initialize database: %v", err)
 		}
 		defer func() {
 			if err := db.CloseDB(); err != nil {
@@ -74,6 +73,6 @@ func runServer(addr string) {
 
 	server := api.NewGameServer()
 	if err := server.StartServer(addr); err != nil {
-		log.Fatalf("Server error: %v", err)
+		logging.Fatalf("Server error: %v", err)
 	}
 }
