@@ -8,7 +8,6 @@ import (
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -145,17 +144,8 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 		}
 	}
 
-	username := "Spectator"
-	switch {
-	case playerID == 0:
-		username = handler.Session.Player1Username
-	case playerID == 1:
-		username = handler.Session.Player2Username
-	case user != nil:
-		username = user.Username
-	}
-
-	logging.GameStarted(gameID, "WebSocket Join", username, playerID)
+	username, userID := utils.TryGetUser(user)
+	logging.GameStarted(gameID, "WebSocket Join", username, userID)
 
 	HandleWebSocket(c.Writer, c.Request, handler.Session, handler.Hub, playerID)
 }
@@ -245,11 +235,11 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 
 	ctx := s.ctx
 	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
-		log.Printf("Failed to save game metadata for %s: %v", session.ID, err)
+		logging.ErrorWith2Users(fmt.Sprintf("Failed to save game metadata for %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 	} else {
 		for _, m := range g.HistoricalHistory {
 			if err := db.SaveMove(ctx, session.ID, m); err != nil {
-				logging.Error(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), "", 0, err)
+				logging.ErrorWith2Users(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 			}
 		}
 		logging.Debug(logging.TagGame, "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
@@ -260,9 +250,9 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		won := winnerID != nil && *winnerID == 0
 
 		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
-			log.Printf("Failed to update stats for user %d: %v", userID, err)
+			logging.ErrorWithUser("Failed to update stats", session.Player1Username, userID, err)
 		} else {
-			log.Printf("Updated stats for user %d (won=%v)", userID, won)
+			logging.Debug(logging.TagGame, "Updated stats for user %s (won=%v)", logging.FormatUser(session.Player1Username, userID), won)
 		}
 	}
 
@@ -272,9 +262,9 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 		won := winnerID != nil && *winnerID == 1
 
 		if err := db.UpdateUserStats(ctx, userID, won, state.MoveCount, duration); err != nil {
-			log.Printf("Failed to update stats for user %d: %v", userID, err)
+			logging.ErrorWithUser("Failed to update stats", session.Player2Username, userID, err)
 		} else {
-			log.Printf("Updated stats for user %d (won=%v)", userID, won)
+			logging.Debug(logging.TagGame, "Updated stats for user %s (won=%v)", logging.FormatUser(session.Player2Username, userID), won)
 		}
 	}
 }

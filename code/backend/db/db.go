@@ -3,9 +3,9 @@ package db
 import (
 	"context"
 	"database/sql"
+	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
 	"fmt"
-	"log"
 	"time"
 
 	"sync"
@@ -54,10 +54,10 @@ func InitDB() error {
 	for i := 0; i < maxRetries; i++ {
 		err = DB.Ping()
 		if err == nil {
-			log.Println("Database connection established")
+			logging.Debug(logging.TagAuth, "Database connection established")
 			return nil
 		}
-		log.Printf("Failed to connect to database (attempt %d/%d): %v. Retrying in 2 seconds...", i+1, maxRetries, err)
+		logging.Error(fmt.Sprintf("Failed to connect to database (attempt %d/%d)", i+1, maxRetries), err)
 		time.Sleep(2 * time.Second)
 	}
 

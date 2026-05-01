@@ -67,7 +67,7 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 			sendError(c, "Username already exists", http.StatusConflict)
 			return
 		}
-		logging.ErrorIP("Failed to create user with username "+req.Username, c.ClientIP(), err)
+		logging.ErrorWithIP("Failed to create user with username "+req.Username, c.ClientIP(), err)
 		sendError(c, "Failed to create user", http.StatusInternalServerError)
 		return
 	}

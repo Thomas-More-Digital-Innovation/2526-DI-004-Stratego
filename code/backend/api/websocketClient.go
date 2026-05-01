@@ -3,7 +3,6 @@ package api
 import (
 	"digital-innovation/stratego/game"
 	"digital-innovation/stratego/logging"
-	"log"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -35,7 +34,7 @@ func (c *WSClient) readPump() {
 	c.conn.SetPongHandler(func(string) error {
 		err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		if err != nil {
-			log.Printf("Error setting read deadline: %v", err)
+			logging.Debug(logging.TagWeb, "Error setting read deadline for %s: %v", c.Username, err)
 		}
 		return nil
 	})
@@ -74,7 +73,7 @@ func (c *WSClient) writePump() {
 			if !ok {
 				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Printf("Error writing close message: %v", err)
+					logging.Debug(logging.TagWeb, "Error writing close message for %s: %v", c.Username, err)
 				}
 				return
 			}
@@ -86,7 +85,7 @@ func (c *WSClient) writePump() {
 		case <-ticker.C:
 			err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err != nil {
-				log.Printf("Error setting write deadline: %v", err)
+				logging.Debug(logging.TagWeb, "Error setting write deadline for %s: %v", c.Username, err)
 				return
 			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {

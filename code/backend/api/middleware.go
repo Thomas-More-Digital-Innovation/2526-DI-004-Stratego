@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -43,7 +44,7 @@ func CSRFMiddleware() gin.HandlerFunc {
 			user := auth.GetCurrentUser(c)
 			username, userID, err := utils.TryGetUserOrError(user)
 			if err != nil {
-				logging.SecurityWarningIP("CSRF validation failed", "Path: "+path, c.ClientIP())
+				logging.SecurityWarningWithIP("CSRF validation failed", "Path: "+path, c.ClientIP())
 			} else {
 				logging.SecurityWarning("CSRF validation failed", "Path: "+path, username, userID)
 			}
@@ -130,9 +131,9 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 			user := auth.GetCurrentUser(c)
 			username, userID, err := utils.TryGetUserOrError(user)
 			if err != nil {
-				logging.SecurityWarningIP("Rate limit triggered", "IP: "+ip, c.ClientIP())
+				logging.SecurityWarningWithIP("Rate limit triggered", "Too many requests from this IP", ip)
 			} else {
-				logging.SecurityWarning("Rate limit triggered", "IP: "+ip, username, userID)
+				logging.SecurityWarning("Rate limit triggered", "Too many requests", username, userID)
 			}
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
 			c.Abort()
@@ -163,22 +164,21 @@ func JSONLoggerMiddleware() gin.HandlerFunc {
 		}
 
 		user := auth.GetCurrentUser(c)
-		userName := "anonymous"
-		if user != nil {
-			userName = user.Username
+		username, userID := utils.TryGetUser(user)
+
+		logData := map[string]any{
+			"time":    time.Now().Format(time.RFC3339),
+			"latency": time.Since(start).String(),
+			"ip":      c.ClientIP(),
+			"method":  c.Request.Method,
+			"path":    path,
+			"status":  c.Writer.Status(),
+			"user":    logging.FormatUser(username, userID),
+			"agent":   c.Request.UserAgent(),
 		}
 
-		// Use standard log package which we've redirected to both stdout and file
-		// Gin will already log its own format, but this gives us a clean JSON object for Loki
-		log.Printf(`{"time":"%s", "latency":"%s", "ip":"%s", "method":"%s", "path":"%s", "status":%d, "user":"%s", "agent":"%s"}`+"\n",
-			time.Now().Format(time.RFC3339),
-			time.Since(start),
-			c.ClientIP(),
-			c.Request.Method,
-			path,
-			c.Writer.Status(),
-			userName,
-			c.Request.UserAgent(),
-		)
+		if jsonBytes, err := json.Marshal(logData); err == nil {
+			log.Println(string(jsonBytes))
+		}
 	}
 }

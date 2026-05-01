@@ -125,7 +125,7 @@ func (c *WSClient) handleGetValidMoves(data any) {
 
 	jsonResponse, err := json.Marshal(msg)
 	if err != nil {
-		logging.Error("Error marshaling valid moves", c.Username, c.UserID, err)
+		logging.ErrorWithUser("Error marshaling valid moves", c.Username, c.UserID, err)
 		return
 	}
 

@@ -30,9 +30,9 @@ func Debug(tag string, format string, v ...any) {
 	if !isDebugEnabled {
 		return
 	}
-	// Combine TagDebug with the provided category tag
-	msg := log.Prefix() + " " + tag + " " + TagDebug + " " + format
-	log.Printf(msg, v...)
+	// Combine category tag with debug tag
+	fullFormat := tag + " " + TagDebug + " " + format
+	log.Printf(fullFormat, v...)
 }
 
 // Auth
@@ -67,11 +67,18 @@ func ConnectionClosed(gameID string, username string, userID int) {
 }
 
 // Errors & Security
-func Error(message string, username string, userID int, err error) {
+func Error(message string, err error) {
+	log.Printf("%s %s: %v", TagError, message, err)
+}
+func ErrorWithUser(message string, username string, userID int, err error) {
 	log.Printf("%s %s [User: %s]: %v", TagError, message, FormatUser(username, userID), err)
 }
 
-func ErrorIP(message string, ip string, err error) {
+func ErrorWith2Users(message string, username1 string, userID1 int, username2 string, userID2 int, err error) {
+	log.Printf("%s %s [User 1: %s, User 2: %s]: %v", TagError, message, FormatUser(username1, userID1), FormatUser(username2, userID2), err)
+}
+
+func ErrorWithIP(message string, ip string, err error) {
 	log.Printf("%s %s [IP: %s]: %v", TagError, message, ip, err)
 }
 
@@ -79,6 +86,6 @@ func SecurityWarning(message string, details string, username string, userID int
 	log.Printf("%s %s [User: %s] | Details: %s", TagSecurity, message, FormatUser(username, userID), details)
 }
 
-func SecurityWarningIP(message string, details string, ip string) {
+func SecurityWarningWithIP(message string, details string, ip string) {
 	log.Printf("%s %s [IP: %s] | Details: %s", TagSecurity, message, ip, details)
 }
