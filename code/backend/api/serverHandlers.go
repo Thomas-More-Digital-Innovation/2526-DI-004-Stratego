@@ -237,10 +237,8 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
 		logging.ErrorWith2Users(fmt.Sprintf("Failed to save game metadata for %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 	} else {
-		for _, m := range g.HistoricalHistory {
-			if err := db.SaveMove(ctx, session.ID, m); err != nil {
-				logging.ErrorWith2Users(fmt.Sprintf("Failed to save move %d for game %s", m.MoveIndex, session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
-			}
+		if err := db.SaveMoves(ctx, session.ID, g.HistoricalHistory); err != nil {
+			logging.ErrorWith2Users(fmt.Sprintf("Failed to save moves for game %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 		}
 		logging.DebugWithUser(logging.TagGame, session.Player1Username, utils.GetIntSafe(session.Player1UserID), "Saved full history for game %s (%d moves)", session.ID, len(g.HistoricalHistory))
 	}

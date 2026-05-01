@@ -202,6 +202,7 @@ func (s *GameServer) StartServer(addr string) error {
 		{
 			me.GET("", s.GetCurrentUserHandler)
 			me.GET("/stats", s.GetCurrentUserStatsHandler)
+			me.POST("/password", s.ChangePasswordHandler)
 		}
 
 		// Public info

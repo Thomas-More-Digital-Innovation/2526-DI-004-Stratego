@@ -208,6 +208,66 @@ func (s *GameServer) RefreshTokenHandler(c *gin.Context) {
 	sendJSON(c, gin.H{"message": "Token refreshed"}, http.StatusOK)
 }
 
+// ChangePasswordHandler handles password updates
+// @Summary Change user password
+// @Description Update the authenticated user's password and revoke all sessions
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body models.ChangePasswordRequest true "Password change details"
+// @Success 200 {object} map[string]string "Password updated"
+// @Failure 400 {object} map[string]string "Invalid request or weak password"
+// @Failure 401 {object} map[string]string "Invalid old password"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/me/password [post]
+func (s *GameServer) ChangePasswordHandler(c *gin.Context) {
+	user := ensureAuthenticated(c)
+	if user == nil {
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		sendError(c, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Verify old password
+	_, err := db.AuthenticateUser(c.Request.Context(), user.Username, req.OldPassword)
+	if err != nil {
+		sendError(c, "Invalid old password", http.StatusUnauthorized)
+		return
+	}
+
+	// Validate new password
+	if !isStrongPassword(req.NewPassword) {
+		sendError(c, "New password does not meet complexity requirements", http.StatusBadRequest)
+		return
+	}
+
+	if req.OldPassword == req.NewPassword {
+		sendError(c, "New password must be different from the old one", http.StatusBadRequest)
+		return
+	}
+
+	// Update password in DB
+	if err := db.UpdateUserPassword(c.Request.Context(), user.ID, req.NewPassword); err != nil {
+		logging.ErrorWithUser("Failed to update password", user.Username, user.ID, err)
+		sendError(c, "Failed to update password", http.StatusInternalServerError)
+		return
+	}
+
+	// Revoke all refresh tokens for this user
+	if err := db.DeleteAllUserRefreshTokens(c.Request.Context(), user.ID); err != nil {
+		logging.ErrorWithUser("Failed to revoke refresh tokens after password change", user.Username, user.ID, err)
+		// We continue anyway as the password is updated
+	}
+
+	logging.DebugWithUser(logging.TagAuth, user.Username, user.ID, "Password changed and sessions revoked")
+	auth.ClearSessionCookie(c)
+	sendJSON(c, gin.H{"message": "Password updated successfully. Please login again."}, http.StatusOK)
+}
+
 // GetCurrentUserHandler returns the currently logged-in user
 // GetCurrentUserHandler returns the currently logged-in user
 // @Summary Get current user

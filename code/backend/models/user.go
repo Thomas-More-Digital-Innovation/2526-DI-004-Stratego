@@ -66,3 +66,8 @@ type UpdateBoardSetupRequest struct {
 	SetupData   string `json:"setup_data,omitempty"`
 	IsDefault   bool   `json:"is_default"`
 }
+// ChangePasswordRequest for updating user password
+type ChangePasswordRequest struct {
+	OldPassword string `json:"oldPassword"`
+	NewPassword string `json:"newPassword"`
+}

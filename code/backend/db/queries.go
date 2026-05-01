@@ -43,6 +43,22 @@ func CreateUser(ctx context.Context, username, password, profilePicture string) 
 	return &user, nil
 }
 
+// UpdateUserPassword updates a user's password with a new hash
+func UpdateUserPassword(ctx context.Context, userID int, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	query := `UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3`
+	_, err = DB.ExecContext(ctx, query, string(hashedPassword), time.Now(), userID)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
+}
+
 // AuthenticateUser checks username and password, returns user if valid
 func AuthenticateUser(ctx context.Context, username, password string) (*models.User, error) {
 	var user models.User
@@ -287,6 +303,46 @@ func SaveMove(ctx context.Context, gameID string, move models.HistoricalMove) er
 	if err != nil {
 		return fmt.Errorf("failed to save move: %w", err)
 	}
+	return nil
+}
+
+// SaveMoves persists multiple moves in a single transaction
+func SaveMoves(ctx context.Context, gameID string, moves []models.HistoricalMove) error {
+	if len(moves) == 0 {
+		return nil
+	}
+
+	tx, err := DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT INTO game_moves (game_id, move_index, player_id, from_x, from_y, to_x, to_y, attacker_data, defender_data, result)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, move := range moves {
+		attackerJSON, _ := json.Marshal(move.Attacker)
+		defenderJSON, _ := json.Marshal(move.Defender)
+
+		_, err = stmt.ExecContext(ctx, gameID, move.MoveIndex, move.PlayerID,
+			move.FromX, move.FromY, move.ToX, move.ToY,
+			attackerJSON, defenderJSON, move.Result)
+		if err != nil {
+			return fmt.Errorf("failed to execute statement for move %d: %w", move.MoveIndex, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
 func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, error) {

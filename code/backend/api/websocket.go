@@ -16,11 +16,20 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
-			return true // Allow non-browser clients
+			// In production, we strictly require an Origin header for browser safety
+			if utils.IsProduction() {
+				logging.SecurityWarningWithIP("WebSocket: Rejected connection with missing Origin header", "", r.RemoteAddr)
+				return false
+			}
+			return true // Allow non-browser clients in dev
 		}
 
 		// Get allowed origins from env
 		allowedOrigins := utils.GetEnv("ALLOWED_ORIGINS", "")
+		if allowedOrigins == "" && !utils.IsProduction() {
+			return true // Default allow for local dev if not set
+		}
+
 		for _, allowed := range strings.Split(allowedOrigins, ",") {
 			if origin == allowed {
 				return true

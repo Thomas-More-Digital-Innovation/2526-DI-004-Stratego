@@ -89,6 +89,13 @@ func ParseSetup(player *engine.Player, data []byte) ([]*engine.Piece, error) {
 		}
 	}
 
+	// Track counts of each piece type for validation
+	typeCounts := make(map[string]int)
+	expectedCounts := make(map[string]int)
+	for _, pt := range pieceTypes {
+		expectedCounts[pt.GetName()] = pt.GetCount()
+	}
+
 	pieces := make([]*engine.Piece, 0, 40)
 	for i := 0; i < 40; i++ {
 		cell := data[i]
@@ -115,11 +122,24 @@ func ParseSetup(player *engine.Player, data []byte) ([]*engine.Piece, error) {
 			return nil, fmt.Errorf("unknown piece type at index %d", i)
 		}
 
+		typeCounts[pieceType.GetName()]++
 		pieces = append(pieces, engine.NewPiece(*pieceType, player))
 	}
 
-	if len(pieces) != 40 {
-		return nil, fmt.Errorf("expected 40 pieces, got %d", len(pieces))
+	// Validate piece counts
+	for typeName, count := range typeCounts {
+		expected := expectedCounts[typeName]
+		if count > expected {
+			return nil, fmt.Errorf("invalid setup: too many pieces of type %s (got %d, max %d)", typeName, count, expected)
+		}
+	}
+
+	// Also ensure all required pieces are present
+	for typeName, expected := range expectedCounts {
+		got := typeCounts[typeName]
+		if got != expected {
+			return nil, fmt.Errorf("invalid setup: incorrect count for %s (got %d, expected %d)", typeName, got, expected)
+		}
 	}
 
 	return pieces, nil

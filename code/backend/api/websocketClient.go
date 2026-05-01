@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 // WSClient represents a WebSocket client connection
@@ -17,6 +18,7 @@ type WSClient struct {
 	hub       *WSHub
 	Username  string
 	UserID    int
+	limiter   *rate.Limiter
 }
 
 // readPump pumps messages from the websocket connection to the hub
@@ -48,6 +50,16 @@ func (c *WSClient) readPump() {
 				logging.ConnectionClosed(c.session.ID, c.Username, c.UserID)
 			}
 			break
+		}
+
+		// Rate limiting: 20 messages per second with a burst of 40
+		if c.limiter == nil {
+			c.limiter = rate.NewLimiter(rate.Limit(20), 40)
+		}
+
+		if !c.limiter.Allow() {
+			logging.SecurityWarning("WebSocket rate limit exceeded", "Dropping message from user", c.Username, c.UserID)
+			continue
 		}
 
 		c.handleMessage(message)

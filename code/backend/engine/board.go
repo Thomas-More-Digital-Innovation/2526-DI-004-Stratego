@@ -17,13 +17,18 @@ func NewBoard() *Board {
 	}
 }
 
-// Clone creates a shallow copy of the board's field and lakes.
-// Since pieces are mostly immutable during AI move calculation, shallow copying is sufficient
-// to prevent concurrent access to the board's field array.
+// Clone creates a deep copy of the board's field and lakes.
 func (b *Board) Clone() *Board {
 	newBoard := &Board{
-		field: b.field,
 		lakes: b.lakes,
+	}
+	for y := range 10 {
+		for x := range 10 {
+			piece := b.field[y][x]
+			if piece != nil {
+				newBoard.field[y][x] = piece.Clone()
+			}
+		}
 	}
 	return newBoard
 }

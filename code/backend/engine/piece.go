@@ -12,14 +12,22 @@ type Piece struct {
 }
 
 // NewPiece creates a new Piece with the given pieceType and player.
-// The piece is initially alive and not revealed to the opponent.
-// The game engine uses this method to create new pieces on the board.
 func NewPiece(pieceType models.PieceType, player *Player) *Piece {
 	return &Piece{
 		pieceType: pieceType,
 		player:    player,
 		alive:     true,
 		revealed:  false,
+	}
+}
+
+// Clone creates a deep copy of the piece.
+func (p *Piece) Clone() *Piece {
+	return &Piece{
+		pieceType: p.pieceType,
+		player:    p.player,
+		alive:     p.alive,
+		revealed:  p.revealed,
 	}
 }
 
