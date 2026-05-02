@@ -68,6 +68,9 @@ func (h *WSHub) BroadcastGameState() {
 		Player2AlivePieces: state.Player2AlivePieces,
 		IsSetupPhase:       state.IsSetupPhase,
 		Headless:           state.Headless,
+		SetupRemainingSecs: state.SetupRemainingSecs,
+		Player1Username:    state.Player1Username,
+		Player2Username:    state.Player2Username,
 	})
 }
 

@@ -91,6 +91,8 @@ type GameStateMessage struct {
 	IsSetupPhase       bool   `json:"isSetupPhase"`
 	Headless           bool   `json:"headless"`
 	SetupRemainingSecs int    `json:"setupRemainingSecs,omitempty"`
+	Player1Username    string `json:"player1Username"`
+	Player2Username    string `json:"player2Username"`
 }
 
 type MoveResultMessage struct {
