@@ -76,8 +76,8 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 		aiType1 := name1
 		aiType2 := name2
 		if name1 == name2 {
-			name1 = name1 + " 1"
-			name2 = name2 + " 2"
+			name1 += " 1"
+			name2 += " 2"
 		}
 		player1 := engine.NewPlayer(0, name1, "red")
 		player2 := engine.NewPlayer(1, name2, "blue")
