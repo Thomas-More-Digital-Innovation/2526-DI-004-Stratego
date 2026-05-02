@@ -1,8 +1,10 @@
+<script lang="ts" module>
+    declare const __VERSION__: string;
+</script>
+
 <script lang="ts">
     import Changelog from "./Changelog.svelte";
     import { fade, scale } from "svelte/transition";
-
-    declare const __VERSION__: string;
 
     let isOpen = $state(false);
 
