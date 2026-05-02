@@ -9,11 +9,12 @@
     import profileBg from "$lib/assets/background-profile.webp";
     import boardBg from "$lib/assets/background-board-setup.webp";
     import EarlyAccessDisclaimer from "$lib/components/EarlyAccessDisclaimer.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
 
     let { children } = $props();
 
-    onMount(() => {
-        authStore.check();
+    onMount(async () => {
+        await authStore.check();
     });
 
     const navItems = [
@@ -71,7 +72,9 @@
             </nav>
 
             <div class="p-4 border-t border-brand-accent/20 bg-black/20">
-                {#if authStore.user}
+                {#if authStore.loading}
+                    <Loading />
+                {:else if authStore.user}
                     <div class="flex items-center gap-3 px-4 py-2">
                         <div
                             class="w-8 h-8 rounded-full bg-brand-secondary/30 border border-brand-accent/50 flex items-center justify-center text-brand-accent text-xs font-bold"

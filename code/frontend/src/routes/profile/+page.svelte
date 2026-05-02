@@ -11,6 +11,7 @@
     let error = $state("");
 
     onMount(async () => {
+        await authStore.check();
         if (!authStore.user) {
             goto("/login");
             return;

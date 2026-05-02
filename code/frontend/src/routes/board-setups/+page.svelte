@@ -15,6 +15,7 @@
     let loading = $state(true);
 
     onMount(async () => {
+        await authStore.check();
         if (!authStore.user) {
             goto("/login");
             return;
