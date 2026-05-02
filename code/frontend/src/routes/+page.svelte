@@ -5,6 +5,7 @@
     import Button from "$lib/components/ui/Button.svelte";
     import type { GameMode } from "$lib/types/game";
     import { allGamemodes, gamemodes } from "$lib/data/gamemodes.data";
+    import ChangelogButton from "$lib/components/changelog/ChangelogButton.svelte";
 
     let selectedMode = $state<GameMode>(gamemodes.human_vs_ai);
     let error = $state("");
@@ -92,4 +93,6 @@
             {/if}
         </Button>
     {/if}
+
+    <ChangelogButton />
 </div>
