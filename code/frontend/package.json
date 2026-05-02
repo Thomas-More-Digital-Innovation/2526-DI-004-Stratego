@@ -1,9 +1,11 @@
 {
 	"name": "frontend",
 	"private": true,
-	"version": "0.0.1",
+	"version": "0.2.0",
 	"type": "module",
 	"scripts": {
+		"predev": "cp ../../CHANGELOG.md ./src/lib/components/changelog/CHANGELOG.md || true",
+		"prebuild": "cp ../../CHANGELOG.md ./src/lib/components/changelog/CHANGELOG.md || true",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
