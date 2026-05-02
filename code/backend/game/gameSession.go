@@ -79,6 +79,8 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController,
 		StartTime:             time.Now(),
 		setupCompleteChan:     make(chan bool, 1),
 		setupTimeout:          5 * time.Minute, // Default
+		Player1Username:       g.Players[0].GetName(),
+		Player2Username:       g.Players[1].GetName(),
 	}
 
 	// Apply options
@@ -525,6 +527,7 @@ func (gs *GameSession) SetPlayer1Associate(userID int, username string) {
 	defer gs.mutex.Unlock()
 	gs.Player1UserID = &userID
 	gs.Player1Username = username
+	gs.game.Players[0].SetName(username)
 }
 
 // SetPlayer2Associate associates a user with Player 2 slot
@@ -533,6 +536,7 @@ func (gs *GameSession) SetPlayer2Associate(userID int, username string) {
 	defer gs.mutex.Unlock()
 	gs.Player2UserID = &userID
 	gs.Player2Username = username
+	gs.game.Players[1].SetName(username)
 }
 
 // GetPlayerIDs returns the user IDs associated with both players

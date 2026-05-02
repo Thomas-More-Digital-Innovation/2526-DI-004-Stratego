@@ -42,8 +42,10 @@ func (s *GameServer) HandleCreateGame(c *gin.Context) {
 	user := auth.GetCurrentUser(c)
 	// We allow guests to create games too, but if logged in, we track them
 	userID := -1
+	username := "Guest"
 	if user != nil {
 		userID = user.ID
+		username = user.Username
 	}
 
 	if req.GameID == "" {
@@ -54,7 +56,18 @@ func (s *GameServer) HandleCreateGame(c *gin.Context) {
 		req.GameType = models.HumanVsAi
 	}
 
-	handler, err := s.CreateGame(req.GameID, req.GameType, req.AI1, req.AI2)
+	name1 := username
+	name2 := req.AI1
+	switch req.GameType {
+	case models.AiVsAi:
+		name1 = req.AI1
+		name2 = req.AI2
+	case models.HumanVsHuman:
+		name1 = "Human Red"
+		name2 = "Human Blue"
+	}
+
+	handler, err := s.CreateGame(req.GameID, req.GameType, name1, name2)
 	if err != nil {
 		sendError(c, err.Error(), http.StatusBadRequest)
 		return
@@ -73,10 +86,12 @@ func (s *GameServer) HandleCreateGame(c *gin.Context) {
 
 	sendJSON(c, response, http.StatusOK)
 
-	username := "Guest"
+	username = "Guest"
 	if user != nil {
 		username = user.Username
-		handler.Session.Player1Username = username
+		if req.GameType != models.AiVsAi {
+			handler.Session.Player1Username = username
+		}
 	}
 	logging.GameStarted(req.GameID, req.GameType, username, userID)
 }

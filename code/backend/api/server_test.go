@@ -16,7 +16,7 @@ func TestNewGameServer(t *testing.T) {
 
 func TestCreateGameHumanVsAI(t *testing.T) {
 	server := api.NewGameServer()
-	handler, err := server.CreateGame("test-game-1", models.HumanVsAi, models.Fafo, models.Fafo)
+	handler, err := server.CreateGame("test-game-1", models.HumanVsAi, "Human Player", models.Fafo)
 
 	if err != nil {
 		t.Fatalf("Expected no error creating HumanVsAI game, got: %v", err)
@@ -69,7 +69,7 @@ func TestCreateGameAIVsAI(t *testing.T) {
 
 func TestCreateGameHumanVsHuman(t *testing.T) {
 	server := api.NewGameServer()
-	handler, err := server.CreateGame("test-game-3", models.HumanVsHuman, models.Fafo, models.Fafo)
+	handler, err := server.CreateGame("test-game-3", models.HumanVsHuman, "Player 1", "Player 2")
 
 	if err != nil {
 		t.Fatalf("Expected no error creating HumanVsHuman game, got: %v", err)
@@ -88,12 +88,12 @@ func TestCreateGameDuplicateID(t *testing.T) {
 	server := api.NewGameServer()
 	gameID := "duplicate-test"
 
-	_, err := server.CreateGame(gameID, models.HumanVsAi, models.Fafo, models.Fafo)
+	_, err := server.CreateGame(gameID, models.HumanVsAi, "Human", models.Fafo)
 	if err != nil {
 		t.Fatalf("Expected no error on first create, got: %v", err)
 	}
 
-	_, err = server.CreateGame(gameID, models.HumanVsAi, models.Fafo, models.Fafo)
+	_, err = server.CreateGame(gameID, models.HumanVsAi, "Human", models.Fafo)
 	if err == nil {
 		t.Error("Expected error when creating game with duplicate ID, got nil")
 	}
@@ -101,7 +101,7 @@ func TestCreateGameDuplicateID(t *testing.T) {
 
 func TestCreateGameInvalidType(t *testing.T) {
 	server := api.NewGameServer()
-	_, err := server.CreateGame("invalid-type-game", "InvalidGameType", models.Fafo, models.Fafo)
+	_, err := server.CreateGame("invalid-type-game", "InvalidGameType", "P1", "P2")
 
 	if err == nil {
 		t.Error("Expected error for invalid game type, got nil")
@@ -112,7 +112,7 @@ func TestGetSession(t *testing.T) {
 	server := api.NewGameServer()
 	gameID := "get-session-test"
 
-	handler, err := server.CreateGame(gameID, models.HumanVsAi, models.Fafo, models.Fafo)
+	handler, err := server.CreateGame(gameID, models.HumanVsAi, "Human", models.Fafo)
 	if err != nil {
 		t.Fatalf("Failed to create game: %v", err)
 	}
