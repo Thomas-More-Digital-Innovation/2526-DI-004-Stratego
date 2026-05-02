@@ -8,6 +8,7 @@
     import baseBg from "$lib/assets/background.webp";
     import profileBg from "$lib/assets/background-profile.webp";
     import boardBg from "$lib/assets/background-board-setup.webp";
+    import EarlyAccessDisclaimer from "$lib/components/EarlyAccessDisclaimer.svelte";
 
     let { children } = $props();
 
@@ -111,21 +112,5 @@
         </div>
     </main>
 
-    <div
-        class="group fixed bottom-2 right-2 p-4 text-red-300 text-center bg-red-500/10 rounded-md"
-    >
-        <p class="text-sm">This game is early access, expect bugs.</p>
-        <div class="hidden group-hover:block">
-            <p class="text-xs">
-                Loss of data is possible. Thank you for testing!
-            </p>
-            <p class="text-sm">
-                Report any bugs <a
-                    class="underline text-brand-primary hover:text-brand-accent"
-                    href="https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/issues"
-                    >here</a
-                >.
-            </p>
-        </div>
-    </div>
+    <EarlyAccessDisclaimer />
 </div>
