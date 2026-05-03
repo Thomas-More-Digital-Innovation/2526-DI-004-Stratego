@@ -1,5 +1,6 @@
 import type { GameInfo, GameMode, User, UserStats } from '$lib/types/game';
 import type { BoardSetup } from '$lib/types/board-setup';
+import { parseApiMessage } from '$lib/utils/api';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
 
@@ -33,7 +34,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || `Request failed: ${response.status}`);
+        const { message, type } = parseApiMessage(text);
+        const error = new Error(message) as any;
+        error.type = type;
+        throw error;
     }
 
     return response.json();
@@ -61,7 +65,10 @@ async function requestVoid(path: string, options?: RequestInit): Promise<void> {
 
     if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || `Request failed: ${response.status}`);
+        const { message, type } = parseApiMessage(text);
+        const error = new Error(message) as any;
+        error.type = type;
+        throw error;
     }
 }
 

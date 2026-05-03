@@ -3,6 +3,7 @@
     import { page } from "$app/stores";
     import { GameSocket } from "$lib/api/websocket";
     import { gameStore } from "$lib/state/game.svelte";
+    import { toastStore, type ToastType } from "$lib/state/toast.svelte";
     import Board from "$lib/components/game/Board.svelte";
     import GameInfo from "$lib/components/game/GameInfo.svelte";
     import RightBar from "$lib/components/game/right-bar/RightBar.svelte";
@@ -15,7 +16,6 @@
 
     let socket = new GameSocket();
     let gameId = $state("");
-    let error = $state("");
     let connected = $state(false);
     let validMoves = $state<Position[]>([]);
     let setupSwapPos1 = $state<Position | null>(null);
@@ -47,9 +47,14 @@
             const playerId = gameStore.gameMode.mode === "human_vs_ai" ? 0 : -1;
             await socket.connect(gameId, playerId);
             connected = true;
-        } catch (e) {
-            error = `Failed to connect: ${e}`;
-            setTimeout(() => (window.location.href = "/"), 3000);
+        } catch (e: any) {
+            const { type } = toastStore.handleApiMessage(
+                e,
+                "Failed to connect",
+            );
+            if (type === "not_found" || type === "invalid_game") {
+                setTimeout(() => (window.location.href = "/"), 3000);
+            }
         }
     });
 
@@ -69,8 +74,7 @@
 
         socket.on("moveResult", (data) => {
             if (!data.success) {
-                error = data.error || "Move failed";
-                setTimeout(() => (error = ""), 3000);
+                toastStore.handleApiMessage(data.error || data, "Move failed");
                 gameStore.setSelectedPosition(null);
                 validMoves = [];
             }
@@ -98,8 +102,7 @@
         });
 
         socket.on("error", (data) => {
-            error = data.error;
-            setTimeout(() => (error = ""), 3000);
+            toastStore.handleApiMessage(data.error || data);
             gameStore.setSelectedPosition(null);
             validMoves = [];
         });
@@ -215,7 +218,7 @@
         try {
             const data = gameStore.exportGame();
             if (!data) {
-                error = "No history available to save";
+                toastStore.warning("No history available to save");
                 return;
             }
             const blob = new Blob([data], { type: "application/json" });
@@ -226,7 +229,7 @@
             a.click();
             URL.revokeObjectURL(url);
         } catch {
-            error = "Failed to save game";
+            toastStore.error("Failed to save game");
         }
     }
 </script>
@@ -234,15 +237,6 @@
 <svelte:head>
     <title>Stratego — Game {gameId}</title>
 </svelte:head>
-
-{#if error}
-    <div
-        class="bg-brand-secondary/20 border z-50 fixed top-4 left-1/2 -translate-x-1/2
-         border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center mb-4"
-    >
-        ⚠️ {error}
-    </div>
-{/if}
 
 {#if !connected}
     <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -274,7 +268,6 @@
         >
             💾 Save Replay
         </Button>
-
     </div>
 
     <div class="grid grid-cols-[280px_1fr_280px] gap-6 items-start">

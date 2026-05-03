@@ -7,6 +7,7 @@
     import { boardSetups } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import { toastStore } from "$lib/state/toast.svelte";
     import type { BoardSetup } from "$lib/types/board-setup";
 
     let id = $derived(Number(page.params.id));
@@ -14,9 +15,9 @@
     let name = $state("");
     let description = $state("");
     let isDefault = $state(false);
-    let error = $state("");
     let loading = $state(true);
     let saving = $state(false);
+    let loadError = $state("");
 
     onMount(async () => {
         try {
@@ -27,10 +28,12 @@
                 description = found.description;
                 isDefault = found.is_default;
             } else {
-                error = "Setup not found";
+                loadError = "Setup not found";
+                toastStore.error("Setup not found");
             }
         } catch (e: any) {
-            error = e.message || "Failed to load setup";
+            loadError = e.message || "Failed to load setup";
+            toastStore.handleApiMessage(e, "Failed to load setup");
         } finally {
             loading = false;
         }
@@ -38,7 +41,6 @@
 
     async function handleSave(setupData: string) {
         saving = true;
-        error = "";
         try {
             await boardSetups.update(id, {
                 name,
@@ -48,7 +50,7 @@
             });
             goto("/board-setups");
         } catch (e: any) {
-            error = e.message || "Failed to update setup";
+            toastStore.handleApiMessage(e, "Failed to update setup");
             saving = false;
         }
     }
@@ -78,9 +80,9 @@
             description="Fetching your strategic configuration..."
             subtitle="Synchronizing"
         />
-    {:else if error && !setup}
+    {:else if loadError && !setup}
         <Card class="text-center py-12">
-            <p class="text-brand-secondary">{error}</p>
+            <p class="text-brand-secondary">{loadError}</p>
             <Button
                 variant="ghost"
                 class="mt-4"
@@ -133,14 +135,6 @@
                     >Set as default setup</label
                 >
             </div>
-
-            {#if error}
-                <div
-                    class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center"
-                >
-                    {error}
-                </div>
-            {/if}
         </Card>
 
         {#if saving}
