@@ -48,13 +48,8 @@
             await socket.connect(gameId, playerId);
             connected = true;
         } catch (e: any) {
-            const { type } = toastStore.handleApiMessage(
-                e,
-                "Failed to connect",
-            );
-            if (type === "not_found" || type === "invalid_game") {
-                setTimeout(() => (window.location.href = "/"), 3000);
-            }
+            toastStore.handleApiMessage(e, "Failed to connect");
+            setTimeout(() => (window.location.href = "/"), 3000);
         }
     });
 

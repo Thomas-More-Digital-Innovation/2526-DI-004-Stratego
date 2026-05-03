@@ -30,9 +30,16 @@ class ToastStore {
      * Handles an API message, using fallback if needed.
      */
     handleApiMessage(error: any, fallbackMessage: string = 'An error occurred') {
-        const messageToParse = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
-        const { message, type } = parseApiMessage(messageToParse);
+        // If error is an object but doesn't have a message and stringifies to '{}', use fallback
+        let messageToParse = typeof error === 'string' ? error : error?.message;
 
+        if (!messageToParse && error) {
+            const stringified = JSON.stringify(error);
+            messageToParse = stringified === '{}' ? '' : stringified;
+        }
+
+        const { message, type: parsedType } = parseApiMessage(messageToParse);
+        const type = typeof error?.type === 'string' ? error.type : parsedType;
         // Map types to supported toast types
         let toastType: ToastType = 'error';
         if (type === 'warning') toastType = 'warning';
@@ -40,7 +47,7 @@ class ToastStore {
         if (type === 'success') toastType = 'success';
 
         const id = this.add(message || fallbackMessage, toastType);
-        return { id, message, type };
+        return { id, message: message || fallbackMessage, type };
     }
 
     success(message: string, duration?: number) {
