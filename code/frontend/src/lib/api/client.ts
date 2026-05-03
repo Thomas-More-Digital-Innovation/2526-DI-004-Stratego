@@ -126,3 +126,8 @@ export const boardSetups = {
     delete: (id: number) =>
         requestVoid(`/board-setups/${id}`, { method: 'DELETE' }),
 };
+
+// Monitoring
+export const monitoring = {
+    health: () => request<{ status: string }>('/health'),
+};

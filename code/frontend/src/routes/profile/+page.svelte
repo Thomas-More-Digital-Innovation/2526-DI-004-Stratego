@@ -51,7 +51,7 @@
         <!-- Header -->
         <Card class="flex items-center gap-6">
             <div
-                class="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center text-white text-2xl font-bold shrink-0"
+                class="w-16 h-16 rounded-full bg-linear-to-br from-brand-primary to-brand-secondary flex items-center justify-center text-white text-2xl font-bold shrink-0"
             >
                 {authStore.user.username[0]?.toUpperCase() || "?"}
             </div>
@@ -121,7 +121,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card
-                    class="text-center bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10"
+                    class="text-center bg-linear-to-br from-brand-primary/10 to-brand-secondary/10"
                 >
                     <div class="text-3xl font-bold text-brand-accent">
                         {getWinRate()}
@@ -154,13 +154,5 @@
                 </Card>
             </div>
         {/if}
-
-        <!-- Actions -->
-        <div class="flex gap-4 justify-center">
-            <Button variant="primary" onclick={() => goto("/board-setups")}>
-                Manage Board Setups
-            </Button>
-            <Button variant="outline" onclick={() => goto("/")}>Home</Button>
-        </div>
     </div>
 {/if}
