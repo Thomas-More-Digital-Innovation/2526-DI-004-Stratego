@@ -89,11 +89,10 @@
         });
 
         socket.on("gameOver", () => {
-            setTimeout(() => {
-                if (confirm("Game Over! Return to menu?")) {
-                    window.location.href = "/";
-                }
-            }, 2000);
+            toastStore.success(
+                "Game Over! You can review the game replay or go back to the menu.",
+                5000,
+            );
         });
 
         socket.on("error", (data) => {
@@ -248,9 +247,25 @@
     />
 {:else}
     <div class="flex items-center justify-between mb-6">
-        <Button variant="ghost" onclick={() => (window.location.href = "/")}>
-            ← Back
-        </Button>
+        {#if gameStore.gameState?.isGameOver}
+            <Button
+                onclick={() => {
+                    window.location.href = "/";
+                }}
+                variant="secondary">Return to menu</Button
+            >
+        {:else}
+            <Button
+                variant="ghost"
+                onclick={() => {
+                    if (confirm("Are you sure you want to quit?")) {
+                        window.location.href = "/";
+                    }
+                }}
+            >
+                Quit Game
+            </Button>
+        {/if}
         <h1 class="text-lg font-bold text-white uppercase tracking-wider">
             Game
         </h1>
