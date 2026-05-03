@@ -5,11 +5,11 @@
     import { stats } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import { toastStore } from "$lib/state/toast.svelte";
     import ChangePasswordModal from "$lib/components/ChangePasswordModal.svelte";
     import type { UserStats } from "$lib/types/game";
 
     let userStats = $state<UserStats | null>(null);
-    let error = $state("");
     let isChangePasswordOpen = $state(false);
 
     onMount(async () => {
@@ -21,7 +21,7 @@
         try {
             userStats = await stats.getMine();
         } catch (e: any) {
-            error = e.message || "Failed to load stats";
+            toastStore.handleApiMessage(e, "Failed to load stats");
         }
     });
 
@@ -86,13 +86,7 @@
             </div>
         </Card>
 
-        {#if error}
-            <div
-                class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center"
-            >
-                {error}
-            </div>
-        {:else if userStats}
+        {#if userStats}
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card class="text-center">

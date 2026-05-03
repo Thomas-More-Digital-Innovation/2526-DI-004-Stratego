@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { authStore } from "$lib/state/auth.svelte";
+    import { toastStore } from "$lib/state/toast.svelte";
     import Card from "$lib/components/ui/Card.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Button from "$lib/components/ui/Button.svelte";
@@ -8,11 +9,9 @@
     let username = $state("");
     let password = $state("");
     let isLogin = $state(true);
-    let error = $state("");
     let loading = $state(false);
 
     async function handleSubmit() {
-        error = "";
         loading = true;
 
         try {
@@ -23,7 +22,7 @@
             }
             goto("/");
         } catch (e: any) {
-            error = e.message || "Authentication failed";
+            toastStore.handleApiMessage(e, "Authentication failed");
         } finally {
             loading = false;
         }
@@ -48,14 +47,6 @@
                     : "Create an account to start playing Stratego"}
             </p>
         </div>
-
-        {#if error}
-            <div
-                class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center"
-            >
-                {error}
-            </div>
-        {/if}
 
         <form
             onsubmit={(e) => {
@@ -94,7 +85,6 @@
             class="w-full"
             onclick={() => {
                 isLogin = !isLogin;
-                error = "";
             }}
         >
             {isLogin

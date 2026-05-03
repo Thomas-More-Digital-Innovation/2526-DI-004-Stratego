@@ -7,6 +7,7 @@
     import boardBg from "$lib/assets/background-board-setup.webp";
     import EarlyAccessDisclaimer from "$lib/components/EarlyAccessDisclaimer.svelte";
     import SideBar from "$lib/components/sidebar/SideBar.svelte";
+    import Toaster from "$lib/components/ui/Toaster.svelte";
 
     let { children } = $props();
 
@@ -43,4 +44,5 @@
     </main>
 
     <EarlyAccessDisclaimer />
+    <Toaster />
 </div>

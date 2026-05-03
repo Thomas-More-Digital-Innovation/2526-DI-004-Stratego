@@ -2,17 +2,16 @@
     import { goto } from "$app/navigation";
     import SetupEditor from "$lib/components/setup/SetupEditor.svelte";
     import { boardSetups } from "$lib/api/client";
+    import { toastStore } from "$lib/state/toast.svelte";
     import Card from "$lib/components/ui/Card.svelte";
 
     let name = $state("My New Setup");
     let description = $state("");
     let isDefault = $state(false);
-    let error = $state("");
     let saving = $state(false);
 
     async function handleSave(setupData: string) {
         saving = true;
-        error = "";
         try {
             await boardSetups.create({
                 name,
@@ -22,7 +21,7 @@
             });
             goto("/board-setups");
         } catch (e: any) {
-            error = e.message || "Failed to save setup";
+            toastStore.handleApiMessage(e, "Failed to save setup");
             saving = false;
         }
     }
@@ -91,14 +90,6 @@
                 >Set as default setup</label
             >
         </div>
-
-        {#if error}
-            <div
-                class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-xl px-4 py-3 text-sm text-center"
-            >
-                {error}
-            </div>
-        {/if}
     </Card>
 
     {#if saving}
