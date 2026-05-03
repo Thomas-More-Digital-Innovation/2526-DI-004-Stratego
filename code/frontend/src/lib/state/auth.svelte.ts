@@ -45,6 +45,12 @@ class AuthStore {
         this.user = null;
         this.checkPromise = null;
     }
+
+    async changePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
+        await auth.changePassword(oldPassword, newPassword, confirmPassword);
+        this.checkPromise = null;
+        await this.check();
+    }
 }
 
 export const authStore = new AuthStore();

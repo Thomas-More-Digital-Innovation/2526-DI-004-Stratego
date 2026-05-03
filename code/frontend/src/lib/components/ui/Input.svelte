@@ -6,6 +6,7 @@
         label?: string;
         id?: string;
         class?: string;
+        disabled?: boolean;
     }
 
     let {
@@ -15,6 +16,7 @@
         label = "",
         id = Math.random().toString(36).substring(7),
         class: className = "",
+        disabled = false,
     }: Props = $props();
 </script>
 
@@ -31,6 +33,7 @@
         {id}
         {type}
         {placeholder}
+        {disabled}
         bind:value
         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary/50 transition-all duration-200"
     />

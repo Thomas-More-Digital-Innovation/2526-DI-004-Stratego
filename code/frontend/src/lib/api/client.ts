@@ -22,7 +22,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         },
     });
 
-    if (response.status === 401 && path !== '/users/refresh' && path !== '/users/login') {
+    if (response.status === 401 && !path.includes('/refresh') && !path.includes('/login') && !path.includes('/password')) {
         try {
             await auth.refresh();
             return request<T>(path, options);
@@ -50,7 +50,7 @@ async function requestVoid(path: string, options?: RequestInit): Promise<void> {
         },
     });
 
-    if (response.status === 401 && path !== '/users/refresh' && path !== '/users/login') {
+    if (response.status === 401 && !path.includes('/refresh') && !path.includes('/login') && !path.includes('/password')) {
         try {
             await auth.refresh();
             return requestVoid(path, options);
@@ -84,6 +84,16 @@ export const auth = {
     logout: () => requestVoid('/users/logout', { method: 'POST' }),
 
     getMe: () => request<User>('/users/me'),
+
+    changePassword: (oldPassword: string, newPassword: string, confirmPassword: string) =>
+        requestVoid('/users/me/password', {
+            method: 'POST',
+            body: JSON.stringify({
+                old_password: oldPassword,
+                new_password: newPassword,
+                confirm_password: confirmPassword
+            }),
+        }),
 };
 
 // Games

@@ -5,10 +5,12 @@
     import { stats } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import ChangePasswordModal from "$lib/components/ChangePasswordModal.svelte";
     import type { UserStats } from "$lib/types/game";
 
     let userStats = $state<UserStats | null>(null);
     let error = $state("");
+    let isChangePasswordOpen = $state(false);
 
     onMount(async () => {
         await authStore.check();
@@ -40,7 +42,16 @@
         await authStore.logout();
         goto("/login");
     }
+
+    function handleChangePassword() {
+        isChangePasswordOpen = true;
+    }
 </script>
+
+<ChangePasswordModal
+    bind:isOpen={isChangePasswordOpen}
+    onClose={() => (isChangePasswordOpen = false)}
+/>
 
 <svelte:head>
     <title>Stratego — Profile</title>
@@ -65,7 +76,14 @@
                     ).toLocaleDateString()}
                 </p>
             </div>
-            <Button variant="secondary" onclick={handleLogout}>Logout</Button>
+            <div>
+                <Button variant="outline" onclick={handleChangePassword}
+                    >Change Password</Button
+                >
+                <Button variant="secondary" onclick={handleLogout}
+                    >Logout</Button
+                >
+            </div>
         </Card>
 
         {#if error}

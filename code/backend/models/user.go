@@ -69,6 +69,7 @@ type UpdateBoardSetupRequest struct {
 
 // ChangePasswordRequest for updating user password
 type ChangePasswordRequest struct {
-	OldPassword string `json:"oldPassword"`
-	NewPassword string `json:"newPassword"`
+	OldPassword     string `json:"old_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
 }
