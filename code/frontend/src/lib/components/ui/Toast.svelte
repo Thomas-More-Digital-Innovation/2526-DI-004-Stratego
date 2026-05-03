@@ -42,6 +42,7 @@
 </script>
 
 <div
+    role={type === "error" || type === "warning" ? "alert" : "status"}
     in:fly={{ y: 20, duration: 300 }}
     out:fade={{ duration: 200 }}
     class="pointer-events-auto flex items-center gap-3 rounded-2xl border {current.border} {current.bg} p-4 {current.text} shadow-2xl backdrop-blur-xl"
