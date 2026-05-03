@@ -239,9 +239,15 @@ func (s *GameServer) ChangePasswordHandler(c *gin.Context) {
 		return
 	}
 
-	// Validate new password
+	// Validate passwords match
+	if req.NewPassword != req.ConfirmPassword {
+		sendError(c, "New passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	// Validate new password complexity
 	if !isStrongPassword(req.NewPassword) {
-		sendError(c, "New password does not meet complexity requirements", http.StatusBadRequest)
+		sendError(c, "New password must be at least 8 characters and contain at least one number, one uppercase and one lowercase letter", http.StatusBadRequest)
 		return
 	}
 
@@ -257,15 +263,40 @@ func (s *GameServer) ChangePasswordHandler(c *gin.Context) {
 		return
 	}
 
-	// Revoke all refresh tokens for this user
+	// Revoke all refresh tokens for this user (logs out all other devices)
 	if err := db.DeleteAllUserRefreshTokens(c.Request.Context(), user.ID); err != nil {
 		logging.ErrorWithUser("Failed to revoke refresh tokens after password change", user.Username, user.ID, err)
-		// We continue anyway as the password is updated
 	}
 
-	logging.DebugWithUser(logging.TagAuth, user.Username, user.ID, "Password changed and sessions revoked")
-	auth.ClearSessionCookie(c)
-	sendJSON(c, gin.H{"message": "Password updated successfully. Please login again."}, http.StatusOK)
+	// Generate new session tokens for the current device
+	accessToken, err := auth.GenerateToken(user.ID, user.Username)
+	if err != nil {
+		logging.ErrorWithUser("Failed to generate new access token after password change", user.Username, user.ID, err)
+		sendError(c, "Password updated, but failed to refresh session. Please login again.", http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken, err := auth.GenerateRefreshToken()
+	if err != nil {
+		logging.ErrorWithUser("Failed to generate new refresh token after password change", user.Username, user.ID, err)
+		sendError(c, "Password updated, but failed to refresh session. Please login again.", http.StatusInternalServerError)
+		return
+	}
+
+	// Save new refresh token
+	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
+	if err := db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt); err != nil {
+		logging.ErrorWithUser("Failed to save new refresh token after password change", user.Username, user.ID, err)
+		sendError(c, "Password updated, but failed to persist session. Please login again.", http.StatusInternalServerError)
+		return
+	}
+
+	// Set new cookies
+	auth.SetSessionCookie(c, accessToken)
+	auth.SetRefreshTokenCookie(c, refreshToken)
+
+	logging.DebugWithUser(logging.TagAuth, user.Username, user.ID, "Password changed and session refreshed")
+	sendJSON(c, gin.H{"message": "Password updated successfully"}, http.StatusOK)
 }
 
 // GetCurrentUserHandler returns the currently logged-in user
