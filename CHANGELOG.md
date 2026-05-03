@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 03-05-2026
+
+### Added
+- Ability to see the username or AI name in the game info.
+- Ability to change the password of the currently logged in user.
+
+### Changed
+- Show full early access disclaimer on the home screen.
+- Centralized toast messages for better UX.
+- Remove alert at end of game.
+
+### Fixed
+- `Profile` & `Board Setup` pages showing login screen after reloading the page.
+- Server status indicator in the sidebar not working.
+- Name tag at bottom of sidebar not routing to profile page.
+
 ## [0.2.0] - 02-05-2026
 
 ### Added
