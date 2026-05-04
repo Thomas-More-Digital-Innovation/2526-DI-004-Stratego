@@ -1,5 +1,21 @@
 <script lang="ts">
-    import changelogRaw from "virtual:changelog";
+    import { onMount } from "svelte";
+
+    let changelogRaw = "";
+    let loading = true;
+    let error = "";
+
+    onMount(async () => {
+        try {
+            const response = await fetch("/CHANGELOG.md");
+            if (!response.ok) throw new Error("Failed to load changelog");
+            changelogRaw = await response.text();
+        } catch (e: any) {
+            error = e.message;
+        } finally {
+            loading = false;
+        }
+    });
 
     function parseMarkdown(md: string) {
         if (!md) return "";
@@ -47,11 +63,23 @@
             .join("\n");
     }
 
-    const html = parseMarkdown(changelogRaw);
+    $: html = parseMarkdown(changelogRaw);
 </script>
 
 <div class="changelog-content">
-    {@html html}
+    {#if loading}
+        <div class="flex items-center justify-center py-12">
+            <div
+                class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"
+            ></div>
+        </div>
+    {:else if error}
+        <div class="text-red-400 text-center py-12">
+            <p>Error loading changelog: {error}</p>
+        </div>
+    {:else}
+        {@html html}
+    {/if}
 </div>
 
 <style>
