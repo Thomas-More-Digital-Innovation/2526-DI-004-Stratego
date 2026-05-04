@@ -207,6 +207,7 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 	if !ignorePause && gr.turnDelay > 0 {
 		delay := gr.turnDelay
 		if gr.turnDelay >= 100*time.Millisecond {
+			// #nosec G404 - weak random is sufficient for turn delay pacing
 			delay = time.Duration(float64(gr.turnDelay)*0.8 + float64(rand.Intn(int(gr.turnDelay)))*0.4)
 		}
 		sleepTime := delay - elapsed

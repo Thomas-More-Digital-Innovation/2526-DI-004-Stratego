@@ -78,6 +78,13 @@ jobs:
           # exclude all test files (ending with _test.go) from linting (e.g. dupl)
           $LINT_BIN run --timeout=5m --skip-files '.*_test\.go' --enable=govet --enable=staticcheck --enable=errcheck --enable=gosimple --enable=gocritic --enable=goconst --enable=ineffassign --enable=dupl
 
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run gosec
+        working-directory: code/backend
+        run: $(go env GOPATH)/bin/gosec ./...
+
   test:
     name: Build & Test
     if: ${{ always() }}
