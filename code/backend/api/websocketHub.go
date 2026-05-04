@@ -142,7 +142,9 @@ func (h *WSHub) Stop() {
 
 	// Close all client connections to trigger their pump exits
 	for client := range h.clients {
-		_ = client.conn.Close()
+		if client.conn != nil {
+			_ = client.conn.Close()
+		}
 	}
 	h.mutex.Unlock()
 
