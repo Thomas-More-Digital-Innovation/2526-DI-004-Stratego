@@ -16,6 +16,11 @@ services:
     depends_on:
       stratego:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   frontend:
     container_name: stratego-frontend
@@ -24,6 +29,11 @@ services:
       - VITE_WS_BASE=${VITE_WS_BASE}
     depends_on:
       - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   stratego:
     image: postgres:15
@@ -40,6 +50,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   stratego-pg-data:
