@@ -17,7 +17,7 @@ func (s *GameServer) DebugStats(c *gin.Context) {
 	s.mutex.RUnlock()
 
 	c.JSON(http.StatusOK, gin.H{
-		"goroutines":    runtime.NumGoroutine(),
+		"goroutines":     runtime.NumGoroutine(),
 		"activeSessions": sessionCount,
 		"memory": gin.H{
 			"alloc":      m.Alloc / 1024 / 1024,
