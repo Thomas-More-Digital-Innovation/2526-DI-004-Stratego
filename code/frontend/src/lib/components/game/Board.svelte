@@ -29,6 +29,8 @@
         responsive?: boolean;
         visualDisabledRows?: number[];
         lastMove?: HistoricalMove | null;
+        highlightedRows?: number[];
+        highlightColor?: "red" | "blue" | "";
     }
 
     let {
@@ -51,6 +53,8 @@
         responsive = false,
         visualDisabledRows = [],
         lastMove = null,
+        highlightedRows = [],
+        highlightColor = "",
     }: Props = $props();
 
     const displayBoard = $derived(board || boardState?.board || []);
@@ -78,6 +82,20 @@
         validMoves.some((m) => m.x === x && m.y === y);
 
     const cellSize = $derived(BOARD_CONFIG.baseCellSize * scale);
+
+    const highlightStyle = $derived.by(() => {
+        if (highlightedRows.length === 0) return "";
+        const minRow = Math.min(...highlightedRows);
+        const maxRow = Math.max(...highlightedRows);
+        const rowCount = maxRow - minRow + 1;
+        const gap = BOARD_CONFIG.gap * scale;
+
+        const marginY = 12;
+        const top = minRow * (cellSize + gap);
+        const height = rowCount * cellSize + (rowCount - 1) * gap + marginY;
+
+        return `top: ${top}px; height: ${height}px;`;
+    });
 </script>
 
 <div
@@ -125,6 +143,15 @@
 
             {#if lastMove && !selectedPosition}
                 <MoveVisualization move={lastMove} {cellSize} {scale} />
+            {/if}
+
+            {#if highlightedRows.length > 0}
+                <div
+                    class="row-highlight"
+                    class:red={highlightColor === "red"}
+                    class:blue={highlightColor === "blue"}
+                    style={highlightStyle}
+                ></div>
             {/if}
         </div>
     {:else}
@@ -208,6 +235,47 @@
         border-radius: 4px;
         pointer-events: none;
         animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .row-highlight {
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        margin-top: 6px;
+        border: 2px solid white;
+        border-radius: 10px;
+        pointer-events: none;
+        z-index: 5;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+        animation: fade-in 0.3s forwards;
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .row-highlight.red {
+        border-color: oklch(0.6688 0.1971 39.15 / 0.5);
+        background: oklch(0.6688 0.1971 39.15 / 0.05);
+        box-shadow:
+            0 0 30px oklch(0.6688 0.1971 39.15 / 0.15),
+            inset 0 0 20px oklch(0.6688 0.1971 39.15 / 0.05);
+    }
+
+    .row-highlight.blue {
+        border-color: oklch(0.7113 0.1044 226.48 / 0.5);
+        background: oklch(0.7113 0.1044 226.48 / 0.05);
+        box-shadow:
+            0 0 30px oklch(0.7113 0.1044 226.48 / 0.15),
+            inset 0 0 20px oklch(0.7113 0.1044 226.48 / 0.05);
     }
 
     @keyframes pulse {
