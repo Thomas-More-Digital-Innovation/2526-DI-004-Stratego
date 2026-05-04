@@ -96,14 +96,35 @@ func (h *WSHub) Run() {
 
 		case message := <-h.broadcast:
 			h.mutex.RLock()
+			// Copy clients to a slice to avoid holding RLock during potential mutations/sends
+			clients := make([]*WSClient, 0, len(h.clients))
 			for client := range h.clients {
-				if !client.Send(message, 100*time.Millisecond) {
-					// Client is slow or disconnected
-					client.Close()
-					delete(h.clients, client)
-				}
+				clients = append(clients, client)
 			}
 			h.mutex.RUnlock()
+
+			for _, client := range clients {
+				if !client.Send(message, 100*time.Millisecond) {
+					// Client is slow or disconnected - unregister them properly
+					logging.Debug(logging.TagWeb, "Dropping slow client: %s", client.Username)
+					h.mutex.Lock()
+					if _, ok := h.clients[client]; ok {
+						delete(h.clients, client)
+						client.Close()
+					}
+					clientCount := len(h.clients)
+					h.mutex.Unlock()
+
+					// If this was the last client, we need to trigger the cleanup logic
+					// To avoid duplicating logic, we send to the unregister case which handles timers
+					if clientCount == 0 {
+						select {
+						case h.unregister <- client:
+						default:
+						}
+					}
+				}
+			}
 		case <-h.stop:
 			logging.Debug(logging.TagWeb, "Stopping hub loop for game %s", h.session.ID)
 			return

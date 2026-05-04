@@ -23,6 +23,8 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+const maxGames = 500
+
 // GameServer manages HTTP and WebSocket connections
 type GameServer struct {
 	sessions map[string]*GameSessionHandler
@@ -60,6 +62,12 @@ func NewGameServer() *GameServer {
 func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 string) (*GameSessionHandler, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
+	// Currently we limit the number of concurrent games to prevent OOM.
+	// Sponsor me for more RAM :)
+	if len(s.sessions) >= maxGames {
+		return nil, fmt.Errorf("server busy: maximum number of concurrent games reached")
+	}
 
 	if _, exists := s.sessions[gameID]; exists {
 		return nil, fmt.Errorf("game %s already exists", gameID)
@@ -127,14 +135,19 @@ func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
 	return handler, exists
 }
 
-// RemoveSession removes a game session from the server
+// RemoveSession removes a game session from the server and stops its resources
 func (s *GameServer) RemoveSession(gameID string) {
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if _, exists := s.sessions[gameID]; exists {
+	handler, exists := s.sessions[gameID]
+	if exists {
 		delete(s.sessions, gameID)
-		logging.Debug(logging.TagWeb, "Removed session %s from GameServer", gameID)
+	}
+	s.mutex.Unlock()
+
+	if exists && handler != nil {
+		logging.Debug(logging.TagWeb, "Removed session %s from GameServer and stopping resources", gameID)
+		handler.Hub.Stop()
+		handler.Session.Stop()
 	}
 }
 
