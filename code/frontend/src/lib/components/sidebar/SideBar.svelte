@@ -46,7 +46,7 @@
 
     <div class="group p-4 border-t border-brand-accent/20 bg-black/20">
         {#if authStore.loading}
-            <Loading />
+            Who are you?
         {:else if authStore.user}
             <LoggedIn />
         {:else}
