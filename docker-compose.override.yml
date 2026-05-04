@@ -15,7 +15,7 @@ services:
     working_dir: /app
     volumes:
       - ./code/frontend:/app:rw
-      - ./CHANGELOG.md:/app/src/lib/components/changelog/CHANGELOG.md:ro
+      - ./CHANGELOG.md:/app/static/CHANGELOG.md:ro
       - /app/node_modules
     environment:
       - FRONTEND_INTERNAL_PORT=5173

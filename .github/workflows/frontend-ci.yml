@@ -86,6 +86,9 @@ jobs:
         working-directory: code/frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare Static Changelog
+        run: mkdir -p code/frontend/static && rm -f code/frontend/static/CHANGELOG.md && cp CHANGELOG.md code/frontend/static/CHANGELOG.md
+
       - name: Build frontend
         working-directory: code/frontend
         run: pnpm build

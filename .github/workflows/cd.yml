@@ -40,6 +40,9 @@ jobs:
             }},
             ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
 
+      - name: Prepare Static Changelog
+        run: mkdir -p code/frontend/static && rm -f code/frontend/static/CHANGELOG.md && cp CHANGELOG.md code/frontend/static/CHANGELOG.md
+
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
         with:
