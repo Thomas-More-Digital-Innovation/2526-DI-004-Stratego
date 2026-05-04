@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 ### Fixed
-- Symlink for changelog.md broken.
+- Fixed broken CHANGELOG.md symlink.
 
 ## [0.2.1] - 03-05-2026
 
