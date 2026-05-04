@@ -10,10 +10,10 @@
         initialSetup?: string; // Base64 encoded 40 bytes
         onSave: (setupData: string) => void;
         onCancel: () => void;
-        ownerId: number;
+        ownerId?: number;
     }
 
-    let { initialSetup, onSave, onCancel, ownerId }: Props = $props();
+    let { initialSetup, onSave, onCancel, ownerId = 1 }: Props = $props();
 
     // Internal state: 4 rows of 10 cells
     // We store the rank char ('0', 'B', '1'-'9', 'M')
