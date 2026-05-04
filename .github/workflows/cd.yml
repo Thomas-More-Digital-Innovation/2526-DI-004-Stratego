@@ -40,6 +40,9 @@ jobs:
             }},
             ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
 
+      - name: Copy CHANGELOG.md for Frontend build
+        run: cp CHANGELOG.md code/frontend/src/lib/components/changelog/CHANGELOG.md
+
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
         with:
