@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.2.2] - 04-05-2026
 
 ### Added
+- Message on screens smaller than 1200px telling users to switch to a larger screen.
 
 ### Changed
 
