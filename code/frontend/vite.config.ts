@@ -23,7 +23,7 @@ const changelogPlugin = (): Plugin => {
         load(id: string) {
             if (id === resolvedVirtualModuleId) {
                 const configDir = fileURLToPath(new URL('.', import.meta.url));
-                const changelogPath = path.resolve(configDir, './src/lib/components/changelog/CHANGELOG.md');
+                const changelogPath = path.resolve(configDir, '../../CHANGELOG.md');
                 const content = readFileSync(changelogPath, 'utf8');
                 return `export default ${JSON.stringify(content)};`;
             }
