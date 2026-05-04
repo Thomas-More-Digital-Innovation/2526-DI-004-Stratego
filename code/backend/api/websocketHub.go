@@ -82,10 +82,10 @@ func (h *WSHub) Run() {
 					// Stop AI vs AI games immediately - no point running without observers
 					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, stopping game immediately: %s", h.session.ID)
 					h.session.Stop()
+					h.Stop()
 					if h.OnCleanup != nil {
 						h.OnCleanup()
 					}
-					h.Stop()
 
 				case models.HumanVsAi, models.HumanVsHuman:
 					// Start cleanup timer with appropriate grace period
@@ -176,10 +176,10 @@ func (h *WSHub) startCleanupTimer() {
 	h.cleanupTimer = time.AfterFunc(h.cleanupPeriod, func() {
 		logging.Debug(logging.TagWeb, "Cleanup timer expired for %s game, stopping and cleaning up: %s", h.gameType, h.session.ID)
 		h.session.Stop()
+		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
 		}
-		h.Stop()
 	})
 }
 
@@ -199,10 +199,10 @@ func (h *WSHub) StartGameOverCleanup(duration time.Duration) {
 	h.cleanupTimer = time.AfterFunc(duration, func() {
 		logging.Debug(logging.TagWeb, "Mandatory game-over cleanup triggered for game: %s", h.session.ID)
 		h.session.Stop()
+		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
 		}
-		h.Stop()
 	})
 }
 
