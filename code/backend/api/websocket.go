@@ -59,7 +59,13 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameS
 		UserID:    userID,
 	}
 
-	hub.register <- client
+	select {
+	case hub.register <- client:
+	default:
+		// Hub is stopped or not accepting new clients
+		_ = conn.Close()
+		return
+	}
 
 	go client.writePump()
 	go client.readPump()

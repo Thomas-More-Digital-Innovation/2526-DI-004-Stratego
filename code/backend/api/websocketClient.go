@@ -59,9 +59,12 @@ func (c *WSClient) Send(data []byte, timeout time.Duration) bool {
 // readPump pumps messages from the websocket connection to the hub
 func (c *WSClient) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		select {
+		case c.hub.unregister <- c:
+		default:
+			// Hub is already stopped or busy; avoid blocking here to prevent goroutine leak
+		}
 		_ = c.conn.Close()
-
 	}()
 
 	err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))

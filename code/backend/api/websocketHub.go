@@ -29,12 +29,12 @@ func NewWSHub(session *game.GameSession, gameType string) *WSHub {
 	return &WSHub{
 		clients:       make(map[*WSClient]bool),
 		broadcast:     make(chan []byte, 256),
-		register:      make(chan *WSClient),
-		unregister:    make(chan *WSClient),
+		register:      make(chan *WSClient, 128),
+		unregister:    make(chan *WSClient, 128),
 		session:       session,
 		gameType:      gameType,
 		cleanupPeriod: 1 * time.Minute, // 1 minute grace period for reconnection
-		stop:          make(chan bool),
+		stop:          make(chan bool, 1),
 	}
 }
 
@@ -118,6 +118,11 @@ func (h *WSHub) Stop() {
 		return
 	}
 	h.stopped = true
+
+	// Close all client connections to trigger their pump exits
+	for client := range h.clients {
+		_ = client.conn.Close()
+	}
 	h.mutex.Unlock()
 
 	select {

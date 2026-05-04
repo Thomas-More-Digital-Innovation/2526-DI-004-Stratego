@@ -190,9 +190,10 @@ func (s *GameServer) StartServer(addr string) error {
 	s.router.GET("/health", s.HealthHandler)
 	s.router.GET("/csrf-token", s.GetCSRFToken)
 
-	// Swagger documentation (Dev only)
+	// Debug and Documentation (Dev only)
 	if !utils.IsProduction() {
 		s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		s.router.GET("/debug/stats", s.DebugStats)
 	}
 
 	// User & Auth endpoints
