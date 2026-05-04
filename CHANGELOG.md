@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 04-05-2026
+
+### Added
+
+### Changed
+
+### Fixed
+- Symlink for changelog.md broken.
+
 ## [0.2.1] - 03-05-2026
 
 ### Added
@@ -17,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - `Profile` & `Board Setup` pages showing login screen after reloading the page.
 - Server status indicator in the sidebar not working.
 - Name tag at bottom of sidebar not routing to profile page.
+- CodeQL scanning paths optimized to reduce unnecessary CI compute.
 
 ## [0.2.0] - 02-05-2026
 
