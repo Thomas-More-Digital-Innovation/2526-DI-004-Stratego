@@ -4,7 +4,6 @@
 	"version": "0.2.2",
 	"type": "module",
 	"scripts": {
-		"prebuild": "cp ../../CHANGELOG.md ./src/lib/components/changelog/CHANGELOG.md || true",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
