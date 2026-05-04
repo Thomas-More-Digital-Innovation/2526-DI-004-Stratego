@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"digital-innovation/stratego/auth"
 	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/game"
@@ -234,6 +235,10 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	}
 
 	logging.GameFinished(session.ID, winnerLabel, loserLabel, state.Round)
+
+	// Start mandatory cleanup (10 minutes) to prevent zombie sessions
+	// If players are still watching the board, they have 10 minutes before the session is killed
+	hub.StartGameOverCleanup(10 * time.Minute)
 }
 
 // saveGameStats saves game statistics to the database
@@ -245,7 +250,10 @@ func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gam
 	g := session.GetGame()
 	initialState := g.GetInitialBoardState()
 
-	ctx := s.ctx
+	// Use a background context with timeout for stats saving to avoid leaking goroutines if DB hangs
+	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
+	defer cancel()
+
 	if err := db.SaveGame(ctx, session.ID, session.Player1UserID, session.Player2UserID, gameType, initialState, winnerID); err != nil {
 		logging.ErrorWith2Users(fmt.Sprintf("Failed to save game metadata for %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), err)
 	} else {

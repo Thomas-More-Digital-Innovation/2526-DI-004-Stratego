@@ -38,6 +38,7 @@ type GameSession struct {
 	StartTime         time.Time
 	setupCompleteChan chan bool
 	setupTimer        *time.Timer
+	setupWarningTimer *time.Timer
 	setupExpiresAt    time.Time
 	setupTimeout      time.Duration
 	setupWarning      time.Duration
@@ -108,7 +109,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController,
 		}
 	}
 
-	time.AfterFunc(warningDelay, func() {
+	session.setupWarningTimer = time.AfterFunc(warningDelay, func() {
 		session.mutex.Lock()
 		if !session.isSetupPhase {
 			session.mutex.Unlock()
@@ -194,6 +195,9 @@ func (gs *GameSession) Stop() {
 
 	if gs.setupTimer != nil {
 		gs.setupTimer.Stop()
+	}
+	if gs.setupWarningTimer != nil {
+		gs.setupWarningTimer.Stop()
 	}
 }
 
@@ -566,6 +570,9 @@ func (gs *GameSession) SetSetupPhaseComplete() {
 	if gs.setupTimer != nil {
 		gs.setupTimer.Stop()
 	}
+	if gs.setupWarningTimer != nil {
+		gs.setupWarningTimer.Stop()
+	}
 
 	gs.isSetupPhase = false
 	select {
@@ -733,6 +740,9 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 
 	if gs.setupTimer != nil {
 		gs.setupTimer.Stop()
+	}
+	if gs.setupWarningTimer != nil {
+		gs.setupWarningTimer.Stop()
 	}
 
 	gs.game.InitialState = gs.game.GetInitialBoardState()

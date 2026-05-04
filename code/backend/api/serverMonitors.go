@@ -2,8 +2,6 @@ package api
 
 import (
 	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/utils"
-	"fmt"
 	"time"
 )
 
@@ -21,8 +19,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 	case <-session.GetSetupCompleteChan():
 		// Game starting
 	case <-session.IsAbortedChan():
-		// TODO: this shouldn't be an error
-		logging.ErrorWith2Users(fmt.Sprintf("Game aborted during setup: %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), nil)
+		logging.Debug(logging.TagWeb, "Game aborted during setup: %s", session.ID)
 		s.RemoveSession(session.ID)
 		return
 	}
@@ -33,8 +30,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 		if !session.WaitForMoveNotification(5 * time.Second) {
 			// Check if session was aborted while waiting
 			if session.IsAborted() {
-				// TODO: this shouldn't be an error
-				logging.ErrorWith2Users(fmt.Sprintf("Game aborted during gameplay: %s", session.ID), session.Player1Username, utils.GetIntSafe(session.Player1UserID), session.Player2Username, utils.GetIntSafe(session.Player2UserID), nil)
+				logging.Debug(logging.TagWeb, "Game aborted during gameplay: %s", session.ID)
 				s.RemoveSession(session.ID)
 				return
 			}

@@ -29,12 +29,12 @@ func NewWSHub(session *game.GameSession, gameType string) *WSHub {
 	return &WSHub{
 		clients:       make(map[*WSClient]bool),
 		broadcast:     make(chan []byte, 256),
-		register:      make(chan *WSClient),
-		unregister:    make(chan *WSClient),
+		register:      make(chan *WSClient, 128),
+		unregister:    make(chan *WSClient, 128),
 		session:       session,
 		gameType:      gameType,
 		cleanupPeriod: 1 * time.Minute, // 1 minute grace period for reconnection
-		stop:          make(chan bool),
+		stop:          make(chan bool, 1),
 	}
 }
 
@@ -82,10 +82,10 @@ func (h *WSHub) Run() {
 					// Stop AI vs AI games immediately - no point running without observers
 					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, stopping game immediately: %s", h.session.ID)
 					h.session.Stop()
+					h.Stop()
 					if h.OnCleanup != nil {
 						h.OnCleanup()
 					}
-					h.Stop()
 
 				case models.HumanVsAi, models.HumanVsHuman:
 					// Start cleanup timer with appropriate grace period
@@ -96,14 +96,35 @@ func (h *WSHub) Run() {
 
 		case message := <-h.broadcast:
 			h.mutex.RLock()
+			// Copy clients to a slice to avoid holding RLock during potential mutations/sends
+			clients := make([]*WSClient, 0, len(h.clients))
 			for client := range h.clients {
-				if !client.Send(message, 100*time.Millisecond) {
-					// Client is slow or disconnected
-					client.Close()
-					delete(h.clients, client)
-				}
+				clients = append(clients, client)
 			}
 			h.mutex.RUnlock()
+
+			for _, client := range clients {
+				if !client.Send(message, 100*time.Millisecond) {
+					// Client is slow or disconnected - unregister them properly
+					logging.Debug(logging.TagWeb, "Dropping slow client: %s", client.Username)
+					h.mutex.Lock()
+					if _, ok := h.clients[client]; ok {
+						delete(h.clients, client)
+						client.Close()
+					}
+					clientCount := len(h.clients)
+					h.mutex.Unlock()
+
+					// If this was the last client, we need to trigger the cleanup logic
+					// To avoid duplicating logic, we send to the unregister case which handles timers
+					if clientCount == 0 {
+						select {
+						case h.unregister <- client:
+						default:
+						}
+					}
+				}
+			}
 		case <-h.stop:
 			logging.Debug(logging.TagWeb, "Stopping hub loop for game %s", h.session.ID)
 			return
@@ -118,6 +139,13 @@ func (h *WSHub) Stop() {
 		return
 	}
 	h.stopped = true
+
+	// Close all client connections to trigger their pump exits
+	for client := range h.clients {
+		if client.conn != nil {
+			_ = client.conn.Close()
+		}
+	}
 	h.mutex.Unlock()
 
 	select {
@@ -148,10 +176,33 @@ func (h *WSHub) startCleanupTimer() {
 	h.cleanupTimer = time.AfterFunc(h.cleanupPeriod, func() {
 		logging.Debug(logging.TagWeb, "Cleanup timer expired for %s game, stopping and cleaning up: %s", h.gameType, h.session.ID)
 		h.session.Stop()
+		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
 		}
+	})
+}
+
+// StartGameOverCleanup starts a mandatory timer to stop the game after it's over
+// This timer is NOT cancelled by reconnections, ensuring we eventually clean up
+func (h *WSHub) StartGameOverCleanup(duration time.Duration) {
+	h.timerMutex.Lock()
+	defer h.timerMutex.Unlock()
+
+	// If there's already a cleanup timer, stop it to prefer the game-over one
+	if h.cleanupTimer != nil {
+		h.cleanupTimer.Stop()
+	}
+
+	logging.Debug(logging.TagWeb, "Starting mandatory game-over cleanup for game (will stop in %v): %s", duration, h.session.ID)
+
+	h.cleanupTimer = time.AfterFunc(duration, func() {
+		logging.Debug(logging.TagWeb, "Mandatory game-over cleanup triggered for game: %s", h.session.ID)
+		h.session.Stop()
 		h.Stop()
+		if h.OnCleanup != nil {
+			h.OnCleanup()
+		}
 	})
 }
 
