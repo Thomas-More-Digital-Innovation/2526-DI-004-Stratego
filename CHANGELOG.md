@@ -6,11 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Message on screens smaller than 1200px telling users to switch to a larger screen.
+- Add gosec & npm audit to github actions.
 
 ### Changed
+- Changed the AI vs AI board setup interface to clearly indicate which AI you are setting up.
+- Add highlighting around the board to indicate whose turn it is.
 
 ### Fixed
 - Fixed broken CHANGELOG.md symlink.
+- Color of setup board is opposite of what it should be during setup phase.
 
 ## [0.2.1] - 03-05-2026
 
@@ -49,14 +53,14 @@ All notable changes to this project will be documented in this file.
 - Game state broadcasting regressions during high-concurrency sessions.
 - Authorization leaks where spectators could occasionally attempt to send moves.
 
-## [0.1.2] - 13-04-2026
+## [0.1.1] - 13-04-2026
 
 ### Fixed
 - Mutex contention issues identified in system audit.
 - Empty CORS origin handling.
 - API path parameter inconsistencies.
 
-## [0.1.1] - 03-04-2026
+## [0.1.0] - 03-04-2026
 
 ### Added
 - Initial functional release of Stratego with Human-vs-AI and AI-vs-AI modes.

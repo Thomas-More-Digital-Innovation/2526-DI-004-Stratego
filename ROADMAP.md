@@ -14,11 +14,14 @@ This document outlines the planned improvements and future directions for the St
 - [ ] **Rate Limiting**: Add secondary user-level rate limits for sensitive actions (creation, password changes).
 - [ ] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
 - [ ] **Reliability**: Implement exponential backoff for WebSocket reconnections with UI feedback.
+- [ ] **Refactoring**: refactoring of backend code, especially the api package.
+- [ ] **Game Limiting**: Allow only one active game per user at a time.
 
 #### Frontend & UI/UX
 - [ ] **Authentication**: Redesign and improve the login and registration screens for a more premium feel.
 - [ ] **Accessibility (a11y)**: Complete an audit for keyboard navigation and ARIA labeling on the game board.
 - [ ] **Feedback**: Add "Reconnecting..." status indicators for socket drops.
+- [ ] **Reconnect Button**: As long as a game is waiting for cleanup, allow the user to reconnect to it via a button in the home page.
 
 ---
 
