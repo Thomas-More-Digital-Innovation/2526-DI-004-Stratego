@@ -8,6 +8,7 @@
     import EarlyAccessDisclaimer from "$lib/components/EarlyAccessDisclaimer.svelte";
     import SideBar from "$lib/components/sidebar/SideBar.svelte";
     import Toaster from "$lib/components/ui/Toaster.svelte";
+    import SmallScreenMessage from "$lib/components/SmallScreenMessage.svelte";
 
     let { children } = $props();
 
@@ -44,5 +45,6 @@
     </main>
 
     <EarlyAccessDisclaimer />
+    <SmallScreenMessage />
     <Toaster />
 </div>
