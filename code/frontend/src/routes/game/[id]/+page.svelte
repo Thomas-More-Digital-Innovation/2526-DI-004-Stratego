@@ -315,14 +315,16 @@
                         : setupSelectedPlayer === 0
                           ? [6, 7, 8, 9]
                           : [0, 1, 2, 3]
-                    : []}
+                    : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
                 highlightColor={isSetupPhase
                     ? gameStore.gameMode.mode === gamemodes.human_vs_ai.mode
                         ? "red"
                         : setupSelectedPlayer === 0
                           ? "red"
                           : "blue"
-                    : ""}
+                    : gameStore.gameState?.currentPlayerId === 0
+                      ? "red"
+                      : "blue"}
                 scale={1.3}
                 lastMove={gameStore.lastMove}
             />
