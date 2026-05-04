@@ -235,6 +235,10 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 	}
 
 	logging.GameFinished(session.ID, winnerLabel, loserLabel, state.Round)
+
+	// Start mandatory cleanup (10 minutes) to prevent zombie sessions
+	// If players are still watching the board, they have 10 minutes before the session is killed
+	hub.StartGameOverCleanup(10 * time.Minute)
 }
 
 // saveGameStats saves game statistics to the database

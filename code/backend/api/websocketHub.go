@@ -181,6 +181,29 @@ func (h *WSHub) startCleanupTimer() {
 	})
 }
 
+// StartGameOverCleanup starts a mandatory timer to stop the game after it's over
+// This timer is NOT cancelled by reconnections, ensuring we eventually clean up
+func (h *WSHub) StartGameOverCleanup(duration time.Duration) {
+	h.timerMutex.Lock()
+	defer h.timerMutex.Unlock()
+
+	// If there's already a cleanup timer, stop it to prefer the game-over one
+	if h.cleanupTimer != nil {
+		h.cleanupTimer.Stop()
+	}
+
+	logging.Debug(logging.TagWeb, "Starting mandatory game-over cleanup for game (will stop in %v): %s", duration, h.session.ID)
+
+	h.cleanupTimer = time.AfterFunc(duration, func() {
+		logging.Debug(logging.TagWeb, "Mandatory game-over cleanup triggered for game: %s", h.session.ID)
+		h.session.Stop()
+		if h.OnCleanup != nil {
+			h.OnCleanup()
+		}
+		h.Stop()
+	})
+}
+
 // cancelCleanupTimer cancels the cleanup timer if it's running
 func (h *WSHub) cancelCleanupTimer() {
 	h.timerMutex.Lock()
