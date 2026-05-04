@@ -10,9 +10,10 @@
         initialSetup?: string; // Base64 encoded 40 bytes
         onSave: (setupData: string) => void;
         onCancel: () => void;
+        ownerId: number;
     }
 
-    let { initialSetup, onSave, onCancel }: Props = $props();
+    let { initialSetup, onSave, onCancel, ownerId }: Props = $props();
 
     // Internal state: 4 rows of 10 cells
     // We store the rank char ('0', 'B', '1'-'9', 'M')
@@ -265,7 +266,17 @@
                     <div
                         class="w-8 h-8 flex items-center justify-center text-xl bg-white/5 rounded-lg overflow-hidden p-1"
                     >
-                        {#if info.icon_blue && (info.icon_blue.includes("/") || info.icon_blue.includes("."))}
+                        {#if ownerId === 2}
+                            {#if info.icon_red && (info.icon_red.includes("/") || info.icon_red.includes("."))}
+                                <img
+                                    src={info.icon_red}
+                                    alt={info.name}
+                                    class="w-full h-full object-contain"
+                                />
+                            {:else}
+                                {info.rank}
+                            {/if}
+                        {:else if info.icon_blue && (info.icon_blue.includes("/") || info.icon_blue.includes("."))}
                             <img
                                 src={info.icon_blue}
                                 alt={info.name}
