@@ -158,6 +158,7 @@ func (ai *FatoAI) evaluateAttack(attacker *engine.Piece, target *engine.Piece, t
 		case attacker.GetRank() >= 3:
 			score = 5.0
 		}
+		// #nosec G404 - weak random is sufficient for AI score variety
 		score += rand.Float64()*10 - 5
 	}
 	return score

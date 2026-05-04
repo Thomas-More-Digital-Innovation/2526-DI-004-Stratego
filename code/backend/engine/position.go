@@ -1,5 +1,7 @@
 package engine
 
+import "fmt"
+
 type Position struct {
 	X int
 	Y int
@@ -69,9 +71,9 @@ func (pos Position) ToDown() Position {
 }
 
 // String returns a string representation of the position in the format "(X,Y)"
-// where X is a letter (A-H) and Y is a number (0-7).
+// where X is a letter (A-J) and Y is a number (0-9).
 // It is useful for debugging and logging.
 // For example, the position (0,0) would be represented as "(A,0)".
 func (pos Position) String() string {
-	return "(" + string(rune(pos.X+'A')) + "," + string(rune(pos.Y+'0')) + ")"
+	return fmt.Sprintf("(%c,%d)", 'A'+pos.X, pos.Y)
 }

@@ -164,13 +164,14 @@ func EncodeSetup(rows []string, playerID int) ([]byte, error) {
 			return nil, fmt.Errorf("row %d must be 10 chars, got %d", i, len(row))
 		}
 
-		for j, char := range row {
+		for j := 0; j < len(row); j++ {
+			char := row[j]
 			if char == '.' || char == ' ' {
 				continue
 			}
 
 			cell := byte(BitOccupied)
-			cell |= (rankToPieceID[byte(char)] << ShiftPieceType) & MaskPieceType
+			cell |= (rankToPieceID[char] << ShiftPieceType) & MaskPieceType
 
 			if playerID == 2 {
 				cell |= BitColor
@@ -192,9 +193,9 @@ func DecodeSetup(data []byte) ([]string, int, error) {
 	rows := make([]string, 4)
 	playerID := 1
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		row := make([]byte, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			cell := data[i*10+j]
 			if cell&BitOccupied == 0 {
 				row[j] = '.'
@@ -224,9 +225,10 @@ func ValidateSetup(rows []string) error {
 		if len(row) != 10 {
 			return fmt.Errorf("each row must be 10 chars")
 		}
-		for _, c := range row {
+		for i := range row {
+			c := row[i]
 			if c != '.' && c != ' ' {
-				counts[byte(c)]++
+				counts[c]++
 			}
 		}
 	}

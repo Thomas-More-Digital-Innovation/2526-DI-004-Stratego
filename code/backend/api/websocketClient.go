@@ -5,9 +5,10 @@ import (
 	"digital-innovation/stratego/logging"
 	"time"
 
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
-	"sync"
 )
 
 // WSClient represents a WebSocket client connection
@@ -59,7 +60,8 @@ func (c *WSClient) Send(data []byte, timeout time.Duration) bool {
 func (c *WSClient) readPump() {
 	defer func() {
 		c.hub.unregister <- c
-		c.conn.Close()
+		_ = c.conn.Close()
+
 	}()
 
 	err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
@@ -105,7 +107,8 @@ func (c *WSClient) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		_ = c.conn.Close()
+
 	}()
 
 	for {

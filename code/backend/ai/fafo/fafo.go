@@ -21,6 +21,7 @@ func (ai *FafoAI) PickRandomPiece() *engine.Piece {
 	if len(pieces) == 0 {
 		return nil
 	}
+	// #nosec G404 - weak random is sufficient for AI piece selection
 	random := rand.IntN(len(pieces))
 	return pieces[random]
 }
@@ -52,6 +53,7 @@ func (ai *FafoAI) FindRandomMove(board *engine.Board) engine.Move {
 			continue
 		}
 
+		// #nosec G404 - weak random is sufficient for AI move selection
 		chosen := moves[rand.IntN(len(moves))]
 		return engine.NewMove(chosen.GetFrom(), chosen.GetTo(), ai.GetPlayer())
 	}

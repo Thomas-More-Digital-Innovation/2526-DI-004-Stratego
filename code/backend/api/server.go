@@ -45,6 +45,7 @@ func NewGameServer() *GameServer {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// #nosec G118 - cancel is stored in GameServer and managed by the caller/server lifecycle
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &GameServer{
