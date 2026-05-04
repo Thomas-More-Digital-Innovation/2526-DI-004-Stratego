@@ -86,9 +86,6 @@ jobs:
         working-directory: code/frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Copy CHANGELOG.md for build
-        run: cp CHANGELOG.md code/frontend/src/lib/components/changelog/CHANGELOG.md
-
       - name: Build frontend
         working-directory: code/frontend
         run: pnpm build
