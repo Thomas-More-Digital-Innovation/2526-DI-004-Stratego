@@ -9,6 +9,7 @@
     import { gamemodes } from "$lib/data/gamemodes.data";
     import { gameStore } from "$lib/state/game.svelte";
     import LoadSavedSetup from "./LoadSavedSetup.svelte";
+    import AiPlayerSelector from "./AiPlayerSelector.svelte";
 
     interface Props {
         onRandomize: (player?: number) => void;
@@ -32,10 +33,14 @@
 
     const ownerId = $derived(
         gameMode.mode === gamemodes.ai_vs_ai.mode
-            ? (selectedPlayer === 0 ? 2 : 1)
+            ? selectedPlayer === 0
+                ? 2
+                : 1
             : viewerId === -1
               ? 2
-              : (viewerId === 0 ? 2 : 1),
+              : viewerId === 0
+                ? 2
+                : 1,
     );
 
     let savedSetups = $state<BoardSetup[]>([]);
@@ -115,47 +120,7 @@
                 </div>
 
                 {#if gameMode.mode === gamemodes.ai_vs_ai.mode}
-                    <div class="flex items-center gap-3 mt-2">
-                        <button
-                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 transition-all {selectedPlayer ===
-                            0
-                                ? 'border-red-500 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-                                : 'border-white/5 bg-white/5 hover:border-white/20 opacity-40 hover:opacity-100'}"
-                            onclick={() => onSelectPlayer?.(0)}
-                        >
-                            <div
-                                class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]"
-                            ></div>
-                            <span
-                                class="text-[10px] font-black text-white uppercase tracking-wider"
-                            >
-                                {gameStore.gameState?.player1Username ||
-                                    "AI Red"}
-                            </span>
-                        </button>
-                        <div
-                            class="text-[10px] font-black text-white/10 uppercase italic"
-                        >
-                            vs
-                        </div>
-                        <button
-                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 transition-all {selectedPlayer ===
-                            1
-                                ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                                : 'border-white/5 bg-white/5 hover:border-white/20 opacity-40 hover:opacity-100'}"
-                            onclick={() => onSelectPlayer?.(1)}
-                        >
-                            <span
-                                class="text-[10px] font-black text-white uppercase tracking-wider"
-                            >
-                                {gameStore.gameState?.player2Username ||
-                                    "AI Blue"}
-                            </span>
-                            <div
-                                class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,1)]"
-                            ></div>
-                        </button>
-                    </div>
+                    <AiPlayerSelector {selectedPlayer} {onSelectPlayer} />
                 {:else}
                     <div class="flex flex-col gap-0.5">
                         <p class="text-white/40 text-xs font-medium">
