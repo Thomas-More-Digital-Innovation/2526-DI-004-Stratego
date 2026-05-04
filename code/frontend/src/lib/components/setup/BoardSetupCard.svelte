@@ -25,7 +25,7 @@
         isInteractive = false,
     }: Props = $props();
 
-    const isRedSide = $derived(ownerId === 1);
+    const isRedSide = $derived(ownerId === 2);
 
     function getDecodedBoard(setupData: string): (PieceType | null)[][] {
         const decoded = decodeSetup(setupData);
