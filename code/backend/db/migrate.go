@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"digital-innovation/stratego/logging"
+	"digital-innovation/stratego/models"
 	"embed"
 	"fmt"
 	"sort"
@@ -14,13 +15,34 @@ var migrationsFS embed.FS
 
 // RunMigrations applies all pending SQL migrations to the database
 func RunMigrations(ctx context.Context) error {
-	// ensure migrations table exists
-	_, err := DB.ExecContext(ctx, `
+	// 0. Pre-migration: Drop old constraints that might conflict with GORM
+	// The manual schema.sql used 'UNIQUE', which Postgres names 'users_username_key'
+	// GORM sometimes gets confused if these exist under different names or if it fails a previous migration
+	_ = DB.WithContext(ctx).Exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key").Error
+	_ = DB.WithContext(ctx).Exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS uni_users_username").Error
+	_ = DB.WithContext(ctx).Exec("ALTER TABLE user_stats DROP CONSTRAINT IF EXISTS user_stats_user_id_key").Error
+	_ = DB.WithContext(ctx).Exec("ALTER TABLE user_stats DROP CONSTRAINT IF EXISTS uni_user_stats_user_id").Error
+
+	// 1. AutoMigrate GORM models
+	err := DB.WithContext(ctx).AutoMigrate(
+		&models.User{},
+		&models.UserStats{},
+		&models.BoardSetup{},
+		&models.RefreshToken{},
+		&models.Game{},
+		&models.GameMove{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to auto-migrate models: %w", err)
+	}
+
+	// 2. Run manual SQL migrations (for RLS, etc.)
+	err = DB.WithContext(ctx).Exec(`
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version VARCHAR(255) PRIMARY KEY,
 			applied_at TIMESTAMPTZ DEFAULT now()
 		)
-	`)
+	`).Error
 	if err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
@@ -40,7 +62,7 @@ func RunMigrations(ctx context.Context) error {
 
 	for _, file := range files {
 		var exists bool
-		err := DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1)", file).Scan(&exists)
+		err := DB.WithContext(ctx).Raw("SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = ?)", file).Scan(&exists).Error
 		if err != nil {
 			return fmt.Errorf("failed to check migration status for %s: %w", file, err)
 		}
@@ -56,13 +78,13 @@ func RunMigrations(ctx context.Context) error {
 		}
 
 		// Execute the migration SQL
-		_, err = DB.ExecContext(ctx, string(content))
+		err = DB.WithContext(ctx).Exec(string(content)).Error
 		if err != nil {
 			return fmt.Errorf("failed to apply migration %s: %w", file, err)
 		}
 
 		// Record that this migration has been applied
-		_, err = DB.ExecContext(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", file)
+		err = DB.WithContext(ctx).Exec("INSERT INTO schema_migrations (version) VALUES (?)", file).Error
 		if err != nil {
 			return fmt.Errorf("failed to record migration %s: %w", file, err)
 		}

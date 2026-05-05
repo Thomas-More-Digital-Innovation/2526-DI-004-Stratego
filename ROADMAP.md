@@ -4,9 +4,7 @@ This document outlines the planned improvements and future directions for the St
 
 ---
 
-## Current Phase: v0.2.x (Stability & Hardening)
-
-### v0.3.0 - Refactoring & Polish
+### Current Phase: v0.3.0 - Refactoring & Polish
 *Focus: Strengthening the core experience and preparing for advanced features.*
 
 #### Backend & Infrastructure

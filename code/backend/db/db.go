@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
 	"fmt"
@@ -10,10 +9,16 @@ import (
 
 	"sync"
 
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
+
+type contextKey string
+
+const UserIDContextKey contextKey = "user_id"
 
 type statsCache struct {
 	userCount  int
@@ -24,6 +29,26 @@ type statsCache struct {
 
 var cache = &statsCache{}
 
+// WithUserID returns a new context with the given user ID for DB operations
+func WithUserID(ctx context.Context, userID int) context.Context {
+	return context.WithValue(ctx, UserIDContextKey, userID)
+}
+
+func rlsPlugin(db *gorm.DB) {
+	db.Callback().Query().Before("gorm:query").Register("rls:set_user_id", setUserIDCallback)
+	db.Callback().Create().Before("gorm:create").Register("rls:set_user_id", setUserIDCallback)
+	db.Callback().Update().Before("gorm:update").Register("rls:set_user_id", setUserIDCallback)
+	db.Callback().Delete().Before("gorm:delete").Register("rls:set_user_id", setUserIDCallback)
+}
+
+func setUserIDCallback(db *gorm.DB) {
+	if db.Statement.Context != nil {
+		if userID, ok := db.Statement.Context.Value(UserIDContextKey).(int); ok {
+			db.Exec(fmt.Sprintf("SET LOCAL app.current_user_id = '%d'", userID))
+		}
+	}
+}
+
 // InitDB initializes the database connection
 func InitDB() error {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
@@ -33,35 +58,41 @@ func InitDB() error {
 	dbName := utils.GetEnv("DB_NAME", "stratego")
 	sslMode := utils.GetEnv("DB_SSLMODE", "disable")
 
-	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		dbHost, dbPort, dbUser, dbPassword, dbName, sslMode,
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		dbHost, dbUser, dbPassword, dbName, dbPort, sslMode,
 	)
 
 	var err error
-	DB, err = sql.Open("postgres", connStr)
-	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
-	}
-
-	// Set connection pool limits
-	DB.SetMaxOpenConns(25)
-	DB.SetMaxIdleConns(5)
-	DB.SetConnMaxLifetime(time.Hour)
 
 	// Test the connection with retries
 	maxRetries := 10
 	for i := range maxRetries {
-		err = DB.Ping()
+		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+
 		if err == nil {
-			logging.Debug(logging.TagAuth, "Database connection established")
+			rlsPlugin(DB)
+			sqlDB, err := DB.DB()
+			if err == nil {
+				// Set connection pool limits
+				sqlDB.SetMaxOpenConns(25)
+				sqlDB.SetMaxIdleConns(5)
+				sqlDB.SetConnMaxLifetime(time.Hour)
 
-			// Run migrations automatically on startup
-			if err := RunMigrations(context.Background()); err != nil {
-				return fmt.Errorf("failed to run migrations: %w", err)
+				err = sqlDB.Ping()
+				if err == nil {
+					logging.Debug(logging.TagAuth, "Database connection established")
+
+					// Run migrations automatically on startup
+					if err := RunMigrations(context.Background()); err != nil {
+						return fmt.Errorf("failed to run migrations: %w", err)
+					}
+
+					return nil
+				}
 			}
-
-			return nil
 		}
 		logging.Error(fmt.Sprintf("Failed to connect to database (attempt %d/%d)", i+1, maxRetries), err)
 		time.Sleep(2 * time.Second)
@@ -73,7 +104,11 @@ func InitDB() error {
 // CloseDB closes the database connection
 func CloseDB() error {
 	if DB != nil {
-		return DB.Close()
+		sqlDB, err := DB.DB()
+		if err != nil {
+			return err
+		}
+		return sqlDB.Close()
 	}
 	return nil
 }
@@ -86,21 +121,20 @@ func updateStatsCache(ctx context.Context) error {
 		return nil
 	}
 
-	var userCount int
-	err := DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&userCount)
+	var userCount int64
+	err := DB.WithContext(ctx).Table("users").Count(&userCount).Error
 	if err != nil {
 		return err
 	}
 
-	var gameCount int
-	// We aggregate the total games from user_stats as an indicator of platform activity
-	err = DB.QueryRowContext(ctx, "SELECT COALESCE(SUM(total_games), 0) FROM user_stats").Scan(&gameCount)
+	var gameCount int64
+	err = DB.WithContext(ctx).Table("user_stats").Select("COALESCE(SUM(total_games), 0)").Scan(&gameCount).Error
 	if err != nil {
 		return err
 	}
 
-	cache.userCount = userCount
-	cache.gameCount = gameCount
+	cache.userCount = int(userCount)
+	cache.gameCount = int(gameCount)
 	cache.lastUpdate = time.Now()
 	return nil
 }
