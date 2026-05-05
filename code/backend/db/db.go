@@ -35,10 +35,22 @@ func WithUserID(ctx context.Context, userID int) context.Context {
 }
 
 func rlsPlugin(db *gorm.DB) {
-	db.Callback().Query().Before("gorm:query").Register("rls:set_user_id", setUserIDCallback)
-	db.Callback().Create().Before("gorm:create").Register("rls:set_user_id", setUserIDCallback)
-	db.Callback().Update().Before("gorm:update").Register("rls:set_user_id", setUserIDCallback)
-	db.Callback().Delete().Before("gorm:delete").Register("rls:set_user_id", setUserIDCallback)
+	err := db.Callback().Query().Before("gorm:query").Register("rls:set_user_id", setUserIDCallback)
+	if err != nil {
+		logging.Error("Failed to register RLS query callback: %v", err)
+	}
+	err = db.Callback().Create().Before("gorm:create").Register("rls:set_user_id", setUserIDCallback)
+	if err != nil {
+		logging.Error("Failed to register RLS create callback: %v", err)
+	}
+	err = db.Callback().Update().Before("gorm:update").Register("rls:set_user_id", setUserIDCallback)
+	if err != nil {
+		logging.Error("Failed to register RLS update callback: %v", err)
+	}
+	err = db.Callback().Delete().Before("gorm:delete").Register("rls:set_user_id", setUserIDCallback)
+	if err != nil {
+		logging.Error("Failed to register RLS delete callback: %v", err)
+	}
 }
 
 func setUserIDCallback(db *gorm.DB) {
