@@ -59,7 +59,7 @@ func TestRowLevelSecurity(t *testing.T) {
 		// Attempt to fetch setupA using User B's context
 		var retrieved models.BoardSetup
 		err := DB.WithContext(WithUserID(ctx, userB.ID)).First(&retrieved, setupA.ID).Error
-		
+
 		if err == nil {
 			t.Errorf("Security Breach: User B successfully retrieved User A's setup!")
 		} else if err != gorm.ErrRecordNotFound {
@@ -70,7 +70,7 @@ func TestRowLevelSecurity(t *testing.T) {
 	t.Run("User A can see their own setup", func(t *testing.T) {
 		var retrieved models.BoardSetup
 		err := DB.WithContext(WithUserID(ctx, userA.ID)).First(&retrieved, setupA.ID).Error
-		
+
 		if err != nil {
 			t.Errorf("User A failed to retrieve their own setup: %v", err)
 		}
@@ -82,10 +82,10 @@ func TestRowLevelSecurity(t *testing.T) {
 	t.Run("User B cannot delete User A's setup", func(t *testing.T) {
 		result := DB.WithContext(WithUserID(ctx, userB.ID)).Delete(&models.BoardSetup{}, setupA.ID)
 		if result.Error != nil {
-			// Some DBs might return error on RLS violation for Delete, 
+			// Some DBs might return error on RLS violation for Delete,
 			// but GORM usually reports 0 rows affected if RLS hides the row.
 		}
-		
+
 		if result.RowsAffected > 0 {
 			t.Errorf("Security Breach: User B successfully deleted User A's setup!")
 		}

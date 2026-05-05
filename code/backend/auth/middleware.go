@@ -30,7 +30,7 @@ func RequireAuth() gin.HandlerFunc {
 
 		// Add user to context for handlers to use
 		c.Set(UserContextKey, user)
-		
+
 		// Inject into request context for DB RLS
 		c.Request = c.Request.WithContext(db.WithUserID(c.Request.Context(), user.ID))
 

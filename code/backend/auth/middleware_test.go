@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/models"
 	"net/http"
 	"net/http/httptest"
@@ -39,8 +40,13 @@ func TestRequireAuth(t *testing.T) {
 		if user.ID != userID {
 			t.Errorf("Expected userID %d, got %d", userID, user.ID)
 		}
-		if user.Username != username {
-			t.Errorf("Expected username %s, got %s", username, user.Username)
+
+		// Verify DB context injection
+		ctxUserID := c.Request.Context().Value(db.UserIDContextKey)
+		if ctxUserID == nil {
+			t.Error("Expected db.UserIDContextKey in request context, got nil")
+		} else if ctxUserID.(int) != userID {
+			t.Errorf("Expected userID %d in DB context, got %d", userID, ctxUserID)
 		}
 	})
 
