@@ -8,8 +8,8 @@ This document outlines the planned improvements and future directions for the St
 *Focus: Strengthening the core experience and preparing for advanced features.*
 
 #### Backend & Infrastructure
-- [ ] **Database**: Remove schema.sql and create a migration system (gorm or similar).
-- [ ] **Data Integrity**: Implement `deleted_at` patterns (soft deletes) for users and game sessions.
+- [x] **Database**: Remove schema.sql and create a migration system (gorm or similar).
+- [x] **Data Integrity**: Implement `deleted_at` patterns (soft deletes) for users and game sessions.
 - [ ] **Refactoring**: refactoring of backend code, especially the api package.
 - [ ] **Rate Limiting**: Add secondary user-level rate limits for sensitive actions (creation, password changes).
 - [ ] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
