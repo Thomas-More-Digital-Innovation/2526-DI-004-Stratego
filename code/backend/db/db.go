@@ -5,9 +5,8 @@ import (
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
 	"fmt"
-	"time"
-
 	"sync"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -34,41 +33,20 @@ func WithUserID(ctx context.Context, userID int) context.Context {
 	return context.WithValue(ctx, UserIDContextKey, userID)
 }
 
-func rlsPlugin(db *gorm.DB) {
-	err := db.Callback().Query().Before("gorm:query").Register("rls:set_user_id", setUserIDCallback)
-	if err != nil {
-		logging.Error("Failed to register RLS query callback: %v", err)
-	}
-	err = db.Callback().Create().Before("gorm:create").Register("rls:set_user_id", setUserIDCallback)
-	if err != nil {
-		logging.Error("Failed to register RLS create callback: %v", err)
-	}
-	err = db.Callback().Update().Before("gorm:update").Register("rls:set_user_id", setUserIDCallback)
-	if err != nil {
-		logging.Error("Failed to register RLS update callback: %v", err)
-	}
-	err = db.Callback().Delete().Before("gorm:delete").Register("rls:set_user_id", setUserIDCallback)
-	if err != nil {
-		logging.Error("Failed to register RLS delete callback: %v", err)
-	}
-}
-
-func setUserIDCallback(db *gorm.DB) {
-	if db.Dialector.Name() != "postgres" {
-		return
-	}
+// WithRLS executes fn inside a transaction where app.current_user_id is set from ctx.
+// SET LOCAL ensures the variable is scoped to the transaction, and the transaction
+// guarantees both SET and the query run on the exact same connection from the pool.
+func WithRLS(ctx context.Context, fn func(tx *gorm.DB) error) error {
 	userID := 0
-	if db.Statement.Context != nil {
-		if id, ok := db.Statement.Context.Value(UserIDContextKey).(int); ok {
-			userID = id
+	if id, ok := ctx.Value(UserIDContextKey).(int); ok {
+		userID = id
+	}
+	return DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(fmt.Sprintf("SET LOCAL app.current_user_id = '%d'", userID)).Error; err != nil {
+			return fmt.Errorf("failed to set RLS context: %w", err)
 		}
-	}
-	logging.Debug(logging.TagAuth, "RLS Callback: Setting app.current_user_id = %d", userID)
-	// Use the underlying connection to avoid GORM callback recursion and ensure 
-	// it's the same connection being used for the main query.
-	if db.Statement.ConnPool != nil {
-		_, _ = db.Statement.ConnPool.ExecContext(db.Statement.Context, fmt.Sprintf("SET app.current_user_id = '%d'", userID))
-	}
+		return fn(tx)
+	})
 }
 
 // InitDB initializes the database connection
@@ -95,7 +73,6 @@ func InitDB() error {
 		})
 
 		if err == nil {
-			rlsPlugin(DB)
 			sqlDB, err := DB.DB()
 			if err == nil {
 				// Set connection pool limits

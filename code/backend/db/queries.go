@@ -127,7 +127,9 @@ func CreateBoardSetup(ctx context.Context, userID int, name, description, setupD
 		SetupData:   setupData,
 		IsDefault:   isDefault,
 	}
-	err := DB.WithContext(ctx).Create(&setup).Error
+	err := WithRLS(ctx, func(tx *gorm.DB) error {
+		return tx.Create(&setup).Error
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create board setup: %w", err)
 	}
