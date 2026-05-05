@@ -7,19 +7,23 @@ ALTER TABLE user_stats ENABLE ROW LEVEL SECURITY;
 
 -- Board Setups: Users can only see and modify their own setups
 -- Using 'app.current_user_id' custom setting to enforce this
+DROP POLICY IF EXISTS board_setups_isolation_policy ON board_setups;
 CREATE POLICY board_setups_isolation_policy ON board_setups
     USING (user_id = current_setting('app.current_user_id', true)::integer)
     WITH CHECK (user_id = current_setting('app.current_user_id', true)::integer);
 
 -- Refresh Tokens: Users can only see and modify their own refresh tokens
+DROP POLICY IF EXISTS refresh_tokens_isolation_policy ON refresh_tokens;
 CREATE POLICY refresh_tokens_isolation_policy ON refresh_tokens
     USING (user_id = current_setting('app.current_user_id', true)::integer)
     WITH CHECK (user_id = current_setting('app.current_user_id', true)::integer);
 
 -- User Stats: Publicly viewable, but only owner can update
+DROP POLICY IF EXISTS user_stats_select_policy ON user_stats;
 CREATE POLICY user_stats_select_policy ON user_stats
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS user_stats_modify_policy ON user_stats;
 CREATE POLICY user_stats_modify_policy ON user_stats
     FOR ALL
     USING (user_id = current_setting('app.current_user_id', true)::integer)
