@@ -19,7 +19,7 @@ func TestGameLogic(t *testing.T) {
 	t.Run("Save Game and Moves", func(t *testing.T) {
 		gameID := "game-123"
 		initialState := map[string]interface{}{"board": "initial"}
-		
+
 		err := SaveGame(ctx, gameID, &user1.ID, &user2.ID, "ranked", initialState, nil)
 		if err != nil {
 			t.Fatalf("SaveGame failed: %v", err)

@@ -39,7 +39,7 @@ func TestGlobalStats(t *testing.T) {
 		cache.mu.Unlock()
 
 		user, _ := CreateUser(ctx, "statuser", "Pass1!", "")
-		
+
 		// Add some games via stats update
 		_ = UpdateUserStats(ctx, user.ID, true, 5, 60.0)
 		_ = UpdateUserStats(ctx, user.ID, false, 8, 90.0)

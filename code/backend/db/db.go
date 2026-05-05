@@ -18,7 +18,6 @@ type contextKey string
 
 const UserIDContextKey contextKey = "user_id"
 
-
 // WithUserID returns a new context with the given user ID for DB operations
 func WithUserID(ctx context.Context, userID int) context.Context {
 	return context.WithValue(ctx, UserIDContextKey, userID)
@@ -105,4 +104,3 @@ func CloseDB() error {
 	}
 	return nil
 }
-
