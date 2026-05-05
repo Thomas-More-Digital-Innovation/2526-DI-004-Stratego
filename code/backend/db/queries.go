@@ -28,6 +28,11 @@ func CreateUser(ctx context.Context, username, password, profilePicture string) 
 		if err := tx.Create(&user).Error; err != nil {
 			return err
 		}
+		if tx.Dialector.Name() == "postgres" {
+			if err := tx.Exec(fmt.Sprintf("SET LOCAL app.current_user_id = '%d'", user.ID)).Error; err != nil {
+				return err
+			}
+		}
 		stats := models.UserStats{UserID: user.ID}
 		return tx.Create(&stats).Error
 	})
