@@ -37,7 +37,7 @@ func WithUserID(ctx context.Context, userID int) context.Context {
 // SET LOCAL ensures the variable is scoped to the transaction, and the transaction
 // guarantees both SET and the query run on the exact same connection from the pool.
 func WithRLS(ctx context.Context, fn func(tx *gorm.DB) error) error {
-	if DB.Dialector.Name() != "postgres" {
+	if !isPostgresDialect() {
 		return DB.WithContext(ctx).Transaction(fn)
 	}
 	userID := 0

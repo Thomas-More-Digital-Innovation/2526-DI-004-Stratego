@@ -41,7 +41,7 @@ func RunMigrations(ctx context.Context) error {
 
 	// 2. Run manual SQL migrations (for RLS, etc.)
 	// Only run these on Postgres as they often contain dialect-specific SQL
-	if DB.Dialector.Name() != "postgres" {
+	if !isPostgresDialect() {
 		return nil
 	}
 
