@@ -5,7 +5,6 @@ import (
 	"digital-innovation/stratego/logging"
 	"digital-innovation/stratego/utils"
 	"fmt"
-	"sync"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -19,14 +18,6 @@ type contextKey string
 
 const UserIDContextKey contextKey = "user_id"
 
-type statsCache struct {
-	userCount  int
-	gameCount  int
-	lastUpdate time.Time
-	mu         sync.RWMutex
-}
-
-var cache = &statsCache{}
 
 // WithUserID returns a new context with the given user ID for DB operations
 func WithUserID(ctx context.Context, userID int) context.Context {
@@ -115,46 +106,3 @@ func CloseDB() error {
 	return nil
 }
 
-func updateStatsCache(ctx context.Context) error {
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
-
-	if time.Since(cache.lastUpdate) < time.Minute && !cache.lastUpdate.IsZero() {
-		return nil
-	}
-
-	var userCount int64
-	err := DB.WithContext(ctx).Table("users").Count(&userCount).Error
-	if err != nil {
-		return err
-	}
-
-	var gameCount int64
-	err = DB.WithContext(ctx).Table("user_stats").Select("COALESCE(SUM(total_games), 0)").Scan(&gameCount).Error
-	if err != nil {
-		return err
-	}
-
-	cache.userCount = int(userCount)
-	cache.gameCount = int(gameCount)
-	cache.lastUpdate = time.Now()
-	return nil
-}
-
-func GetTotalUserCount(ctx context.Context) (int, error) {
-	if err := updateStatsCache(ctx); err != nil {
-		return 0, err
-	}
-	cache.mu.RLock()
-	defer cache.mu.RUnlock()
-	return cache.userCount, nil
-}
-
-func GetTotalGamesPlayedCount(ctx context.Context) (int, error) {
-	if err := updateStatsCache(ctx); err != nil {
-		return 0, err
-	}
-	cache.mu.RLock()
-	defer cache.mu.RUnlock()
-	return cache.gameCount, nil
-}
