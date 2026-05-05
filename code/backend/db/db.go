@@ -63,10 +63,12 @@ func setUserIDCallback(db *gorm.DB) {
 			userID = id
 		}
 	}
-	// Use SET instead of SET LOCAL to ensure it persists for the session if not in a transaction.
-	// Since we set it for EVERY query (via the callback), it will be overwritten correctly
-	// even if connections are reused from the pool.
-	db.Exec(fmt.Sprintf("SET app.current_user_id = '%d'", userID))
+	logging.Debug(logging.TagAuth, "RLS Callback: Setting app.current_user_id = %d", userID)
+	// Use the underlying connection to avoid GORM callback recursion and ensure 
+	// it's the same connection being used for the main query.
+	if db.Statement.ConnPool != nil {
+		_, _ = db.Statement.ConnPool.ExecContext(db.Statement.Context, fmt.Sprintf("SET app.current_user_id = '%d'", userID))
+	}
 }
 
 // InitDB initializes the database connection

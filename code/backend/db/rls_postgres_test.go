@@ -56,6 +56,11 @@ func TestRowLevelSecurity(t *testing.T) {
 	}
 
 	t.Run("User B cannot see User A's setup via RLS", func(t *testing.T) {
+		// Debug: check what Postgres thinks the current user is
+		var pgUser string
+		DB.WithContext(WithUserID(ctx, userB.ID)).Raw("SELECT current_setting('app.current_user_id', true)").Scan(&pgUser)
+		t.Logf("Postgres app.current_user_id for User B: %s", pgUser)
+
 		// Attempt to fetch setupA using User B's context
 		var retrieved models.BoardSetup
 		err := DB.WithContext(WithUserID(ctx, userB.ID)).First(&retrieved, setupA.ID).Error
