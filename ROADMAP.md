@@ -6,7 +6,7 @@ This document outlines the planned improvements and future directions for the St
 
 ## Current Phase: v0.2.x (Stability & Hardening)
 
-### v0.2.3 - Polish & Resilience
+### v0.3.0 - Refactoring & Polish
 *Focus: Strengthening the core experience and preparing for advanced features.*
 
 #### Backend & Infrastructure
@@ -25,7 +25,7 @@ This document outlines the planned improvements and future directions for the St
 
 ---
 
-## v0.3.0 - AI & Intelligence
+## v0.4.0 - AI & Intelligence
 *Focus: Moving beyond random moves and providing tools for AI experimentation.*
 
 ### AI Playground Improvements
@@ -41,7 +41,7 @@ This document outlines the planned improvements and future directions for the St
 
 ---
 
-## v0.4.0 - Social & PvP
+## v0.5.0 - Social & PvP
 *Focus: Connecting players and building a competitive community.*
 
 ### Social Features
@@ -52,7 +52,7 @@ This document outlines the planned improvements and future directions for the St
 
 ---
 
-## v0.5.0 - Mobile & PWA
+## v0.6.0 - Mobile & PWA
 *Focus: Making Stratego available everywhere.*
 
 ### Mobile Experience
