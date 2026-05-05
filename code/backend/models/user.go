@@ -26,7 +26,7 @@ type UserStats struct {
 	Losses              int            `json:"losses" gorm:"default:0"`
 	Draws               int            `json:"draws" gorm:"default:0"`
 	TotalMoves          int            `json:"total_moves" gorm:"default:0"`
-	AvgGameDurationSecs float64        `json:"avg_game_duration_seconds" gorm:"default:0"`
+	AvgGameDurationSecs float64        `json:"avg_game_duration_seconds" gorm:"column:avg_game_duration_seconds;default:0"`
 	CreatedAt           time.Time      `json:"created_at"`
 	UpdatedAt           time.Time      `json:"updated_at"`
 	DeletedAt           gorm.DeletedAt `json:"-" gorm:"index"`

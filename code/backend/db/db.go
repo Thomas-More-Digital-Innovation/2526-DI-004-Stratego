@@ -42,6 +42,9 @@ func rlsPlugin(db *gorm.DB) {
 }
 
 func setUserIDCallback(db *gorm.DB) {
+	if db.Dialector.Name() != "postgres" {
+		return
+	}
 	userID := 0
 	if db.Statement.Context != nil {
 		if id, ok := db.Statement.Context.Value(UserIDContextKey).(int); ok {

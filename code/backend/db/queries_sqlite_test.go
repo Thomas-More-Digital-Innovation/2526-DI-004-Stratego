@@ -10,7 +10,8 @@ import (
 )
 
 func setupSQLiteDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Use ?cache=shared to allow multiple connections in the pool to see the same in-memory DB
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to connect database: %v", err)
 	}
