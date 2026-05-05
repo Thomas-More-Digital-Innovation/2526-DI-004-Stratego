@@ -92,7 +92,7 @@ func UpdateUserStats(ctx context.Context, userID int, won bool, moveCount int, d
 			"wins":                      gorm.Expr("wins + ?", winsIncrement),
 			"losses":                    gorm.Expr("losses + ?", lossesIncrement),
 			"total_moves":               gorm.Expr("total_moves + ?", moveCount),
-			"avg_game_duration_seconds": gorm.Expr("(avg_game_duration_seconds * total_games + ?) / (total_games + 1)", durationSecs),
+			"avg_game_duration_seconds": gorm.Expr("((avg_game_duration_seconds * total_games) + ?) / (total_games + 1)", durationSecs),
 		}).Error
 
 	if err != nil {

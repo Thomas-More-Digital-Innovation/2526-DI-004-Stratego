@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"digital-innovation/stratego/models"
 	"testing"
 	"time"
 )
@@ -63,6 +64,25 @@ func TestAuthLogic(t *testing.T) {
 		_, err = GetUserIDByRefreshToken(ctx, token)
 		if err == nil {
 			t.Error("expected error for deleted token, got nil")
+		}
+	})
+
+	t.Run("Token is Hashed in DB", func(t *testing.T) {
+		user, _ := CreateUser(ctx, "hashuser", "Pass1234!", "")
+		token := "secret-token-123"
+		_ = SaveRefreshToken(ctx, user.ID, token, time.Now().Add(time.Hour))
+
+		// Try to find the raw token using direct GORM (bypass our helper)
+		var rt models.RefreshToken
+		err := DB.Where("token = ?", token).First(&rt).Error
+		if err == nil {
+			t.Error("Security Vulnerability: found raw token in database!")
+		}
+
+		// Try to find the hashed token
+		err = DB.Where("token = ?", hashToken(token)).First(&rt).Error
+		if err != nil {
+			t.Errorf("expected to find hashed token in DB, got error: %v", err)
 		}
 	})
 }

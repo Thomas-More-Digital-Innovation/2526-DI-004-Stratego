@@ -30,10 +30,12 @@ func WithRLS(ctx context.Context, fn func(tx *gorm.DB) error) error {
 	if !isPostgresDialect() {
 		return DB.WithContext(ctx).Transaction(fn)
 	}
-	userID := 0
-	if id, ok := ctx.Value(UserIDContextKey).(int); ok {
-		userID = id
+
+	userID, ok := ctx.Value(UserIDContextKey).(int)
+	if !ok || userID == 0 {
+		return fmt.Errorf("RLS context missing or unauthorized (user_id: %d)", userID)
 	}
+
 	return DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec(fmt.Sprintf("SET LOCAL app.current_user_id = '%d'", userID)).Error; err != nil {
 			return fmt.Errorf("failed to set RLS context: %w", err)

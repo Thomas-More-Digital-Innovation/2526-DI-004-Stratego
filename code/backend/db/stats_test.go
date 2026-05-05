@@ -77,4 +77,26 @@ func TestGlobalStats(t *testing.T) {
 			t.Error("expected fresh value after cache expiry, but got cached value")
 		}
 	})
+
+	t.Run("Stress concurrency", func(t *testing.T) {
+		// Reset cache
+		cache.mu.Lock()
+		cache.lastUpdate = time.Time{}
+		cache.mu.Unlock()
+
+		const goroutines = 50
+		done := make(chan bool)
+
+		for i := 0; i < goroutines; i++ {
+			go func() {
+				_, _ = GetTotalUserCount(ctx)
+				done <- true
+			}()
+		}
+
+		for i := 0; i < goroutines; i++ {
+			<-done
+		}
+		// If we reached here without deadlocking, it's a pass
+	})
 }

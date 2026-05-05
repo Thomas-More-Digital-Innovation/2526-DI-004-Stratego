@@ -6,9 +6,17 @@ import (
 	"fmt"
 	"time"
 
+	"crypto/sha256"
+	"encoding/hex"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+func hashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
+}
 
 // AuthenticateUser checks username and password, returns user if valid
 func AuthenticateUser(ctx context.Context, username, password string) (*models.User, error) {
@@ -34,7 +42,7 @@ func AuthenticateUser(ctx context.Context, username, password string) (*models.U
 func SaveRefreshToken(ctx context.Context, userID int, token string, expiresAt time.Time) error {
 	rt := models.RefreshToken{
 		UserID:    userID,
-		Token:     token,
+		Token:     hashToken(token),
 		ExpiresAt: expiresAt,
 	}
 	err := DB.WithContext(ctx).Create(&rt).Error
@@ -47,7 +55,7 @@ func SaveRefreshToken(ctx context.Context, userID int, token string, expiresAt t
 // GetUserIDByRefreshToken validates a refresh token and returns the owner's ID
 func GetUserIDByRefreshToken(ctx context.Context, token string) (int, error) {
 	var rt models.RefreshToken
-	err := DB.WithContext(ctx).Where("token = ? AND expires_at > ?", token, time.Now()).First(&rt).Error
+	err := DB.WithContext(ctx).Where("token = ? AND expires_at > ?", hashToken(token), time.Now()).First(&rt).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return 0, fmt.Errorf("invalid or expired refresh token")
@@ -59,7 +67,7 @@ func GetUserIDByRefreshToken(ctx context.Context, token string) (int, error) {
 
 // DeleteRefreshToken removes a refresh token (e.g., on logout)
 func DeleteRefreshToken(ctx context.Context, token string) error {
-	return DB.WithContext(ctx).Where("token = ?", token).Delete(&models.RefreshToken{}).Error
+	return DB.WithContext(ctx).Where("token = ?", hashToken(token)).Delete(&models.RefreshToken{}).Error
 }
 
 // DeleteAllUserRefreshTokens revokes all sessions for a user

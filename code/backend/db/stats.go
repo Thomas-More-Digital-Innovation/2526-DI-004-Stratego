@@ -16,9 +16,20 @@ type statsCache struct {
 var cache = &statsCache{}
 
 func updateStatsCache(ctx context.Context) error {
+	// Fast path: check with read lock
+	cache.mu.RLock()
+	needsUpdate := time.Since(cache.lastUpdate) >= time.Minute || cache.lastUpdate.IsZero()
+	cache.mu.RUnlock()
+
+	if !needsUpdate {
+		return nil
+	}
+
+	// Slow path: acquire write lock
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
+	// Check again in case someone else updated it while we were waiting for the lock
 	if time.Since(cache.lastUpdate) < time.Minute && !cache.lastUpdate.IsZero() {
 		return nil
 	}
