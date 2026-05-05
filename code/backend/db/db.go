@@ -42,11 +42,16 @@ func rlsPlugin(db *gorm.DB) {
 }
 
 func setUserIDCallback(db *gorm.DB) {
+	userID := 0
 	if db.Statement.Context != nil {
-		if userID, ok := db.Statement.Context.Value(UserIDContextKey).(int); ok {
-			db.Exec(fmt.Sprintf("SET LOCAL app.current_user_id = '%d'", userID))
+		if id, ok := db.Statement.Context.Value(UserIDContextKey).(int); ok {
+			userID = id
 		}
 	}
+	// Use SET instead of SET LOCAL to ensure it persists for the session if not in a transaction.
+	// Since we set it for EVERY query (via the callback), it will be overwritten correctly
+	// even if connections are reused from the pool.
+	db.Exec(fmt.Sprintf("SET app.current_user_id = '%d'", userID))
 }
 
 // InitDB initializes the database connection

@@ -1,9 +1,13 @@
 -- 004_rls_setup.sql
 
 -- Enable Row Level Security (RLS) on relevant tables
+-- FORCE ensures RLS applies even to the table owner (the app user)
 ALTER TABLE board_setups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE board_setups FORCE ROW LEVEL SECURITY;
 ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE refresh_tokens FORCE ROW LEVEL SECURITY;
 ALTER TABLE user_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_stats FORCE ROW LEVEL SECURITY;
 
 -- Board Setups: Users can only see and modify their own setups
 -- Using 'app.current_user_id' custom setting to enforce this

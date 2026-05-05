@@ -17,11 +17,14 @@ var migrationsFS embed.FS
 func RunMigrations(ctx context.Context) error {
 	// 0. Pre-migration: Drop old constraints that might conflict with GORM
 	// The manual schema.sql used 'UNIQUE', which Postgres names 'users_username_key'
-	// GORM sometimes gets confused if these exist under different names or if it fails a previous migration
-	_ = DB.WithContext(ctx).Exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key").Error
-	_ = DB.WithContext(ctx).Exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS uni_users_username").Error
-	_ = DB.WithContext(ctx).Exec("ALTER TABLE user_stats DROP CONSTRAINT IF EXISTS user_stats_user_id_key").Error
-	_ = DB.WithContext(ctx).Exec("ALTER TABLE user_stats DROP CONSTRAINT IF EXISTS uni_user_stats_user_id").Error
+	if DB.Migrator().HasTable("users") {
+		_ = DB.WithContext(ctx).Exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key").Error
+		_ = DB.WithContext(ctx).Exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS uni_users_username").Error
+	}
+	if DB.Migrator().HasTable("user_stats") {
+		_ = DB.WithContext(ctx).Exec("ALTER TABLE user_stats DROP CONSTRAINT IF EXISTS user_stats_user_id_key").Error
+		_ = DB.WithContext(ctx).Exec("ALTER TABLE user_stats DROP CONSTRAINT IF EXISTS uni_user_stats_user_id").Error
+	}
 
 	// 1. AutoMigrate GORM models
 	err := DB.WithContext(ctx).AutoMigrate(
