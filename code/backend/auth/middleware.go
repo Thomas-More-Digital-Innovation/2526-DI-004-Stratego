@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"digital-innovation/stratego/db"
 	"digital-innovation/stratego/models"
 	"digital-innovation/stratego/utils"
 	"net/http"
@@ -30,6 +31,9 @@ func RequireAuth() gin.HandlerFunc {
 		// Add user to context for handlers to use
 		c.Set(UserContextKey, user)
 
+		// Inject into request context for DB RLS
+		c.Request = c.Request.WithContext(db.WithUserID(c.Request.Context(), user.ID))
+
 		c.Next()
 	}
 }
@@ -41,6 +45,8 @@ func OptionalAuth() gin.HandlerFunc {
 		if err == nil {
 			if user, err := VerifyToken(cookie); err == nil {
 				c.Set(UserContextKey, user)
+				// Inject into request context for DB RLS
+				c.Request = c.Request.WithContext(db.WithUserID(c.Request.Context(), user.ID))
 			}
 		}
 		c.Next()

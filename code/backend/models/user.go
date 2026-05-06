@@ -1,41 +1,48 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // User represents a user in the system
 type User struct {
-	ID             int       `json:"id"`
-	Username       string    `json:"username"`
-	PasswordHash   string    `json:"-"` // never send to client
-	ProfilePicture string    `json:"profile_picture,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             int            `json:"id" gorm:"primaryKey"`
+	Username       string         `json:"username" gorm:"unique;not null;size:50"`
+	PasswordHash   string         `json:"-" gorm:"not null;size:255"` // never send to client
+	ProfilePicture string         `json:"profile_picture,omitempty" gorm:"size:255"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // UserStats represents game statistics for a user
 type UserStats struct {
-	ID                  int       `json:"id"`
-	UserID              int       `json:"user_id"`
-	TotalGames          int       `json:"total_games"`
-	Wins                int       `json:"wins"`
-	Losses              int       `json:"losses"`
-	Draws               int       `json:"draws"`
-	TotalMoves          int       `json:"total_moves"`
-	AvgGameDurationSecs float64   `json:"avg_game_duration_seconds"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                  int            `json:"id" gorm:"primaryKey"`
+	UserID              int            `json:"user_id" gorm:"unique;not null"`
+	TotalGames          int            `json:"total_games" gorm:"default:0"`
+	Wins                int            `json:"wins" gorm:"default:0"`
+	Losses              int            `json:"losses" gorm:"default:0"`
+	Draws               int            `json:"draws" gorm:"default:0"`
+	TotalMoves          int            `json:"total_moves" gorm:"default:0"`
+	AvgGameDurationSecs float64        `json:"avg_game_duration_seconds" gorm:"column:avg_game_duration_seconds;default:0"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
+	DeletedAt           gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // BoardSetup represents a saved board configuration
 type BoardSetup struct {
-	ID          int       `json:"id"`
-	UserID      int       `json:"user_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	SetupData   string    `json:"setup_data"` // JSON string of piece positions
-	IsDefault   bool      `json:"is_default"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int            `json:"id" gorm:"primaryKey"`
+	UserID      int            `json:"user_id" gorm:"index;not null"`
+	Name        string         `json:"name" gorm:"not null;size:100"`
+	Description string         `json:"description,omitempty" gorm:"type:text"`
+	SetupData   string         `json:"setup_data" gorm:"not null;size:40"` // JSON string of piece positions
+	IsDefault   bool           `json:"is_default" gorm:"default:false"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // CreateUserRequest for user registration

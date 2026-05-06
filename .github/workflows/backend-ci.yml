@@ -94,6 +94,21 @@ jobs:
       matrix:
         go-version: ["1.25"]
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: stratego_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -118,8 +133,24 @@ jobs:
         working-directory: code/backend
         run: go mod download
 
+      - name: Create non-superuser for RLS tests
+        # POSTGRES_USER is always a superuser which bypasses RLS even with FORCE.
+        # We create a dedicated non-superuser so our policies are properly enforced.
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U user -d stratego_test -c "
+            CREATE USER appuser WITH NOSUPERUSER LOGIN PASSWORD 'apppass';
+            GRANT ALL PRIVILEGES ON DATABASE stratego_test TO appuser;
+            GRANT ALL ON SCHEMA public TO appuser;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO appuser;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO appuser;
+          "
+
       - name: Run tests with coverage
         working-directory: code/backend
+        env:
+          TEST_DB_DSN: "host=localhost user=appuser password=apppass dbname=stratego_test sslmode=disable"
         run: |
           # run tests with race detector and produce a coverprofile
           go test -v -race ./... -coverprofile=coverage.out -covermode=atomic
