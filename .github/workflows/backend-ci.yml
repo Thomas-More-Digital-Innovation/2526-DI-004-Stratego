@@ -60,13 +60,14 @@ jobs:
             exit 1
           fi
 
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: code/backend
-          # Point to the config in the root since we are running in code/backend
-          args: --config=../../.golangci.yaml
+        working-directory: code/backend
+        run: |
+          # The binary is installed to GOPATH/bin
+          $(go env GOPATH)/bin/golangci-lint run --config=../../.golangci.yaml
 
   test:
     name: Build & Test
