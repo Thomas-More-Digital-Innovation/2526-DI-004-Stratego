@@ -14,7 +14,6 @@ linters:
     - revive
     - staticcheck
     - errcheck
-    - gosimple
     - gocritic
     - ineffassign
     - dupl
