@@ -6,23 +6,23 @@ concurrency:
 
 on:
   push:
-    branches: [ '*' ]
+    branches: [ "*" ]
     paths:
-      - 'code/backend/**'
-      - '.github/workflows/backend-ci.yml'
+      - "code/backend/**"
+      - ".github/workflows/backend-ci.yml"
   pull_request:
-    branches: [ '*' ]
+    branches: [ "*" ]
     paths:
-      - 'code/backend/**'
-      - '.github/workflows/backend-ci.yml'
+      - "code/backend/**"
+      - ".github/workflows/backend-ci.yml"
 
 jobs:
   lint:
-    name: Lint & Formatting
+    name: Static Code Analysis
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.25"]
+        go-version: [ "1.25" ]
 
     steps:
       - name: Checkout repository
@@ -33,15 +33,14 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Cache Go modules & golangci cache
+      - name: Cache Go modules & build cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
-            ~/.cache/golangci-lint
-            ~/.local/share/golangci-lint
             code/backend/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('code/backend/go.sum') }}
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{
+            hashFiles('code/backend/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.go-version }}-
             ${{ runner.os }}-go-
@@ -61,29 +60,13 @@ jobs:
             exit 1
           fi
 
-      - name: Run go vet
-        working-directory: code/backend
-        run: go vet ./...
-
-      - name: Install golangci-lint
-        run: |
-          GO_INSTALL_TARGET="github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
-          go install $GO_INSTALL_TARGET
-
       - name: Run golangci-lint
-        working-directory: code/backend
-        run: |
-          LINT_BIN=$(go env GOPATH)/bin/golangci-lint
-          $LINT_BIN --version
-          # exclude all test files (ending with _test.go) from linting (e.g. dupl)
-          $LINT_BIN run --timeout=5m --skip-files '.*_test\.go' --enable=govet --enable=staticcheck --enable=errcheck --enable=gosimple --enable=gocritic --enable=goconst --enable=ineffassign --enable=dupl
-
-      - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
-
-      - name: Run gosec
-        working-directory: code/backend
-        run: $(go env GOPATH)/bin/gosec ./...
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: code/backend
+          # Point to the config in the root since we are running in code/backend
+          args: --config=../../.golangci.yaml
 
   test:
     name: Build & Test
@@ -92,7 +75,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        go-version: ["1.25"]
+        go-version: [ "1.25" ]
 
     services:
       postgres:
@@ -104,9 +87,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
           --health-retries 5
 
     steps:
@@ -124,7 +105,8 @@ jobs:
           path: |
             ~/.cache/go-build
             code/backend/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('code/backend/go.sum') }}
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{
+            hashFiles('code/backend/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.go-version }}-
             ${{ runner.os }}-go-
@@ -150,7 +132,8 @@ jobs:
       - name: Run tests with coverage
         working-directory: code/backend
         env:
-          TEST_DB_DSN: "host=localhost user=appuser password=apppass dbname=stratego_test sslmode=disable"
+          TEST_DB_DSN: "host=localhost user=appuser password=apppass dbname=stratego_test
+            sslmode=disable"
         run: |
           # run tests with race detector and produce a coverprofile
           go test -v -race ./... -coverprofile=coverage.out -covermode=atomic
