@@ -1,15 +1,15 @@
-// Package api provides the HTTP and WebSocket API for the Stratego game
+// Package api provides the HTTP and WebSocket API for the GoStrategy game
 package api
 
 import (
 	"context"
-	AIhandler "digital-innovation/stratego/ai/handler"
-	"digital-innovation/stratego/auth"
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/game"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	AIhandler "digital-innovation/gostrategy/ai/handler"
+	"digital-innovation/gostrategy/auth"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"fmt"
 	"strings"
 	"sync"
@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 
-	_ "digital-innovation/stratego/docs" // Required for Swagger UI
+	_ "digital-innovation/gostrategy/docs" // Required for Swagger UI
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -180,7 +180,7 @@ func (s *GameServer) StartServer(addr string) error {
 		if !utils.IsProduction() {
 			corsConfig.AllowOrigins = []string{"http://localhost:5000"}
 		} else {
-			corsConfig.AllowOrigins = []string{"https://stratego.dotsem.be"}
+			corsConfig.AllowOrigins = []string{"https://gostrategy.dotsem.be"}
 		}
 	}
 	corsConfig.AllowCredentials = true

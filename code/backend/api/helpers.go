@@ -1,9 +1,9 @@
 package api
 
 import (
-	"digital-innovation/stratego/auth"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/auth"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"net/http"
 	"strconv"
 

@@ -1,7 +1,7 @@
 package aivsai
 
 import (
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/models"
 	"fmt"
 )
 

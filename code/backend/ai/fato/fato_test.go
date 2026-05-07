@@ -1,9 +1,9 @@
 package fato_test
 
 import (
-	"digital-innovation/stratego/ai/fato"
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/ai/fato"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/models"
 	"testing"
 )
 

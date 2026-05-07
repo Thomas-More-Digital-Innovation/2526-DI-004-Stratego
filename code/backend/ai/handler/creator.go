@@ -2,11 +2,11 @@
 package AIhandler
 
 import (
-	"digital-innovation/stratego/ai"
-	"digital-innovation/stratego/ai/fafo"
-	"digital-innovation/stratego/ai/fato"
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/ai"
+	"digital-innovation/gostrategy/ai/fafo"
+	"digital-innovation/gostrategy/ai/fato"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/models"
 )
 
 // CreateAI is a factory function that returns an AI instance based on the given type

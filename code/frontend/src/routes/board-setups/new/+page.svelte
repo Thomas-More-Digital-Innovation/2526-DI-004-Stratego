@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — New Setup</title>
+    <title>GoStrategy — New Setup</title>
 </svelte:head>
 
 <div class="max-w-6xl mx-auto space-y-8">

@@ -3,8 +3,8 @@ package db
 
 import (
 	"context"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/utils"
 	"fmt"
 	"time"
 
@@ -51,9 +51,9 @@ func WithRLS(ctx context.Context, fn func(tx *gorm.DB) error) error {
 func InitDB() error {
 	dbHost := utils.GetEnv("DB_HOST", "localhost")
 	dbPort := utils.GetEnv("DB_PORT", "5432")
-	dbUser := utils.GetEnv("DB_USER", "stratego")
+	dbUser := utils.GetEnv("DB_USER", "gostrategy")
 	dbPassword := utils.GetEnv("DB_PASSWORD", "pass")
-	dbName := utils.GetEnv("DB_NAME", "stratego")
+	dbName := utils.GetEnv("DB_NAME", "gostrategy")
 	sslMode := utils.GetEnv("DB_SSLMODE", "disable")
 
 	dsn := fmt.Sprintf(

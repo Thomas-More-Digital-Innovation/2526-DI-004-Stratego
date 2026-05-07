@@ -1,8 +1,8 @@
 package api_test
 
 import (
-	"digital-innovation/stratego/api"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/api"
+	"digital-innovation/gostrategy/models"
 	"testing"
 )
 

@@ -1,10 +1,10 @@
 package game
 
 import (
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"errors"
 	"fmt"
 	"sync"

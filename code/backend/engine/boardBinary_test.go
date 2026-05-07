@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/models"
 	"testing"
 )
 

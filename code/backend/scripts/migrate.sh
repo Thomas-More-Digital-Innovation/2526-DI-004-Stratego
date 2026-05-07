@@ -8,6 +8,6 @@ BACKEND_DIR="$SCRIPT_DIR/.."
 
 cd "$BACKEND_DIR"
 
-echo "=== Stratego Database Migration Tool ==="
+echo "=== GoStrategy Database Migration Tool ==="
 go run scripts/migrate.go
 echo "======================================="

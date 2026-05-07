@@ -1,4 +1,4 @@
-# Different AIs for Stratego
+# Different AIs for GoStrategy
 
 ## 🎲 1. **FAFO (Random)**
 
@@ -35,7 +35,7 @@ Uses manually designed rules or evaluations (e.g., value pieces, favor capturing
 **❌ Cons:**
 
 * Limited by human bias or oversimplified rules.
-* Hard to adapt to hidden information and deception in Stratego.
+* Hard to adapt to hidden information and deception in GoStrategy.
 * Doesn’t improve without manual tuning.
 
 **🧠 Trainable?**
@@ -55,7 +55,7 @@ Explores the game tree assuming both players play optimally. Each node alternate
 
 **❌ Cons:**
 
-* Stratego has **hidden information** (unknown opponent pieces), so minimax can’t model uncertainty well.
+* GoStrategy has **hidden information** (unknown opponent pieces), so minimax can’t model uncertainty well.
 * The branching factor is huge → needs pruning (α–β pruning) and depth limits.
 * Struggles when bluffing or incomplete knowledge is key.
 
@@ -91,7 +91,7 @@ Yes — very trainable. You can:
 
 ---
 
-## ⚔️ TL;DR — in Stratego context
+## ⚔️ TL;DR — in GoStrategy context
 
 | Algorithm | Info type     | Strength         | Weakness             | Trainable  | Notes                 |
 | --------- | ------------- | ---------------- | -------------------- | ---------- | --------------------- |

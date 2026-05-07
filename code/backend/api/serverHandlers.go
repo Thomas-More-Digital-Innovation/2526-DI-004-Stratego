@@ -2,12 +2,12 @@ package api
 
 import (
 	"context"
-	"digital-innovation/stratego/auth"
-	"digital-innovation/stratego/db"
-	"digital-innovation/stratego/game"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/auth"
+	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"fmt"
 	"net/http"
 	"time"

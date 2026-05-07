@@ -1,9 +1,9 @@
-// Package api provides the HTTP and WebSocket API for the Stratego game
+// Package api provides the HTTP and WebSocket API for the GoStrategy game
 package api
 
 import (
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/models"
 )
 
 // WebSocket message types

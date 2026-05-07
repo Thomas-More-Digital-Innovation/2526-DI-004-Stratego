@@ -2,8 +2,8 @@ package auth
 
 import (
 	"crypto/rand"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"encoding/hex"
 	"fmt"
 	"time"

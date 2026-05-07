@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/models"
 	"errors"
 )
 

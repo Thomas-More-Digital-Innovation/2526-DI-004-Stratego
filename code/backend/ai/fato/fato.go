@@ -3,10 +3,10 @@
 package fato
 
 import (
-	ai "digital-innovation/stratego/ai"
-	"digital-innovation/stratego/ai/fafo"
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/models"
+	ai "digital-innovation/gostrategy/ai"
+	"digital-innovation/gostrategy/ai/fafo"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/models"
 	"math"
 	"math/rand/v2"
 )

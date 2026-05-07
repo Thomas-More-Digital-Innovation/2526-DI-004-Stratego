@@ -54,7 +54,7 @@
 />
 
 <svelte:head>
-    <title>Stratego — Profile</title>
+    <title>GoStrategy — Profile</title>
 </svelte:head>
 
 {#if authStore.user}

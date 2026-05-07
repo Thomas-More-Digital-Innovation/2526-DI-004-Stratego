@@ -1,12 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is the API server for the Stratego game.",
-        "title": "Stratego API",
+        "description": "This is the API server for the GoStrategy game.",
+        "title": "GoStrategy API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "Sem Van Broekhoven",
-            "url": "https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego",
+            "url": "https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy",
             "email": "[EMAIL_ADDRESS]"
         },
         "license": {

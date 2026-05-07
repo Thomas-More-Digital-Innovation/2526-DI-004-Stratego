@@ -1,9 +1,9 @@
 package api
 
 import (
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"

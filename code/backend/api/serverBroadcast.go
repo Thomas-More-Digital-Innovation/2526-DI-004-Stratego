@@ -1,9 +1,9 @@
 package api
 
 import (
-	"digital-innovation/stratego/game"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
 )
 
 // broadcastFullState sends complete game state and board to all clients

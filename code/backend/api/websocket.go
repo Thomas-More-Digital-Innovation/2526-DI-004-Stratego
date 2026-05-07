@@ -1,9 +1,9 @@
 package api
 
 import (
-	"digital-innovation/stratego/game"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/utils"
 	"net/http"
 	"strings"
 

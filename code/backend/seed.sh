@@ -2,7 +2,7 @@
 set -euo pipefail
 
 API_URL=${API_URL:-http://localhost:8080}
-COOKIEJAR="/tmp/stratego-seed-cookies.txt"
+COOKIEJAR="/tmp/gostrategy-seed-cookies.txt"
 
 echo "Seeding development data to $API_URL"
 

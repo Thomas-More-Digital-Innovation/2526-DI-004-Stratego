@@ -1,7 +1,7 @@
 package api
 
 import (
-	"digital-innovation/stratego/db"
+	"digital-innovation/gostrategy/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

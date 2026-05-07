@@ -1,5 +1,5 @@
 # Phase 1 — Research & Design
-- Study official Stratego rules and edge cases (combat, movement, victory).
+- Study official GoStrategy rules and edge cases (combat, movement, victory).
 - Define exact data structures: board size, coordinates, piece types, ranks.
 
 Plan internal modules:

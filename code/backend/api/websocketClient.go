@@ -1,9 +1,9 @@
-// Package api provides the HTTP and WebSocket API for the Stratego game
+// Package api provides the HTTP and WebSocket API for the GoStrategy game
 package api
 
 import (
-	"digital-innovation/stratego/game"
-	"digital-innovation/stratego/logging"
+	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/logging"
 	"time"
 
 	"sync"

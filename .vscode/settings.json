@@ -5,7 +5,7 @@
         "fato",
         "gorm",
         "MCTS",
-        "stratego",
+        "gostrategy",
         "Upgrader"
     ]
 }

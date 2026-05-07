@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 07-05-2026
+
+### Added
+- **Data Integrity**: Implement `deleted_at` patterns (soft deletes) for users and game sessions.
+
+### Changed
+- **Database**: Remove schema.sql and create a migration system (gorm or similar).
+- **Rebranding**: Rebranding to GoStrategy for legal reasons #StayOpenSource.
+
 ## [0.2.2] - 04-05-2026
 
 ### Added
@@ -63,6 +72,6 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 03-04-2026
 
 ### Added
-- Initial functional release of Stratego with Human-vs-AI and AI-vs-AI modes.
+- Initial functional release of GoStrategy with Human-vs-AI and AI-vs-AI modes.
 - Basic WebSocket implementation for game updates.
 - In-memory session management.

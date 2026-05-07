@@ -57,7 +57,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — Edit Setup</title>
+    <title>GoStrategy — Edit Setup</title>
 </svelte:head>
 
 <div class="max-w-6xl mx-auto space-y-8">

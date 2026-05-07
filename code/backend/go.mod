@@ -1,4 +1,4 @@
-module digital-innovation/stratego
+module digital-innovation/gostrategy
 
 go 1.25.1
 

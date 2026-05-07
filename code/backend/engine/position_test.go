@@ -1,7 +1,7 @@
 package engine_test
 
 import (
-	"digital-innovation/stratego/engine"
+	"digital-innovation/gostrategy/engine"
 	"testing"
 )
 

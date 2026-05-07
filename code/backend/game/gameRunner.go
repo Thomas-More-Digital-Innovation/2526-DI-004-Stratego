@@ -1,8 +1,8 @@
 package game
 
 import (
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/logging"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/logging"
 	"fmt"
 	"math/rand"
 	"sync"
