@@ -2,7 +2,7 @@
 
 <img src="documents/pictures/logo.png" width=200>
 
-Open-source implementation of the classic GoStrategy board game. Built with a high-performance Go backend and a modern SvelteKit frontend, designed for both Human-vs-AI and AI-vs-AI experimentation.
+Open-source implementation of the classic Stratego board game. Built with a high-performance Go backend and a modern SvelteKit frontend, designed for both Human-vs-AI and AI-vs-AI experimentation.
 
 Play the game here: https://gostrategy.dotsem.be
 
