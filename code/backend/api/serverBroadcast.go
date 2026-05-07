@@ -55,7 +55,7 @@ func (s *GameServer) broadcastBoardState(hub *WSHub, viewerID int) {
 }
 
 // broadcastSetupBoard sends the setup board state (pieces not yet placed on board)
-func (s *GameServer) broadcastSetupBoard(hub *WSHub, gameType string) {
+func (s *GameServer) broadcastSetupBoard(hub *WSHub, _ string) {
 	hub.BroadcastSetupBoard()
 }
 
@@ -75,7 +75,7 @@ func (s *GameServer) broadcastBoardStatePerClient(hub *WSHub) {
 }
 
 // broadcastCombat sends combat information to all clients
-func (s *GameServer) broadcastCombat(hub *WSHub, combat *game.CombatResult, gameType string) {
+func (s *GameServer) broadcastCombat(hub *WSHub, combat *game.CombatResult, _ string) {
 	if combat == nil || !combat.Occurred {
 		return
 	}

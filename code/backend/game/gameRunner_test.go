@@ -42,7 +42,7 @@ func TestRunToCompletion(t *testing.T) {
 			g = game.QuickStart(controller2, controller1)
 		}
 
-		runner := game.NewGameRunner(g, 0, 1000)
+		runner := game.NewRunner(g, 0, 1000)
 		winner := runner.RunToCompletion() // we don't want cluttered logging in pipeline
 		rounds := g.GetRound()
 
@@ -97,7 +97,7 @@ func TestSubmitHumanMove(t *testing.T) {
 	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
 
 	gameInstance := game.QuickStart(controller1, controller2)
-	runner := game.NewGameRunner(gameInstance, 0, 1000)
+	runner := game.NewRunner(gameInstance, 0, 1000)
 	runner.DebugSetWaitingForInput(true)
 	gameObj := runner.GetGame()
 
@@ -126,7 +126,7 @@ func TestSubmitHumanMove(t *testing.T) {
 	}
 }
 
-func TestGameRunnerIsWaitingForInput(t *testing.T) {
+func TestRunnerIsWaitingForInput(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 
@@ -134,7 +134,7 @@ func TestGameRunnerIsWaitingForInput(t *testing.T) {
 	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
 
 	g := game.QuickStart(controller1, controller2)
-	runner := game.NewGameRunner(g, 0, 1000)
+	runner := game.NewRunner(g, 0, 1000)
 
 	if runner.IsWaitingForInput() {
 		t.Error("Expected not waiting for input before game starts")
@@ -151,7 +151,7 @@ func TestGameRunnerIsWaitingForInput(t *testing.T) {
 	}
 }
 
-func TestGameRunnerGetGame(t *testing.T) {
+func TestRunnerGetGame(t *testing.T) {
 	player1 := engine.NewPlayer(0, "P1", "red")
 	player2 := engine.NewPlayer(1, "P2", "blue")
 
@@ -159,7 +159,7 @@ func TestGameRunnerGetGame(t *testing.T) {
 	controller2 := engine.NewHumanPlayerController(&player2)
 
 	g := game.NewGame(controller1, controller2)
-	runner := game.NewGameRunner(g, 0, 1000)
+	runner := game.NewRunner(g, 0, 1000)
 
 	retrieved := runner.GetGame()
 	if retrieved != g {
@@ -175,7 +175,7 @@ func TestSubmitHumanMoveWrongPlayer(t *testing.T) {
 	controller2 := engine.NewHumanPlayerController(&player2)
 
 	g := game.QuickStart(controller1, controller2)
-	runner := game.NewGameRunner(g, 0, 1000)
+	runner := game.NewRunner(g, 0, 1000)
 	runner.DebugSetWaitingForInput(true)
 
 	// Try to submit move for player2 when it's player1's turn
@@ -187,7 +187,7 @@ func TestSubmitHumanMoveWrongPlayer(t *testing.T) {
 	}
 }
 
-func TestGameRunnerWithDelay(t *testing.T) {
+func TestRunnerWithDelay(t *testing.T) {
 	player1 := engine.NewPlayer(0, "AI1", "red")
 	player2 := engine.NewPlayer(1, "AI2", "blue")
 
@@ -197,7 +197,7 @@ func TestGameRunnerWithDelay(t *testing.T) {
 	g := game.QuickStart(controller1, controller2)
 
 	// Create runner with short delay
-	runner := game.NewGameRunner(g, 5*time.Millisecond, 10)
+	runner := game.NewRunner(g, 5*time.Millisecond, 10)
 
 	start := time.Now()
 	runner.RunToCompletion()

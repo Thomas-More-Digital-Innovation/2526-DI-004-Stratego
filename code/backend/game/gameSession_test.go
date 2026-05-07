@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-func TestNewGameSession(t *testing.T) {
+func TestNewSession(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("test-session", controller1, controller2)
+	session := game.NewSession("test-session", controller1, controller2)
 
 	if session == nil {
-		t.Fatal("Expected NewGameSession to return a session, but got nil")
+		t.Fatal("Expected NewSession to return a session, but got nil")
 	}
 
 	if session.ID != "test-session" {
@@ -34,14 +34,14 @@ func TestNewGameSession(t *testing.T) {
 	}
 }
 
-func TestGameSessionSwapSetupPieces(t *testing.T) {
+func TestSessionSwapSetupPieces(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("swap-test", controller1, controller2)
+	session := game.NewSession("swap-test", controller1, controller2)
 
 	pos1 := engine.NewPosition(0, 6)
 	pos2 := engine.NewPosition(1, 6)
@@ -52,14 +52,14 @@ func TestGameSessionSwapSetupPieces(t *testing.T) {
 	}
 }
 
-func TestGameSessionSwapSetupPiecesNotInSetup(t *testing.T) {
+func TestSessionSwapSetupPiecesNotInSetup(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("swap-test-2", controller1, controller2)
+	session := game.NewSession("swap-test-2", controller1, controller2)
 	session.SetSetupPhaseComplete()
 
 	pos1 := engine.NewPosition(0, 6)
@@ -71,14 +71,14 @@ func TestGameSessionSwapSetupPiecesNotInSetup(t *testing.T) {
 	}
 }
 
-func TestGameSessionSwapSetupPiecesInvalidPlayer(t *testing.T) {
+func TestSessionSwapSetupPiecesInvalidPlayer(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("swap-test-3", controller1, controller2)
+	session := game.NewSession("swap-test-3", controller1, controller2)
 
 	pos1 := engine.NewPosition(0, 6)
 	pos2 := engine.NewPosition(1, 6)
@@ -89,14 +89,14 @@ func TestGameSessionSwapSetupPiecesInvalidPlayer(t *testing.T) {
 	}
 }
 
-func TestGameSessionRandomizeSetup(t *testing.T) {
+func TestSessionRandomizeSetup(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("randomize-test", controller1, controller2)
+	session := game.NewSession("randomize-test", controller1, controller2)
 
 	err := session.RandomizeSetup(0)
 	if err != nil {
@@ -109,14 +109,14 @@ func TestGameSessionRandomizeSetup(t *testing.T) {
 	}
 }
 
-func TestGameSessionRandomizeSetupNotInSetupPhase(t *testing.T) {
+func TestSessionRandomizeSetupNotInSetupPhase(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("randomize-test-2", controller1, controller2)
+	session := game.NewSession("randomize-test-2", controller1, controller2)
 	session.SetSetupPhaseComplete()
 
 	err := session.RandomizeSetup(0)
@@ -125,14 +125,14 @@ func TestGameSessionRandomizeSetupNotInSetupPhase(t *testing.T) {
 	}
 }
 
-func TestGameSessionStartGameFromSetup(t *testing.T) {
+func TestSessionStartGameFromSetup(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("start-test", controller1, controller2)
+	session := game.NewSession("start-test", controller1, controller2)
 
 	err := session.StartGameFromSetup(false)
 	if err != nil {
@@ -152,14 +152,14 @@ func TestGameSessionStartGameFromSetup(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 }
 
-func TestGameSessionGetGameState(t *testing.T) {
+func TestSessionGetGameState(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("state-test", controller1, controller2)
+	session := game.NewSession("state-test", controller1, controller2)
 
 	state := session.GetGameState()
 
@@ -180,14 +180,14 @@ func TestGameSessionGetGameState(t *testing.T) {
 	}
 }
 
-func TestGameSessionSubmitMove(t *testing.T) {
+func TestSessionSubmitMove(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("move-test", controller1, controller2)
+	session := game.NewSession("move-test", controller1, controller2)
 
 	// Start the game
 	err := session.StartGameFromSetup(false)
@@ -212,14 +212,14 @@ func TestGameSessionSubmitMove(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 }
 
-func TestGameSessionSubmitMoveNotRunning(t *testing.T) {
+func TestSessionSubmitMoveNotRunning(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("move-test-2", controller1, controller2)
+	session := game.NewSession("move-test-2", controller1, controller2)
 
 	// Try to submit move without starting the game
 	move := engine.NewMove(engine.NewPosition(0, 6), engine.NewPosition(0, 5), &player1)
@@ -229,14 +229,16 @@ func TestGameSessionSubmitMoveNotRunning(t *testing.T) {
 	}
 }
 
-func TestGameSessionSubmitMove_NoPiece(t *testing.T) {
+func TestSessionSubmitMove_NoPiece(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("move-no-piece", controller1, controller2)
+	session := game.NewSession("move-no-piece", controller1, controller2)
 
-	session.StartGameFromSetup(false)
+	if err := session.StartGameFromSetup(false); err != nil {
+		t.Fatalf("Failed to start game: %v", err)
+	}
 	defer session.Stop()
 	time.Sleep(50 * time.Millisecond)
 
@@ -251,14 +253,16 @@ func TestGameSessionSubmitMove_NoPiece(t *testing.T) {
 	}
 }
 
-func TestGameSessionSubmitMove_WrongOwner(t *testing.T) {
+func TestSessionSubmitMove_WrongOwner(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("move-wrong-owner", controller1, controller2)
+	session := game.NewSession("move-wrong-owner", controller1, controller2)
 
-	session.StartGameFromSetup(false)
+	if err := session.StartGameFromSetup(false); err != nil {
+		t.Fatalf("Failed to start game: %v", err)
+	}
 	defer session.Stop()
 	time.Sleep(50 * time.Millisecond)
 
@@ -271,14 +275,16 @@ func TestGameSessionSubmitMove_WrongOwner(t *testing.T) {
 	}
 }
 
-func TestGameSessionSubmitMove_UnmovablePiece(t *testing.T) {
+func TestSessionSubmitMove_UnmovablePiece(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("move-unmovable", controller1, controller2)
+	session := game.NewSession("move-unmovable", controller1, controller2)
 
-	session.StartGameFromSetup(false)
+	if err := session.StartGameFromSetup(false); err != nil {
+		t.Fatalf("Failed to start game: %v", err)
+	}
 	defer session.Stop()
 	time.Sleep(50 * time.Millisecond)
 
@@ -294,14 +300,16 @@ func TestGameSessionSubmitMove_UnmovablePiece(t *testing.T) {
 	}
 }
 
-func TestGameSessionSubmitMove_IllegalMove(t *testing.T) {
+func TestSessionSubmitMove_IllegalMove(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Human", "red")
 	player2 := engine.NewPlayer(1, "AI", "blue")
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("move-illegal", controller1, controller2)
+	session := game.NewSession("move-illegal", controller1, controller2)
 
-	session.StartGameFromSetup(false)
+	if err := session.StartGameFromSetup(false); err != nil {
+		t.Fatalf("Failed to start game: %v", err)
+	}
 	defer session.Stop()
 	time.Sleep(50 * time.Millisecond)
 
@@ -317,14 +325,14 @@ func TestGameSessionSubmitMove_IllegalMove(t *testing.T) {
 	}
 }
 
-func TestGameSessionAnimationSignaling(t *testing.T) {
+func TestSessionAnimationSignaling(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("anim-test", controller1, controller2)
+	session := game.NewSession("anim-test", controller1, controller2)
 
 	if session.IsWaitingForAnimation() {
 		t.Error("Expected not waiting for animation initially")
@@ -342,14 +350,14 @@ func TestGameSessionAnimationSignaling(t *testing.T) {
 	}
 }
 
-func TestGameSessionAnimationTimeout(t *testing.T) {
+func TestSessionAnimationTimeout(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("anim-timeout-test", controller1, controller2)
+	session := game.NewSession("anim-timeout-test", controller1, controller2)
 
 	start := time.Now()
 	session.WaitForAnimationComplete(50 * time.Millisecond)
@@ -360,14 +368,14 @@ func TestGameSessionAnimationTimeout(t *testing.T) {
 	}
 }
 
-func TestGameSessionGetBoard(t *testing.T) {
+func TestSessionGetBoard(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("board-test", controller1, controller2)
+	session := game.NewSession("board-test", controller1, controller2)
 
 	board := session.GetBoard()
 	if board == nil {
@@ -375,14 +383,14 @@ func TestGameSessionGetBoard(t *testing.T) {
 	}
 }
 
-func TestGameSessionGetSetupPieces(t *testing.T) {
+func TestSessionGetSetupPieces(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("pieces-test", controller1, controller2)
+	session := game.NewSession("pieces-test", controller1, controller2)
 
 	pieces1 := session.GetSetupPieces(0)
 	pieces2 := session.GetSetupPieces(1)
@@ -396,14 +404,14 @@ func TestGameSessionGetSetupPieces(t *testing.T) {
 	}
 }
 
-func TestGameSessionStop(t *testing.T) {
+func TestSessionStop(t *testing.T) {
 	player1 := engine.NewPlayer(0, "Player1", "red")
 	player2 := engine.NewPlayer(1, "Player2", "blue")
 
 	controller1 := engine.NewHumanPlayerController(&player1)
 	controller2 := engine.NewHumanPlayerController(&player2)
 
-	session := game.NewGameSession("stop-test", controller1, controller2)
+	session := game.NewSession("stop-test", controller1, controller2)
 
 	err := session.StartGameFromSetup(false)
 	if err != nil {

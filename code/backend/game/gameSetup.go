@@ -60,7 +60,7 @@ func RandomSetup(player *engine.Player) []*engine.Piece {
 }
 
 // CustomSetup allows manual piece placement with validation
-func CustomSetup(player *engine.Player, piecePositions map[engine.Position]*engine.Piece) ([]*engine.Piece, error) {
+func CustomSetup(_ *engine.Player, piecePositions map[engine.Position]*engine.Piece) ([]*engine.Piece, error) {
 	if len(piecePositions) != 40 {
 		return nil, errors.New("must place exactly 40 pieces")
 	}
@@ -73,8 +73,7 @@ func CustomSetup(player *engine.Player, piecePositions map[engine.Position]*engi
 	return pieces, nil
 }
 
-// ParseSetup converts 40-byte binary setup data (bitpacked) or 40-character rank strings
-// into an ordered piece list for the player.
+// ParseSetup converts 40-byte binary setup data or 40-character rank strings into pieces
 func ParseSetup(player *engine.Player, data []byte) ([]*engine.Piece, error) {
 	if len(data) != 40 {
 		return nil, fmt.Errorf("setup data must be 40 bytes, got %d", len(data))

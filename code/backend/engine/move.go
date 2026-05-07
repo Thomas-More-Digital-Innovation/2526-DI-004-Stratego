@@ -1,11 +1,13 @@
 package engine
 
+// Move represents a single move in the game
 type Move struct {
 	from   Position
 	to     Position
 	player *Player
 }
 
+// NewMove creates a new Move instance
 func NewMove(from Position, to Position, player *Player) Move {
 	return Move{
 		from:   from,

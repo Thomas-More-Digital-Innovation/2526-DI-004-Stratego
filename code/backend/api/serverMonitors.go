@@ -6,7 +6,7 @@ import (
 )
 
 // monitorGame watches for game events and broadcasts them
-func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
+func (s *GameServer) monitorGame(handler *SessionHandler, gameType string) {
 	session := handler.Session
 	hub := handler.Hub
 
@@ -85,7 +85,7 @@ func (s *GameServer) monitorGame(handler *GameSessionHandler, gameType string) {
 			s.broadcastFullState(hub, gameType)
 		}
 
-		// Signal that move has been processed - GameRunner can continue
+		// Signal that move has been processed - Runner can continue
 		session.AckMoveProcessed()
 
 		// Check if game is over

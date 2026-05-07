@@ -10,10 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// sendError helper to be used when shifting from net/http to Gin (optional, can just use c.JSON)
-// But for now, we'll keep it to maintain similar API structure if needed
+// sendError helper to be used when shifting from net/http to Gin
 func sendError(c *gin.Context, message string, statusCode int) {
-	c.JSON(statusCode, gin.H{"error": message})
+	c.JSON(statusCode, gin.H{MsgTypeError: message})
 }
 
 // sendJSON helper (optional, can just use c.JSON)
@@ -25,7 +24,7 @@ func sendJSON(c *gin.Context, data interface{}, statusCode int) {
 func ensureAuthenticated(c *gin.Context) *models.User {
 	user := auth.GetCurrentUser(c)
 	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Please login"})
+		c.JSON(http.StatusUnauthorized, gin.H{MsgTypeError: "Unauthorized: Please login"})
 		c.Abort()
 		return nil
 	}

@@ -16,6 +16,7 @@ const (
 	ShiftPieceType = 2
 )
 
+// Piece IDs for binary encoding
 const (
 	PieceIDFlag       byte = 1
 	PieceIDBomb       byte = 2
@@ -69,7 +70,7 @@ func GetPieceTypeFromCell(cell byte) *models.PieceType {
 	return idToPieceType[pieceID]
 }
 
-// Encode full 10x10 board to 100 bytes
+// EncodeBoard encodes a full 10x10 board to 100 bytes
 func EncodeBoard(board *Board, movedPositions map[Position]bool) []byte {
 	data := make([]byte, 100)
 	field := board.GetField()
@@ -103,7 +104,7 @@ func EncodeBoard(board *Board, movedPositions map[Position]bool) []byte {
 	return data
 }
 
-// Decode 100 bytes to full 10x10 board
+// DecodeBoard decodes 100 bytes to full 10x10 board
 func DecodeBoard(data []byte, player1, player2 *Player) (*Board, map[Position]bool) {
 	board := NewBoard()
 	movedPositions := make(map[Position]bool)
@@ -134,12 +135,12 @@ func DecodeBoard(data []byte, player1, player2 *Player) (*Board, map[Position]bo
 	return board, movedPositions
 }
 
-// Encode to base64 string
+// EncodeBoardToBase64 encodes to base64 string
 func EncodeBoardToBase64(board *Board, movedPositions map[Position]bool) string {
 	return base64.StdEncoding.EncodeToString(EncodeBoard(board, movedPositions))
 }
 
-// Decode from base64 string
+// DecodeBoardFromBase64 decodes from base64 string
 func DecodeBoardFromBase64(encoded string, player1, player2 *Player) (*Board, map[Position]bool, error) {
 	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -152,7 +153,7 @@ func DecodeBoardFromBase64(encoded string, player1, player2 *Player) (*Board, ma
 	return board, moved, nil
 }
 
-// Encode 4x10 setup to 40 bytes
+// EncodeSetup encodes a 4x10 setup to 40 bytes
 func EncodeSetup(rows []string, playerID int) ([]byte, error) {
 	if len(rows) != 4 {
 		return nil, fmt.Errorf("expected 4 rows, got %d", len(rows))
@@ -184,7 +185,7 @@ func EncodeSetup(rows []string, playerID int) ([]byte, error) {
 	return data, nil
 }
 
-// Decode 40 bytes to 4x10 setup
+// DecodeSetup decodes 40 bytes to a 4x10 setup
 func DecodeSetup(data []byte) ([]string, int, error) {
 	if len(data) != 40 {
 		return nil, 0, fmt.Errorf("invalid data length: expected 40, got %d", len(data))
@@ -214,7 +215,7 @@ func DecodeSetup(data []byte) ([]string, int, error) {
 	return rows, playerID, nil
 }
 
-// Validate setup has correct piece counts
+// ValidateSetup validates that a setup has the correct piece counts
 func ValidateSetup(rows []string) error {
 	if len(rows) != 4 {
 		return fmt.Errorf("setup must have 4 rows, got %d", len(rows))

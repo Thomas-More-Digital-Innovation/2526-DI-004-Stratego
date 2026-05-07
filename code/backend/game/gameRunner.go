@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-// GameRunner handles the execution of a game turn-by-turn
-type GameRunner struct {
+// Runner handles the execution of a game turn-by-turn
+type Runner struct {
 	game                 *Game
 	turnDelay            time.Duration // Optional delay between AI turns for visualization, can be 0 to remove the delay
 	maxTurns             int
@@ -21,11 +21,12 @@ type GameRunner struct {
 	locker               sync.Locker // Mutex from GameSession to prevent race conditions
 }
 
-func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunner {
+// NewRunner creates a new Runner instance
+func NewRunner(game *Game, turnDelay time.Duration, maxTurns int) *Runner {
 	if maxTurns <= 0 {
 		maxTurns = 1000 // Default safety limit of 1000 turns, prevents infinite loops (especially for AI vs AI)
 	}
-	return &GameRunner{
+	return &Runner{
 		game:      game,
 		turnDelay: turnDelay,
 		maxTurns:  maxTurns,
@@ -34,15 +35,15 @@ func NewGameRunner(game *Game, turnDelay time.Duration, maxTurns int) *GameRunne
 }
 
 // SetMoveCallback sets the callback to be called when a move is executed
-func (gr *GameRunner) SetMoveCallback(callback func()) {
+func (gr *Runner) SetMoveCallback(callback func()) {
 	gr.onMoveExecuted = callback
 }
 
 // RunToCompletion runs the game until it's over (for AI vs AI)
 // Winner can be nil when max turns are reached and both AIs have a similar piece count
-func (gr *GameRunner) RunToCompletion() *engine.Player {
+func (gr *Runner) RunToCompletion() *engine.Player {
 	turnCount := 0
-	logging.Debug(logging.TagGame, "GameRunner: Starting RunToCompletion loop")
+	logging.Debug(logging.TagGame, "Runner: Starting RunToCompletion loop")
 
 	for {
 		var isGameOver bool
@@ -61,7 +62,7 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 		select {
 		case <-gr.stopChan:
 
-			logging.Debug(logging.TagGame, "GameRunner: Stop signal received, ending game")
+			logging.Debug(logging.TagGame, "Runner: Stop signal received, ending game")
 
 			return nil
 		default:
@@ -79,11 +80,11 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 			turnCount++
 
 			// TODO: figure out what to do with this or delete
-			// logging.Debug(logging.TagGame, "GameRunner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
+			// logging.Debug(logging.TagGame, "Runner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
 
 		} else {
 			if gr.game.IsGameOver() {
-				logging.Debug(logging.TagGame, "GameRunner: Game ended during ExecuteTurn")
+				logging.Debug(logging.TagGame, "Runner: Game ended during ExecuteTurn")
 
 				break
 			}
@@ -95,7 +96,7 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 	}
 
 	if turnCount >= gr.maxTurns {
-		logging.Debug(logging.TagGame, "GameRunner: Game ended: Maximum turns reached")
+		logging.Debug(logging.TagGame, "Runner: Game ended: Maximum turns reached")
 		return gr.calculateWinnerOnMaxTurnsExceeded()
 	}
 
@@ -108,7 +109,7 @@ func (gr *GameRunner) RunToCompletion() *engine.Player {
 	return gr.game.GetWinner()
 }
 
-func (gr *GameRunner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
+func (gr *Runner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
 	if gr.locker != nil {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
@@ -122,11 +123,11 @@ func (gr *GameRunner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
 }
 
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
-func (gr *GameRunner) ExecuteTurn() bool {
+func (gr *Runner) ExecuteTurn() bool {
 	return gr.executeTurn(false)
 }
 
-func (gr *GameRunner) executeTurn(ignorePause bool) bool {
+func (gr *Runner) executeTurn(ignorePause bool) bool {
 	if gr.locker != nil {
 		gr.locker.Lock()
 	}
@@ -276,7 +277,7 @@ func (gr *GameRunner) executeTurn(ignorePause bool) bool {
 }
 
 // getOpponent returns the opponent of the given player
-func (gr *GameRunner) getOpponent(player *engine.Player) *engine.Player {
+func (gr *Runner) getOpponent(player *engine.Player) *engine.Player {
 	if gr.game.Players[0] == player {
 		return gr.game.Players[1]
 	}
@@ -284,7 +285,7 @@ func (gr *GameRunner) getOpponent(player *engine.Player) *engine.Player {
 }
 
 // IsWaitingForInput returns true if the game is waiting for human input
-func (gr *GameRunner) IsWaitingForInput() bool {
+func (gr *Runner) IsWaitingForInput() bool {
 	if gr.locker != nil {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
@@ -292,23 +293,23 @@ func (gr *GameRunner) IsWaitingForInput() bool {
 	return gr.isWaitingForInput()
 }
 
-func (gr *GameRunner) isWaitingForInput() bool {
+func (gr *Runner) isWaitingForInput() bool {
 	return gr.waitingForHumanInput
 }
 
 // DebugSetWaitingForInput sets the waiting for human input flag to the given value.
 // This is for debugging (& testing) purposes only and should not be used in production code.
-func (gr *GameRunner) DebugSetWaitingForInput(value bool) {
+func (gr *Runner) DebugSetWaitingForInput(value bool) {
 	gr.waitingForHumanInput = value
 }
 
 // GetGame returns the underlying game
-func (gr *GameRunner) GetGame() *Game {
+func (gr *Runner) GetGame() *Game {
 	return gr.game
 }
 
 // SubmitHumanMove allows external code to submit a human player's move
-func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
+func (gr *Runner) SubmitHumanMove(move engine.Move) error {
 	if gr.locker != nil {
 		gr.locker.Lock()
 	}
@@ -363,7 +364,7 @@ func (gr *GameRunner) SubmitHumanMove(move engine.Move) error {
 }
 
 // Pause pauses the game runner
-func (gr *GameRunner) Pause() {
+func (gr *Runner) Pause() {
 	if gr.locker != nil {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
@@ -371,12 +372,12 @@ func (gr *GameRunner) Pause() {
 	gr.setPaused(true)
 }
 
-func (gr *GameRunner) setPaused(paused bool) {
+func (gr *Runner) setPaused(paused bool) {
 	gr.paused = paused
 }
 
 // Unpause unpauses the game runner
-func (gr *GameRunner) Unpause() {
+func (gr *Runner) Unpause() {
 	if gr.locker != nil {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
@@ -385,17 +386,17 @@ func (gr *GameRunner) Unpause() {
 }
 
 // SetTurnDelay sets the delay between AI turns
-func (gr *GameRunner) SetTurnDelay(delay time.Duration) {
+func (gr *Runner) SetTurnDelay(delay time.Duration) {
 	gr.turnDelay = delay
 }
 
 // Step executes a single turn even if the game is paused
-func (gr *GameRunner) Step() bool {
+func (gr *Runner) Step() bool {
 	return gr.executeTurn(true)
 }
 
 // IsPaused returns whether the game runner is paused
-func (gr *GameRunner) IsPaused() bool {
+func (gr *Runner) IsPaused() bool {
 	if gr.locker != nil {
 		gr.locker.Lock()
 		defer gr.locker.Unlock()
@@ -403,6 +404,6 @@ func (gr *GameRunner) IsPaused() bool {
 	return gr.isPaused()
 }
 
-func (gr *GameRunner) isPaused() bool {
+func (gr *Runner) isPaused() bool {
 	return gr.paused
 }

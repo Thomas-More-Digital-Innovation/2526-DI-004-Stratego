@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// RunAIvsAI runs a tournament between two AI types and prints the results
 func RunAIvsAI(ai1, ai2 string, matches int, format string, logging bool) {
 	summary := runAIvsAI(ai1, ai2, matches, logging)
 

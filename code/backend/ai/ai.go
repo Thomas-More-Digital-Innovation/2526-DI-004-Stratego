@@ -1,3 +1,4 @@
+// Package ai provides base interfaces and common functionality for AI implementations
 package ai
 
 import (
@@ -10,15 +11,17 @@ type AI interface {
 	engine.PlayerController
 }
 
+// BaseAI provides common functionality for all AI types
 type BaseAI struct {
 	player *engine.Player
-	memory *AIMemory
+	memory *Memory
 }
 
+// NewBaseAI creates a new BaseAI instance
 func NewBaseAI(player *engine.Player, hasMemory bool) *BaseAI {
-	var memory *AIMemory = nil
+	var memory *Memory
 	if hasMemory {
-		memory = NewAIMemory()
+		memory = NewMemory()
 	}
 	return &BaseAI{
 		player: player,
@@ -37,13 +40,13 @@ func (ai *BaseAI) GetControllerType() engine.ControllerType {
 }
 
 // GetMemory returns the AI's memory system (O(1) position lookup)
-func (ai *BaseAI) GetMemory() *AIMemory {
+func (ai *BaseAI) GetMemory() *Memory {
 	return ai.memory
 }
 
 // AnalyzeMove is called after opponent moves - override in subclasses for learning
 // Default implementation updates memory automatically
-func (ai *BaseAI) AnalyzeMove(move engine.Move, opponent *engine.Player, round int) {
+func (ai *BaseAI) AnalyzeMove(move engine.Move, _ *engine.Player, _ int) {
 	if ai.memory == nil {
 		return
 	}

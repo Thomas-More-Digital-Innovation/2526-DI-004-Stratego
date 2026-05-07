@@ -11,10 +11,14 @@ import (
 // - map each piece-icon char to a 4-bit id (0..15)
 // - pack two cells per byte: (hi<<4)|lo
 
+// Board setup constants
 const (
+	// PlayerSetupCells is the number of cells in a player's setup area
 	PlayerSetupCells = 40
-	PlayerSetupRows  = 4
-	PlayerSetupCols  = 10
+	// PlayerSetupRows is the number of rows in a player's setup area
+	PlayerSetupRows = 4
+	// PlayerSetupCols is the number of columns in a player's setup area
+	PlayerSetupCols = 10
 )
 
 var (
@@ -94,6 +98,7 @@ func EncodeBoardSetup(rows []string) (string, error) {
 	return base64.StdEncoding.EncodeToString(packed), nil
 }
 
+// DecodeBoardSetup decodes a base64 encoded compact board setup into human-readable rows
 func DecodeBoardSetup(encoded string) ([]string, error) {
 	b, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {

@@ -2,11 +2,13 @@ package engine
 
 import "fmt"
 
+// Position represents a coordinate on the 10x10 board
 type Position struct {
 	X int
 	Y int
 }
 
+// NewPosition creates a new Position instance
 func NewPosition(x int, y int) Position {
 	return Position{
 		X: x,

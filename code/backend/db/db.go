@@ -1,3 +1,4 @@
+// Package db provides database access and persistence for game data
 package db
 
 import (
@@ -12,10 +13,12 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// DB is the global database connection instance
 var DB *gorm.DB
 
 type contextKey string
 
+// UserIDContextKey is the key used to store the user ID in the context
 const UserIDContextKey contextKey = "user_id"
 
 // WithUserID returns a new context with the given user ID for DB operations

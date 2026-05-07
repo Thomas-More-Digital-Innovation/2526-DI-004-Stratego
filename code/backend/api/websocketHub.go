@@ -14,7 +14,7 @@ type WSHub struct {
 	broadcast     chan []byte
 	register      chan *WSClient
 	unregister    chan *WSClient
-	session       *game.GameSession
+	session       *game.Session
 	gameType      string
 	mutex         sync.RWMutex
 	cleanupTimer  *time.Timer
@@ -25,7 +25,8 @@ type WSHub struct {
 	stopped       bool
 }
 
-func NewWSHub(session *game.GameSession, gameType string) *WSHub {
+// NewWSHub creates a new WSHub instance for a session
+func NewWSHub(session *game.Session, gameType string) *WSHub {
 	return &WSHub{
 		clients:       make(map[*WSClient]bool),
 		broadcast:     make(chan []byte, 256),
@@ -132,6 +133,7 @@ func (h *WSHub) Run() {
 	}
 }
 
+// Stop stops the hub loop and closes all connections
 func (h *WSHub) Stop() {
 	h.mutex.Lock()
 	if h.stopped {

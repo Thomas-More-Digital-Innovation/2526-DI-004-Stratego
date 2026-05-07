@@ -16,7 +16,7 @@ func TestWSHub_RegisterUnregister(t *testing.T) {
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("test-reg", c1, c2)
+	session := game.NewSession("test-reg", c1, c2)
 	hub := NewWSHub(session, models.HumanVsHuman)
 
 	go hub.Run()
@@ -59,7 +59,7 @@ func TestWSHub_AICleanup(t *testing.T) {
 	player2 := engine.NewPlayer(1, "AI2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("test-ai-cleanup", c1, c2)
+	session := game.NewSession("test-ai-cleanup", c1, c2)
 
 	cleanupSignal := make(chan bool, 1)
 	hub := NewWSHub(session, models.AiVsAi)
@@ -97,7 +97,7 @@ func TestWSHub_Broadcast(t *testing.T) {
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := game.NewGameSession("test-broadcast", c1, c2)
+	session := game.NewSession("test-broadcast", c1, c2)
 	hub := NewWSHub(session, models.HumanVsHuman)
 
 	go hub.Run()

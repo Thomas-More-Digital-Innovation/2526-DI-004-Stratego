@@ -5,22 +5,26 @@ import (
 	"sync"
 )
 
+// MemoryEntry represents a single piece known to the AI memory
 type MemoryEntry struct {
 	Piece      *engine.Piece
 	Confidence float64 // how sure are we? 1.0 = revealed, <1.0 = guess
 	LastSeen   int
 }
 
-type AIMemory struct {
+// Memory represents the AI's internal knowledge of the board
+type Memory struct {
 	field [10][10]*MemoryEntry
 	mutex sync.RWMutex
 }
 
-func NewAIMemory() *AIMemory {
-	return &AIMemory{}
+// NewMemory creates a new Memory instance
+func NewMemory() *Memory {
+	return &Memory{}
 }
 
-func (m *AIMemory) Remember(pos engine.Position, piece *engine.Piece, confidence float64, round int) {
+// Remember updates memory with new information about a piece
+func (m *Memory) Remember(pos engine.Position, piece *engine.Piece, confidence float64, round int) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -32,7 +36,7 @@ func (m *AIMemory) Remember(pos engine.Position, piece *engine.Piece, confidence
 }
 
 // Recall retrieves what we know about a position (O(1))
-func (m *AIMemory) Recall(pos engine.Position) *MemoryEntry {
+func (m *Memory) Recall(pos engine.Position) *MemoryEntry {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -40,7 +44,7 @@ func (m *AIMemory) Recall(pos engine.Position) *MemoryEntry {
 }
 
 // Forget clears memory at a position
-func (m *AIMemory) Forget(pos engine.Position) {
+func (m *Memory) Forget(pos engine.Position) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -48,7 +52,7 @@ func (m *AIMemory) Forget(pos engine.Position) {
 }
 
 // MovePiece updates memory when a piece moves (critical for correctness)
-func (m *AIMemory) MovePiece(from, to engine.Position) {
+func (m *Memory) MovePiece(from, to engine.Position) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -60,7 +64,7 @@ func (m *AIMemory) MovePiece(from, to engine.Position) {
 
 // UpdateFromCombat processes combat results to update memory
 // Call this when pieces are revealed in combat
-func (m *AIMemory) UpdateFromCombat(attackerPos, defenderPos engine.Position, attackerPiece, defenderPiece *engine.Piece, round int) {
+func (m *Memory) UpdateFromCombat(attackerPos, defenderPos engine.Position, attackerPiece, defenderPiece *engine.Piece, round int) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -91,7 +95,7 @@ func (m *AIMemory) UpdateFromCombat(attackerPos, defenderPos engine.Position, at
 }
 
 // Clear resets all memory (for new game)
-func (m *AIMemory) Clear() {
+func (m *Memory) Clear() {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -100,7 +104,7 @@ func (m *AIMemory) Clear() {
 
 // GetKnownEnemyPositions returns all positions where we remember enemy pieces
 // Useful for targeting decisions
-func (m *AIMemory) GetKnownEnemyPositions() []engine.Position {
+func (m *Memory) GetKnownEnemyPositions() []engine.Position {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -117,7 +121,7 @@ func (m *AIMemory) GetKnownEnemyPositions() []engine.Position {
 
 // DecayConfidence reduces confidence over time for guesses
 // Call periodically to forget old, uncertain information
-func (m *AIMemory) DecayConfidence(decayRate float64, minConfidence float64) {
+func (m *Memory) DecayConfidence(decayRate float64, minConfidence float64) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 

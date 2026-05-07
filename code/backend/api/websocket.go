@@ -42,7 +42,7 @@ var upgrader = websocket.Upgrader{
 }
 
 // HandleWebSocket handles WebSocket connections
-func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.GameSession, hub *WSHub, seatIndex int, username string, userID int) {
+func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.Session, hub *WSHub, seatIndex int, username string, userID int) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logging.ConnectionError(session.ID, "", 0, err)

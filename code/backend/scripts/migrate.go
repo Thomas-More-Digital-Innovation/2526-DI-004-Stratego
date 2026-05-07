@@ -1,3 +1,4 @@
+// Package main provides a script to run database migrations
 package main
 
 import (

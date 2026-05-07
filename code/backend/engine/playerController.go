@@ -2,11 +2,13 @@ package engine
 
 import "sync"
 
+// ControllerType defines whether a player is human or AI
 type ControllerType int
 
+// Controller types
 const (
-	HumanController ControllerType = iota
-	AIController
+	HumanController ControllerType = iota // Controlled by a human player
+	AIController                          // Controlled by an AI
 )
 
 // PlayerController is the interface that all player controllers must implement
@@ -24,22 +26,25 @@ type HumanPlayerController struct {
 	mutex       sync.RWMutex
 }
 
+// NewHumanPlayerController creates a new HumanPlayerController instance
 func NewHumanPlayerController(player *Player) *HumanPlayerController {
 	return &HumanPlayerController{
 		player: player,
 	}
 }
 
+// GetPlayer returns the player associated with this controller
 func (h *HumanPlayerController) GetPlayer() *Player {
 	return h.player
 }
 
+// GetControllerType returns the type of this controller
 func (h *HumanPlayerController) GetControllerType() ControllerType {
 	return HumanController
 }
 
 // MakeMove for human returns an empty move - the game should wait for SetPendingMove
-func (h *HumanPlayerController) MakeMove(board *Board) Move {
+func (h *HumanPlayerController) MakeMove(_ *Board) Move {
 	// Return empty move - game loop should check for this and wait
 	return Move{}
 }

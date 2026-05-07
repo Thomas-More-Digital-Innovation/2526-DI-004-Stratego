@@ -78,7 +78,7 @@ func TestGlobalStats(t *testing.T) {
 		}
 	})
 
-	t.Run("Stress concurrency", func(t *testing.T) {
+	t.Run("Stress concurrency", func(_ *testing.T) {
 		// Reset cache
 		cache.mu.Lock()
 		cache.lastUpdate = time.Time{}

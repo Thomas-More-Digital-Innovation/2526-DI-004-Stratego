@@ -33,8 +33,8 @@ func TestFormatUser(t *testing.T) {
 	}{
 		{"Alice", 1, "Alice (ID: 1)"},
 		{"Bob\nSmith", 2, "Bob Smith (ID: 2)"},
-		{"", 0, "Guest"},
-		{"", -1, "Guest"},
+		{"", 0, GuestUser},
+		{"", -1, GuestUser},
 	}
 
 	for _, tt := range tests {

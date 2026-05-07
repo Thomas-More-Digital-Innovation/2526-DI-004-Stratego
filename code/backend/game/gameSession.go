@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-// GameSession manages a game that can be controlled via API
+// Session manages a game that can be controlled via API
 // Supports async gameplay for human players
-type GameSession struct {
+type Session struct {
 	ID                    string
 	game                  *Game
-	runner                *GameRunner
+	runner                *Runner
 	mutex                 sync.RWMutex
 	running               bool
 	isSetupPhase          bool
@@ -44,31 +44,32 @@ type GameSession struct {
 	setupWarning      time.Duration
 }
 
-// SessionOption is a function that configures a GameSession
-type SessionOption func(*GameSession)
+// SessionOption is a function that configures a Session
+type SessionOption func(*Session)
 
 // WithSetupTimeout set a custom setup phase timeout
 func WithSetupTimeout(d time.Duration) SessionOption {
-	return func(gs *GameSession) { gs.setupTimeout = d }
+	return func(gs *Session) { gs.setupTimeout = d }
 }
 
 // WithSetupWarning sets a custom delay for the setup phase warning
 // d is the duration from the start of the session until the warning fires
 func WithSetupWarning(d time.Duration) SessionOption {
-	return func(gs *GameSession) { gs.setupWarning = d }
+	return func(gs *Session) { gs.setupWarning = d }
 }
 
-func NewGameSession(id string, controller1, controller2 engine.PlayerController, opts ...SessionOption) *GameSession {
+// NewSession creates a new Session instance
+func NewSession(id string, controller1, controller2 engine.PlayerController, opts ...SessionOption) *Session {
 	g := NewGame(controller1, controller2)
 
 	// Generate initial piece setups for both players
 	player1Pieces := RandomSetup(g.Players[0])
 	player2Pieces := RandomSetup(g.Players[1])
 
-	session := &GameSession{
+	session := &Session{
 		ID:                    id,
 		game:                  g,
-		runner:                NewGameRunner(g, 1*time.Nanosecond, 1000),
+		runner:                NewRunner(g, 1*time.Nanosecond, 1000),
 		isSetupPhase:          true,
 		player1Pieces:         player1Pieces,
 		player2Pieces:         player2Pieces,
@@ -129,7 +130,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController,
 		}
 		session.mutex.Unlock()
 
-		logging.Debug(logging.TagGame, "GameSession %s: Setup timeout reached. Starting game with current/random setups.", session.ID)
+		logging.Debug(logging.TagGame, "Session %s: Setup timeout reached. Starting game with current/random setups.", session.ID)
 		_ = session.StartGameFromSetup(false)
 	})
 
@@ -138,7 +139,7 @@ func NewGameSession(id string, controller1, controller2 engine.PlayerController,
 
 // Start begins the game loop in a goroutine
 // Returns immediately, game runs asynchronously
-func (gs *GameSession) Start() error {
+func (gs *Session) Start() error {
 	gs.mutex.Lock()
 	if gs.running {
 		gs.mutex.Unlock()
@@ -177,7 +178,7 @@ func (gs *GameSession) Start() error {
 }
 
 // Stop forcefully stops the game session
-func (gs *GameSession) Stop() {
+func (gs *Session) Stop() {
 	gs.mutex.Lock()
 	if gs.aborted {
 		gs.mutex.Unlock()
@@ -202,43 +203,43 @@ func (gs *GameSession) Stop() {
 }
 
 // IsAborted returns whether the game was aborted
-func (gs *GameSession) IsAborted() bool {
+func (gs *Session) IsAborted() bool {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.aborted
 }
 
 // Pause pauses the game session
-func (gs *GameSession) Pause() {
+func (gs *Session) Pause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.setPaused(true)
-	logging.Debug(logging.TagGame, "GameSession %s: Paused", gs.ID)
+	logging.Debug(logging.TagGame, "Session %s: Paused", gs.ID)
 }
 
 // Unpause unpauses the game session
-func (gs *GameSession) Unpause() {
+func (gs *Session) Unpause() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.setPaused(false)
-	logging.Debug(logging.TagGame, "GameSession %s: Unpaused", gs.ID)
+	logging.Debug(logging.TagGame, "Session %s: Unpaused", gs.ID)
 }
 
 // SetTurnDelay sets the delay between AI turns
-func (gs *GameSession) SetTurnDelay(delay time.Duration) {
+func (gs *Session) SetTurnDelay(delay time.Duration) {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.runner.SetTurnDelay(delay)
 }
 
 // StepAI executes a single AI turn even if the game is paused
-func (gs *GameSession) StepAI() bool {
+func (gs *Session) StepAI() bool {
 	return gs.runner.Step()
 }
 
 // SubmitMove submits a move for a human player
 // Returns error if move is invalid or not the player's turn
-func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
+func (gs *Session) SubmitMove(playerID int, move engine.Move) error {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
@@ -295,7 +296,7 @@ func (gs *GameSession) SubmitMove(playerID int, move engine.Move) error {
 }
 
 // GetGameState returns current game state (for API responses)
-func (gs *GameSession) GetGameState() models.GameState {
+func (gs *Session) GetGameState() models.GameState {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
@@ -320,7 +321,7 @@ func (gs *GameSession) GetGameState() models.GameState {
 	}
 }
 
-func (gs *GameSession) getSetupRemainingSecs() int {
+func (gs *Session) getSetupRemainingSecs() int {
 	if !gs.isSetupPhase {
 		return 0
 	}
@@ -332,7 +333,7 @@ func (gs *GameSession) getSetupRemainingSecs() int {
 }
 
 // GetGameSummary returns a lightweight summary of the game state
-func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
+func (gs *Session) GetGameSummary(gameType string) models.GameSummary {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
@@ -349,7 +350,7 @@ func (gs *GameSession) GetGameSummary(gameType string) models.GameSummary {
 }
 
 // GetBoard returns the current board state
-func (gs *GameSession) GetBoard() *engine.Board {
+func (gs *Session) GetBoard() *engine.Board {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.game.Board
@@ -357,7 +358,7 @@ func (gs *GameSession) GetBoard() *engine.Board {
 
 // GetAvailableMoves returns valid moves for a piece at the given position
 // It returns an error if the piece does not belong to the requesting player
-func (gs *GameSession) GetAvailableMoves(playerID int, pos engine.Position) ([]engine.Move, error) {
+func (gs *Session) GetAvailableMoves(playerID int, pos engine.Position) ([]engine.Move, error) {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
@@ -374,40 +375,40 @@ func (gs *GameSession) GetAvailableMoves(playerID int, pos engine.Position) ([]e
 }
 
 // WaitForCompletion blocks until the game is complete and returns the winner
-func (gs *GameSession) WaitForCompletion() *engine.Player {
+func (gs *Session) WaitForCompletion() *engine.Player {
 	return <-gs.doneChan
 }
 
 // IsRunning returns whether the game is currently running
-func (gs *GameSession) IsRunning() bool {
+func (gs *Session) IsRunning() bool {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.running
 }
 
 // GetWinner returns the winner of the game
-func (gs *GameSession) GetWinner() *engine.Player {
+func (gs *Session) GetWinner() *engine.Player {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.game.GetWinner()
 }
 
 // GetWinCause returns the cause of the win
-func (gs *GameSession) GetWinCause() WinCause {
+func (gs *Session) GetWinCause() WinCause {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.game.GetWinCause()
 }
 
 // GetLastCombat returns the last combat result if any
-func (gs *GameSession) GetLastCombat() *CombatResult {
+func (gs *Session) GetLastCombat() *CombatResult {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.game.GetLastCombat()
 }
 
 // GetLastHistoricalMove returns the last historical move if any
-func (gs *GameSession) GetLastHistoricalMove() *models.HistoricalMove {
+func (gs *Session) GetLastHistoricalMove() *models.HistoricalMove {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	if len(gs.game.HistoricalHistory) == 0 {
@@ -418,30 +419,30 @@ func (gs *GameSession) GetLastHistoricalMove() *models.HistoricalMove {
 }
 
 // ClearLastCombat clears the last combat result
-func (gs *GameSession) ClearLastCombat() {
+func (gs *Session) ClearLastCombat() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.game.ClearLastCombat()
 }
 
 // HideCombatPieces hides the pieces from the last combat
-func (gs *GameSession) HideCombatPieces() {
+func (gs *Session) HideCombatPieces() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.game.HideCombatPieces()
 }
 
 // WaitForAnimationComplete blocks until animation is complete or timeout
-func (gs *GameSession) WaitForAnimationComplete(timeout time.Duration) {
+func (gs *Session) WaitForAnimationComplete(timeout time.Duration) {
 	gs.mutex.Lock()
 	gs.waitingForAnimation = true
 	gs.mutex.Unlock()
 
 	select {
 	case <-gs.animationCompleteChan:
-		logging.Debug(logging.TagGame, "GameSession %s: Animation complete signal received", gs.ID)
+		logging.Debug(logging.TagGame, "Session %s: Animation complete signal received", gs.ID)
 	case <-time.After(timeout):
-		logging.Debug(logging.TagGame, "GameSession %s: Animation timeout", gs.ID)
+		logging.Debug(logging.TagGame, "Session %s: Animation timeout", gs.ID)
 	}
 
 	gs.mutex.Lock()
@@ -450,7 +451,7 @@ func (gs *GameSession) WaitForAnimationComplete(timeout time.Duration) {
 }
 
 // SignalAnimationComplete signals that the animation has completed
-func (gs *GameSession) SignalAnimationComplete() {
+func (gs *Session) SignalAnimationComplete() {
 	gs.mutex.RLock()
 	waiting := gs.waitingForAnimation
 	gs.mutex.RUnlock()
@@ -458,38 +459,38 @@ func (gs *GameSession) SignalAnimationComplete() {
 	if waiting {
 		select {
 		case gs.animationCompleteChan <- true:
-			logging.Debug(logging.TagGame, "GameSession %s: Animation complete signal sent", gs.ID)
+			logging.Debug(logging.TagGame, "Session %s: Animation complete signal sent", gs.ID)
 		default:
-			logging.Debug(logging.TagGame, "GameSession %s: Animation complete channel full", gs.ID)
+			logging.Debug(logging.TagGame, "Session %s: Animation complete channel full", gs.ID)
 		}
 	}
 }
 
 // IsWaitingForAnimation returns whether the session is waiting for animation
-func (gs *GameSession) IsWaitingForAnimation() bool {
+func (gs *Session) IsWaitingForAnimation() bool {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.waitingForAnimation
 }
 
 // GetGame returns the game instance (for advanced access)
-func (gs *GameSession) GetGame() *Game {
+func (gs *Session) GetGame() *Game {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.game
 }
 
 // NotifyMoveExecuted signals that a move has been executed
-func (gs *GameSession) NotifyMoveExecuted() {
+func (gs *Session) NotifyMoveExecuted() {
 	select {
 	case gs.moveNotifyChan <- true:
 	default:
-		logging.Debug(logging.TagGame, "GameSession %s: Move notification channel full", gs.ID)
+		logging.Debug(logging.TagGame, "Session %s: Move notification channel full", gs.ID)
 	}
 }
 
 // WaitForMoveNotification waits for a move to be executed
-func (gs *GameSession) WaitForMoveNotification(timeout time.Duration) bool {
+func (gs *Session) WaitForMoveNotification(timeout time.Duration) bool {
 	select {
 	case <-gs.moveNotifyChan:
 		return true
@@ -499,7 +500,7 @@ func (gs *GameSession) WaitForMoveNotification(timeout time.Duration) bool {
 }
 
 // AckMoveProcessed signals that the move has been processed by the monitor
-func (gs *GameSession) AckMoveProcessed() {
+func (gs *Session) AckMoveProcessed() {
 	select {
 	case gs.moveAckChan <- true:
 	default:
@@ -508,7 +509,7 @@ func (gs *GameSession) AckMoveProcessed() {
 }
 
 // WaitForMoveAck waits for move to be acknowledged as processed
-func (gs *GameSession) WaitForMoveAck(timeout time.Duration) bool {
+func (gs *Session) WaitForMoveAck(timeout time.Duration) bool {
 	select {
 	case <-gs.moveAckChan:
 		return true
@@ -526,7 +527,7 @@ func getPlayerIDOrNil(player *engine.Player) *int {
 }
 
 // SetPlayer1Associate associates a user with Player 1 slot
-func (gs *GameSession) SetPlayer1Associate(userID int, username string) {
+func (gs *Session) SetPlayer1Associate(userID int, username string) {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.Player1UserID = &userID
@@ -535,7 +536,7 @@ func (gs *GameSession) SetPlayer1Associate(userID int, username string) {
 }
 
 // SetPlayer2Associate associates a user with Player 2 slot
-func (gs *GameSession) SetPlayer2Associate(userID int, username string) {
+func (gs *Session) SetPlayer2Associate(userID int, username string) {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 	gs.Player2UserID = &userID
@@ -544,26 +545,26 @@ func (gs *GameSession) SetPlayer2Associate(userID int, username string) {
 }
 
 // GetPlayerIDs returns the user IDs associated with both players
-func (gs *GameSession) GetPlayerIDs() (p1 *int, p2 *int) {
+func (gs *Session) GetPlayerIDs() (p1 *int, p2 *int) {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.Player1UserID, gs.Player2UserID
 }
 
 // NotifySetupUpdate signals that the setup phase state has changed (e.g. timer)
-func (gs *GameSession) NotifySetupUpdate() {
+func (gs *Session) NotifySetupUpdate() {
 	gs.NotifyMoveExecuted() // Currently reuse this to trigger broadcast
 }
 
 // IsSetupPhase returns whether the game is in setup phase
-func (gs *GameSession) IsSetupPhase() bool {
+func (gs *Session) IsSetupPhase() bool {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.isSetupPhase
 }
 
 // SetSetupPhaseComplete marks the setup phase as complete
-func (gs *GameSession) SetSetupPhaseComplete() {
+func (gs *Session) SetSetupPhaseComplete() {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 
@@ -583,14 +584,14 @@ func (gs *GameSession) SetSetupPhaseComplete() {
 }
 
 // IsHeadless returns whether the game is running in headless simulation mode
-func (gs *GameSession) IsHeadless() bool {
+func (gs *Session) IsHeadless() bool {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 	return gs.headless
 }
 
 // GetSetupPieces returns the setup pieces for a player
-func (gs *GameSession) GetSetupPieces(playerID int) []*engine.Piece {
+func (gs *Session) GetSetupPieces(playerID int) []*engine.Piece {
 	gs.mutex.RLock()
 	defer gs.mutex.RUnlock()
 
@@ -600,8 +601,8 @@ func (gs *GameSession) GetSetupPieces(playerID int) []*engine.Piece {
 	return gs.player2Pieces
 }
 
-// SwapPieces swaps two pieces in the setup
-func (gs *GameSession) SwapSetupPieces(playerID int, pos1, pos2 engine.Position) error {
+// SwapSetupPieces swaps two pieces in the setup
+func (gs *Session) SwapSetupPieces(playerID int, pos1, pos2 engine.Position) error {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 
@@ -635,7 +636,7 @@ func (gs *GameSession) SwapSetupPieces(playerID int, pos1, pos2 engine.Position)
 }
 
 // positionToIndex converts a board position to piece array index
-func (gs *GameSession) positionToIndex(pos engine.Position, playerID int) int {
+func (gs *Session) positionToIndex(pos engine.Position, playerID int) int {
 	var startRow, endRow int
 	if playerID == 0 {
 		startRow = 6
@@ -656,7 +657,7 @@ func (gs *GameSession) positionToIndex(pos engine.Position, playerID int) int {
 }
 
 // LoadSetup loads a predefined setup from binary data (40 bytes)
-func (gs *GameSession) LoadSetup(playerID int, data []byte) error {
+func (gs *Session) LoadSetup(playerID int, data []byte) error {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 
@@ -691,7 +692,7 @@ func (gs *GameSession) LoadSetup(playerID int, data []byte) error {
 }
 
 // RandomizeSetup randomizes the setup for a player
-func (gs *GameSession) RandomizeSetup(playerID int) error {
+func (gs *Session) RandomizeSetup(playerID int) error {
 	gs.mutex.Lock()
 	defer gs.mutex.Unlock()
 
@@ -716,7 +717,7 @@ func (gs *GameSession) RandomizeSetup(playerID int) error {
 }
 
 // StartGameFromSetup starts the game from setup phase
-func (gs *GameSession) StartGameFromSetup(headless bool) error {
+func (gs *Session) StartGameFromSetup(headless bool) error {
 	gs.mutex.Lock()
 
 	if !gs.isSetupPhase {
@@ -769,11 +770,11 @@ func (gs *GameSession) StartGameFromSetup(headless bool) error {
 }
 
 // GetSetupCompleteChan returns the channel that signals setup completion
-func (gs *GameSession) GetSetupCompleteChan() <-chan bool {
+func (gs *Session) GetSetupCompleteChan() <-chan bool {
 	return gs.setupCompleteChan
 }
 
 // IsAbortedChan returns the channel that signals if the game was aborted
-func (gs *GameSession) IsAbortedChan() <-chan bool {
+func (gs *Session) IsAbortedChan() <-chan bool {
 	return gs.stopChan
 }

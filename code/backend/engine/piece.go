@@ -4,6 +4,7 @@ import (
 	"digital-innovation/stratego/models"
 )
 
+// Piece represents a single game piece on the board
 type Piece struct {
 	pieceType models.PieceType
 	player    *Player
@@ -43,7 +44,7 @@ func (p *Piece) GetType() *models.PieceType {
 	return &p.pieceType
 }
 
-// GetValue returns the value of the piece. The value is used by the game engine to
+// GetStrategicValue returns the strategic value of the piece. The value is used by the game engine to
 // determine the strength of a piece in battle. The value is also used to calculate
 // the score of a player in the game. The score is the total value of all pieces
 // captured by the player.

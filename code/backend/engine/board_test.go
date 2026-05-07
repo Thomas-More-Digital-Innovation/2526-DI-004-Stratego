@@ -143,7 +143,7 @@ func TestIsInvalidMoveToTeamPiece(t *testing.T) {
 	}
 }
 
-func TestRandomizeSetup(t *testing.T) {
+func TestRandomizeSetup(_ *testing.T) {
 	// unimplemented
 }
 

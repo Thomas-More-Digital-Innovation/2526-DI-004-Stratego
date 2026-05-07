@@ -1,3 +1,5 @@
+// Package fato implements the FATO (Find Around and Take Out) AI strategy
+// This AI is more aggressive than FAFO and uses memory to target enemy pieces
 package fato
 
 import (
@@ -11,17 +13,20 @@ import (
 
 // TODO: choose aggression on frontend
 
-type FatoAI struct {
-	fafo.FafoAI
+// AI implements an aggressive movement strategy
+type AI struct {
+	fafo.AI
 	aggression float64
 }
 
-func NewFatoAI(player *engine.Player, hasMemory bool) *FatoAI {
-	return NewFatoAIWithAggression(player, hasMemory, 0.5)
+// NewAI creates a new AI instance with default aggression
+func NewAI(player *engine.Player, hasMemory bool) *AI {
+	return NewAIWithAggression(player, hasMemory, 0.5)
 }
 
-func NewFatoAIWithAggression(player *engine.Player, hasMemory bool, aggression float64) *FatoAI {
-	fafoAI := fafo.NewFafoAI(player, hasMemory)
+// NewAIWithAggression creates a new AI instance with specified aggression
+func NewAIWithAggression(player *engine.Player, hasMemory bool, aggression float64) *AI {
+	fafoAI := fafo.NewAI(player, hasMemory)
 
 	if aggression < 0.0 {
 		aggression = 0.0
@@ -30,14 +35,14 @@ func NewFatoAIWithAggression(player *engine.Player, hasMemory bool, aggression f
 		aggression = 1.0
 	}
 
-	return &FatoAI{
-		FafoAI:     *fafoAI,
+	return &AI{
+		AI:         *fafoAI,
 		aggression: aggression,
 	}
 }
 
 // SetAggression sets the aggression level (0.0 = passive, 1.0 = aggressive)
-func (ai *FatoAI) SetAggression(aggression float64) {
+func (ai *AI) SetAggression(aggression float64) {
 	if aggression < 0.0 {
 		aggression = 0.0
 	}
@@ -48,11 +53,12 @@ func (ai *FatoAI) SetAggression(aggression float64) {
 }
 
 // GetAggression returns the current aggression level
-func (ai *FatoAI) GetAggression() float64 {
+func (ai *AI) GetAggression() float64 {
 	return ai.aggression
 }
 
-func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
+// MakeMove implements the PlayerController interface
+func (ai *AI) MakeMove(board *engine.Board) engine.Move {
 	// Not so random huh? :-)
 
 	// 1. Try to attack a known enemy piece
@@ -70,7 +76,7 @@ func (ai *FatoAI) MakeMove(board *engine.Board) engine.Move {
 }
 
 // findAttackMove looks for moves that attack known/visible enemy pieces
-func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
+func (ai *AI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 	memory := ai.GetMemory()
 	pieces := ai.GetPlayer().GetAlivePieces()
 
@@ -125,7 +131,7 @@ func (ai *FatoAI) findAttackMove(board *engine.Board) (engine.Move, bool) {
 }
 
 // evaluateAttack scores an attack opportunity
-func (ai *FatoAI) evaluateAttack(attacker *engine.Piece, target *engine.Piece, targetPos engine.Position, memory *ai.AIMemory) float64 {
+func (ai *AI) evaluateAttack(attacker *engine.Piece, target *engine.Piece, targetPos engine.Position, memory *ai.Memory) float64 {
 	score := 0.0
 
 	// Check memory for target
@@ -165,7 +171,7 @@ func (ai *FatoAI) evaluateAttack(attacker *engine.Piece, target *engine.Piece, t
 }
 
 // findExplorationMove moves toward enemy side
-func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
+func (ai *AI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 	enemyY := 0
 	if ai.GetPlayer().GetID() == 1 {
 		enemyY = 9
@@ -213,7 +219,7 @@ func (ai *FatoAI) findExplorationMove(board *engine.Board) (engine.Move, bool) {
 
 // AnalyzeMove observes opponent moves and updates memory
 // Overrides BaseAI to add scout detection
-func (ai *FatoAI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player, round int) {
+func (ai *AI) AnalyzeMove(opponentMove engine.Move, opponent *engine.Player, round int) {
 	memory := ai.GetMemory()
 	from := opponentMove.GetFrom()
 	to := opponentMove.GetTo()

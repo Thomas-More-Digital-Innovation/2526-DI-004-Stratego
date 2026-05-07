@@ -1,5 +1,6 @@
 package engine
 
+// Player represents a participant in the game
 type Player struct {
 	id             int
 	name           string
@@ -10,6 +11,7 @@ type Player struct {
 	piecePositions map[*Piece]Position
 }
 
+// NewPlayer creates a new Player instance
 func NewPlayer(id int, name string, avatar string) Player {
 	return Player{
 		id:             id,
@@ -29,14 +31,14 @@ func (pl *Player) GetID() int {
 
 // HasWon returns a boolean indicating whether the player has won the game.
 // This is used by the game engine to determine the outcome of the game.
-func (p *Player) HasWon() bool {
-	return p.won
+func (pl *Player) HasWon() bool {
+	return pl.won
 }
 
 // SetWinner marks the player as the winner of the game.
 // This is used by the game engine to update the state of the players after a game is complete.
-func (p *Player) SetWinner() {
-	p.won = true
+func (pl *Player) SetWinner() {
+	pl.won = true
 }
 
 // GetName returns the name of the player. This is used by the game engine to
@@ -78,10 +80,12 @@ func (pl *Player) GetPieceScore() int {
 	return pl.pieceScore
 }
 
+// ResetPieceScore resets the player's piece score to zero
 func (pl *Player) ResetPieceScore() {
 	pl.pieceScore = 0
 }
 
+// InitializePieceScore sets the initial piece score for the player
 func (pl *Player) InitializePieceScore(initialScore int) {
 	pl.pieceScore = initialScore
 }
