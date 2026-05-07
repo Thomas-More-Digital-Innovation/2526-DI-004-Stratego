@@ -1,5 +1,7 @@
+// Package models defines the data structures used in the game
 package models
 
+// AiTournamentData contains statistics for an AI player in a tournament
 type AiTournamentData struct {
 	Name                 string
 	Wins                 int
@@ -8,6 +10,7 @@ type AiTournamentData struct {
 	WinCauseMaxTurns     int
 }
 
+// AiGameSummary contains the overall results of an AI vs AI match set
 type AiGameSummary struct {
 	Player1data          AiTournamentData
 	Player2data          AiTournamentData

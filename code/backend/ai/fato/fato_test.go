@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestNewFatoAI(t *testing.T) {
+func TestNewAI(t *testing.T) {
 	player := engine.NewPlayer(0, "player", "red")
-	ai := fato.NewFatoAI(&player, true)
+	ai := fato.NewAI(&player, true)
 
 	if ai.GetPlayer() == nil {
 		t.Errorf("Expected player to be set in FatoAI")
@@ -22,7 +22,7 @@ func TestNewFatoAI(t *testing.T) {
 
 func TestIsPieceMemorized(t *testing.T) {
 	player := engine.NewPlayer(0, "player", "red")
-	ai := fato.NewFatoAI(&player, true)
+	ai := fato.NewAI(&player, true)
 
 	position := engine.NewPosition(1, 1)
 
@@ -41,14 +41,14 @@ func TestIsPieceMemorized(t *testing.T) {
 	}
 }
 
-func TestMakeMove(t *testing.T) {
+func TestMakeMove(_ *testing.T) {
 	// TODO
 }
 
 func TestAnalyzeMove(t *testing.T) {
 	aiPlayer := engine.NewPlayer(0, "ai", "red")
 	humanPlayer := engine.NewPlayer(1, "human", "blue")
-	ai := fato.NewFatoAI(&aiPlayer, true)
+	ai := fato.NewAI(&aiPlayer, true)
 
 	// Normal move (1 square) - should NOT be remembered as scout
 	normalMove := engine.NewMove(engine.NewPosition(1, 1), engine.NewPosition(1, 2), &humanPlayer)
@@ -79,7 +79,7 @@ func TestAnalyzeMove(t *testing.T) {
 func TestMemoryUpdatesOnMove(t *testing.T) {
 	aiPlayer := engine.NewPlayer(0, "ai", "red")
 	humanPlayer := engine.NewPlayer(1, "human", "blue")
-	ai := fato.NewFatoAI(&aiPlayer, true)
+	ai := fato.NewAI(&aiPlayer, true)
 
 	// Remember a piece at position (2, 2)
 	pos1 := engine.NewPosition(2, 2)

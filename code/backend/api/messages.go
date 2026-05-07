@@ -1,3 +1,4 @@
+// Package api provides the HTTP and WebSocket API for the Stratego game
 package api
 
 import (
@@ -32,47 +33,54 @@ const (
 	MsgTypeValidMoves  = "validMoves"
 	MsgTypeSetupPhase  = "setupPhase"
 	MsgTypeMoveHistory = "moveHistory"
+	MsgTypeMessage     = "message"
 )
 
-// Base message structure
+// WSMessage is the base structure for all WebSocket messages
 type WSMessage struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data,omitempty"`
 }
 
-// Client messages
+// MoveMessage is sent by the client to request a move
 type MoveMessage struct {
 	From PositionDTO `json:"from"`
 	To   PositionDTO `json:"to"`
 }
 
+// GetValidMovesMessage is sent by the client to request valid moves for a position
 type GetValidMovesMessage struct {
 	Position PositionDTO `json:"position"`
 }
 
+// SwapPiecesMessage is sent by the client to swap two pieces during setup
 type SwapPiecesMessage struct {
 	Pos1 PositionDTO `json:"pos1"`
 	Pos2 PositionDTO `json:"pos2"`
 }
 
+// StartGameMessage is sent by the client to start the game
 type StartGameMessage struct {
 	Headless bool `json:"headless"`
 }
 
+// LoadSetupMessage is sent by the client to load a saved piece setup
 type LoadSetupMessage struct {
 	PlayerID  *int   `json:"playerId,omitempty"`
 	SetupData string `json:"setupData"` // Base64 encoded 40 bytes
 }
 
+// RandomizeSetupMessage is sent by the client to request a random piece setup
 type RandomizeSetupMessage struct {
 	PlayerID *int `json:"playerId,omitempty"`
 }
 
+// SetSpeedMessage is sent by the client to change game speed
 type SetSpeedMessage struct {
 	SpeedMs int `json:"speedMs"`
 }
 
-// Server messages
+// GameStateMessage contains the current state of the game
 type GameStateMessage struct {
 	Round              int    `json:"round"`
 	CurrentPlayerID    int    `json:"currentPlayerId"`
@@ -95,16 +103,19 @@ type GameStateMessage struct {
 	Player2Username    string `json:"player2Username"`
 }
 
+// MoveResultMessage is sent by the server to report move success/failure
 type MoveResultMessage struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
 }
 
+// ValidMovesMessage is sent by the server with a list of valid moves
 type ValidMovesMessage struct {
 	Position   PositionDTO   `json:"position"`
 	ValidMoves []PositionDTO `json:"validMoves"`
 }
 
+// GameOverMessage is sent by the server when the game ends
 type GameOverMessage struct {
 	WinnerID   *int   `json:"winnerId,omitempty"`
 	WinnerName string `json:"winnerName,omitempty"`
@@ -112,10 +123,12 @@ type GameOverMessage struct {
 	Round      int    `json:"round"`
 }
 
+// ErrorMessage is sent by the server when an error occurs
 type ErrorMessage struct {
 	Error string `json:"error"`
 }
 
+// BoardStateMessage contains the current pieces on the board
 type BoardStateMessage struct {
 	Board    [][]PieceDTO           `json:"board"`
 	Width    int                    `json:"width"`
@@ -123,6 +136,7 @@ type BoardStateMessage struct {
 	LastMove *models.HistoricalMove `json:"lastMove,omitempty"`
 }
 
+// CombatMessage contains results of a combat between two pieces
 type CombatMessage struct {
 	Attacker     PieceDTO `json:"attacker"`
 	Defender     PieceDTO `json:"defender"`
@@ -132,23 +146,26 @@ type CombatMessage struct {
 	DefenderDied bool     `json:"defenderDied"`
 }
 
+// MoveHistoryMessage contains the history of moves in a game
 type MoveHistoryMessage struct {
 	Moves        []MoveDTO               `json:"moves"`
 	FullHistory  []models.HistoricalMove `json:"fullHistory"`
 	InitialState [][]models.PieceData    `json:"initialState"`
 }
 
-// DTOs for data transfer
+// PositionDTO is a data transfer object for coordinates
 type PositionDTO struct {
 	X int `json:"x"`
 	Y int `json:"y"`
 }
 
+// MoveDTO is a data transfer object for moves
 type MoveDTO struct {
 	From PositionDTO `json:"from"`
 	To   PositionDTO `json:"to"`
 }
 
+// PieceDTO is a data transfer object for pieces
 type PieceDTO struct {
 	Type      string      `json:"type,omitempty"`
 	Rank      string      `json:"rank,omitempty"`
@@ -159,6 +176,7 @@ type PieceDTO struct {
 	Position  PositionDTO `json:"position"`
 }
 
+// CombatDTO is a data transfer object for combat results
 type CombatDTO struct {
 	AttackerRank     string `json:"attackerRank"`
 	DefenderRank     string `json:"defenderRank"`
@@ -166,11 +184,12 @@ type CombatDTO struct {
 	DefenderRevealed bool   `json:"defenderRevealed"`
 }
 
-// Helper functions to convert engine types to DTOs
+// PositionToDTO converts an engine.Position to a PositionDTO
 func PositionToDTO(pos engine.Position) PositionDTO {
 	return PositionDTO{X: pos.X, Y: pos.Y}
 }
 
+// MoveToDTO converts an engine.Move to a MoveDTO
 func MoveToDTO(move engine.Move) MoveDTO {
 	return MoveDTO{
 		From: PositionToDTO(move.GetFrom()),
@@ -178,6 +197,7 @@ func MoveToDTO(move engine.Move) MoveDTO {
 	}
 }
 
+// PieceToDTO converts an engine.Piece to a PieceDTO, hiding information if necessary
 func PieceToDTO(piece *engine.Piece, viewerID int) PieceDTO {
 	if piece == nil {
 		return PieceDTO{OwnerID: -1}

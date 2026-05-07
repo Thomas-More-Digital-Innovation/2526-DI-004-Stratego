@@ -1,3 +1,4 @@
+// Package api provides the HTTP and WebSocket API for the Stratego game
 package api
 
 import (
@@ -48,7 +49,7 @@ func CSRFMiddleware() gin.HandlerFunc {
 			} else {
 				logging.SecurityWarning("CSRF validation failed", "Path: "+path, username, userID)
 			}
-			c.JSON(http.StatusForbidden, gin.H{"error": "CSRF validation failed"})
+			c.JSON(http.StatusForbidden, gin.H{MsgTypeError: "CSRF validation failed"})
 			c.Abort()
 			return
 		}
@@ -70,6 +71,7 @@ type IPRateLimiter struct {
 	b   int
 }
 
+// NewIPRateLimiter creates a new IPRateLimiter instance
 func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
 	i := &IPRateLimiter{
 		ips: make(map[string]*visitor),
@@ -83,6 +85,7 @@ func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
 	return i
 }
 
+// GetLimiter returns the rate limiter for a specific IP address
 func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 	i.mu.Lock()
 	defer i.mu.Unlock()
@@ -135,7 +138,7 @@ func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
 			} else {
 				logging.SecurityWarning("Rate limit triggered", "Too many requests", username, userID)
 			}
-			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
+			c.JSON(http.StatusTooManyRequests, gin.H{MsgTypeError: "Too many requests"})
 			c.Abort()
 			return
 		}

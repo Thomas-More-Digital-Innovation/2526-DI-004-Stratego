@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-func TestGameSession_SetupTimeout(t *testing.T) {
+func TestSession_SetupTimeout(t *testing.T) {
 	player1 := engine.NewPlayer(0, "P1", "red")
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
 
 	// Use functional option to set a short timeout for testing
-	session := NewGameSession("test-timeout", c1, c2, WithSetupTimeout(100*time.Millisecond))
+	session := NewSession("test-timeout", c1, c2, WithSetupTimeout(100*time.Millisecond))
 
 	if !session.IsSetupPhase() {
 		t.Error("Expected game to start in setup phase")
@@ -30,14 +30,16 @@ func TestGameSession_SetupTimeout(t *testing.T) {
 	}
 }
 
-func TestGameSession_Abort(t *testing.T) {
+func TestSession_Abort(t *testing.T) {
 	player1 := engine.NewPlayer(0, "P1", "red")
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := NewGameSession("test-abort", c1, c2)
+	session := NewSession("test-abort", c1, c2)
 
-	session.StartGameFromSetup(true)
+	if err := session.StartGameFromSetup(true); err != nil {
+		t.Fatalf("Failed to start game: %v", err)
+	}
 
 	if !session.IsRunning() {
 		t.Fatal("Game should be running")
@@ -57,12 +59,12 @@ func TestGameSession_Abort(t *testing.T) {
 	}
 }
 
-func TestGameSession_SwapSetupPieces(t *testing.T) {
+func TestSession_SwapSetupPieces(t *testing.T) {
 	player1 := engine.NewPlayer(0, "P1", "red")
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := NewGameSession("test-swap", c1, c2)
+	session := NewSession("test-swap", c1, c2)
 
 	p1 := engine.NewPosition(0, 6)
 	p2 := engine.NewPosition(1, 6)
@@ -91,14 +93,14 @@ func TestGameSession_SwapSetupPieces(t *testing.T) {
 		t.Error("Expected error for position outside setup area")
 	}
 }
-func TestGameSession_SetupWarning(t *testing.T) {
+func TestSession_SetupWarning(t *testing.T) {
 	player1 := engine.NewPlayer(0, "P1", "red")
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
 
 	// Set warning at 50ms, timeout at 200ms
-	session := NewGameSession("test-warning", c1, c2,
+	session := NewSession("test-warning", c1, c2,
 		WithSetupTimeout(200*time.Millisecond),
 		WithSetupWarning(50*time.Millisecond),
 	)

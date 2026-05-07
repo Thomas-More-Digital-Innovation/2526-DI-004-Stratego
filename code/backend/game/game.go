@@ -1,3 +1,4 @@
+// Package game handles the game state and flow
 package game
 
 import (
@@ -5,14 +6,17 @@ import (
 	"digital-innovation/stratego/models"
 )
 
+// WinCause defines why a game ended
 type WinCause string
 
+// Win causes
 const (
 	WinCauseFlagCaptured    WinCause = "flag_captured"
 	WinCauseNoMovablePieces WinCause = "no_movable_pieces"
 	WinCauseMaxTurns        WinCause = "max_turns"
 )
 
+// CombatResult stores details about a resolved battle
 type CombatResult struct {
 	Occurred         bool
 	AttackerPiece    *engine.Piece
@@ -21,6 +25,7 @@ type CombatResult struct {
 	DefenderPosition engine.Position
 }
 
+// Game represents a single match instance
 type Game struct {
 	Players           []*engine.Player
 	PlayerControllers []engine.PlayerController // AI or Human controllers
@@ -37,6 +42,7 @@ type Game struct {
 	gameOver          bool
 }
 
+// NewGame creates a new Game instance with given controllers
 func NewGame(controller1, controller2 engine.PlayerController) *Game {
 	board := engine.NewBoard()
 	player1 := controller1.GetPlayer()
@@ -55,6 +61,7 @@ func NewGame(controller1, controller2 engine.PlayerController) *Game {
 	}
 }
 
+// NextTurn advances the game state to the next player's turn
 func (g *Game) NextTurn() {
 	switch {
 	case g.Players[0].HasWon():
@@ -77,26 +84,32 @@ func (g *Game) NextTurn() {
 	}
 }
 
+// IsGameOver returns true if the game has ended
 func (g *Game) IsGameOver() bool {
 	return g.gameOver
 }
 
+// GetCurrentController returns the controller for the current player
 func (g *Game) GetCurrentController() engine.PlayerController {
 	return g.CurrentController
 }
 
+// GetRound returns the current round number
 func (g *Game) GetRound() int {
 	return g.round
 }
 
+// GetWinner returns the player who won the game, or nil
 func (g *Game) GetWinner() *engine.Player {
 	return g.winner
 }
 
+// GetWinCause returns the cause of victory
 func (g *Game) GetWinCause() WinCause {
 	return g.winCause
 }
 
+// SetWinner manually declares a winner and ends the game
 func (g *Game) SetWinner(player *engine.Player, cause WinCause) {
 	g.winner = player
 	g.winCause = cause

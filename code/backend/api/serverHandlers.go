@@ -172,7 +172,7 @@ func (s *GameServer) HandleWebSocketConnection(c *gin.Context) {
 // @Router /games [get]
 func (s *GameServer) HandleListGames(c *gin.Context) {
 	s.mutex.RLock()
-	handlers := make([]*GameSessionHandler, 0, len(s.sessions))
+	handlers := make([]*SessionHandler, 0, len(s.sessions))
 	for _, handler := range s.sessions {
 		handlers = append(handlers, handler)
 	}
@@ -188,7 +188,7 @@ func (s *GameServer) HandleListGames(c *gin.Context) {
 }
 
 // handleGameOver broadcasts final game state and saves stats
-func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
+func (s *GameServer) handleGameOver(session *game.Session, hub *WSHub) {
 	hub.BroadcastGameState()
 
 	state := session.GetGameState()
@@ -242,7 +242,7 @@ func (s *GameServer) handleGameOver(session *game.GameSession, hub *WSHub) {
 }
 
 // saveGameStats saves game statistics to the database
-func (s *GameServer) saveGameStats(session *game.GameSession, winnerID *int, gameType string) {
+func (s *GameServer) saveGameStats(session *game.Session, winnerID *int, gameType string) {
 	duration := time.Since(session.StartTime).Seconds()
 	state := session.GetGameState()
 

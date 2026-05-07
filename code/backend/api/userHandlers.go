@@ -168,7 +168,7 @@ func (s *GameServer) LogoutHandler(c *gin.Context) {
 	}
 
 	auth.ClearSessionCookie(c)
-	sendJSON(c, gin.H{"message": "Logged out successfully"}, http.StatusOK)
+	sendJSON(c, gin.H{MsgTypeMessage: "Logged out successfully"}, http.StatusOK)
 }
 
 // RefreshTokenHandler handles access token renewal using a refresh token
@@ -205,7 +205,7 @@ func (s *GameServer) RefreshTokenHandler(c *gin.Context) {
 	}
 
 	auth.SetSessionCookie(c, accessToken)
-	sendJSON(c, gin.H{"message": "Token refreshed"}, http.StatusOK)
+	sendJSON(c, gin.H{MsgTypeMessage: "Token refreshed"}, http.StatusOK)
 }
 
 // ChangePasswordHandler handles password updates
@@ -296,7 +296,7 @@ func (s *GameServer) ChangePasswordHandler(c *gin.Context) {
 	auth.SetRefreshTokenCookie(c, refreshToken)
 
 	logging.DebugWithUser(logging.TagAuth, user.Username, user.ID, "Password changed and session refreshed")
-	sendJSON(c, gin.H{"message": "Password updated successfully"}, http.StatusOK)
+	sendJSON(c, gin.H{MsgTypeMessage: "Password updated successfully"}, http.StatusOK)
 }
 
 // GetCurrentUserHandler returns the currently logged-in user

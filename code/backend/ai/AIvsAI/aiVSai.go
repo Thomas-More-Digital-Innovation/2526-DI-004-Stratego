@@ -1,3 +1,4 @@
+// Package aivsai provides tools for running AI vs AI matches and gathering statistics
 package aivsai
 
 import (
@@ -46,7 +47,7 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 			}
 		}
 
-		runner := game.NewGameRunner(g, 0, 1000)
+		runner := game.NewRunner(g, 0, 1000)
 		winner := runner.RunToCompletion()
 		rounds := g.GetRound()
 		totalRounds += rounds

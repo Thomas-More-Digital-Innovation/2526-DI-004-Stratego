@@ -22,6 +22,7 @@ const (
 	colorBold   = "\033[1m"
 )
 
+// Log tags for different components
 const (
 	TagDebug    = colorBold + colorBlack + colorGreen + "[ DEBUG ]" + colorReset
 	TagAuth     = colorBold + colorWhite + colorBlue + "[  AUTH  ]" + colorReset
@@ -31,6 +32,8 @@ const (
 	TagError    = colorBold + colorWhite + colorRed + "[ ERROR  ]" + colorReset
 	TagFatal    = colorBold + colorWhite + colorPurple + "[ FATAL  ]" + colorReset
 )
+// GuestUser is the default username for unauthenticated users
+const GuestUser = "Guest"
 
 func init() {
 	// Only set time flags, we will handle the location manually for custom ordering
@@ -71,7 +74,7 @@ func getCallerLocation(depth int) string {
 // FormatUser returns a standardized user identifier for logs
 func FormatUser(username string, userID int) string {
 	if username == "" && userID <= 0 {
-		return "Guest"
+		return GuestUser
 	}
 	return fmt.Sprintf("%s (ID: %d)", sanitize(username), userID)
 }
@@ -80,12 +83,12 @@ func FormatUser(username string, userID int) string {
 // Auth
 // --------------------------------------------------------------------------------
 
-// Logs a registration event
+// UserRegistered logs a registration event
 func UserRegistered(username string, userID int) {
 	logOutput(TagAuth, fmt.Sprintf("User registered: %s", FormatUser(username, userID)))
 }
 
-// Logs a login event
+// UserLoggedIn logs a login event
 func UserLoggedIn(username string, userID int) {
 	logOutput(TagAuth, fmt.Sprintf("User logged in: %s", FormatUser(username, userID)))
 }
@@ -94,17 +97,17 @@ func UserLoggedIn(username string, userID int) {
 // Game
 // --------------------------------------------------------------------------------
 
-// Logs a game started event
+// GameStarted logs a game started event
 func GameStarted(gameID, gameType string, username string, userID int) {
 	logOutput(TagGame, fmt.Sprintf("Game started: %s (Type: %s) by %s", sanitize(gameID), sanitize(gameType), FormatUser(username, userID)))
 }
 
-// Logs a game finished event
+// GameFinished logs a game finished event
 func GameFinished(gameID string, winner, loser string, rounds int) {
 	logOutput(TagGame, fmt.Sprintf("Game finished: %s | Winner: %s | Loser: %s | Rounds: %d", sanitize(gameID), sanitize(winner), sanitize(loser), rounds))
 }
 
-// Logs a game aborted event
+// GameAborted logs a game aborted event
 func GameAborted(gameID string, reason string, username string, userID int) {
 	logOutput(TagGame, fmt.Sprintf("Game aborted: %s (Reason: %s) by %s", sanitize(gameID), sanitize(reason), FormatUser(username, userID)))
 }
@@ -113,12 +116,12 @@ func GameAborted(gameID string, reason string, username string, userID int) {
 // Connections
 // --------------------------------------------------------------------------------
 
-// Logs a connection error event
+// ConnectionError logs a connection error event
 func ConnectionError(gameID string, username string, userID int, err error) {
 	logOutput(TagWeb, fmt.Sprintf("WebSocket error [User: %s] in game %s: %v", FormatUser(username, userID), sanitize(gameID), err))
 }
 
-// Logs a connection closed event
+// ConnectionClosed logs a connection closed event
 func ConnectionClosed(gameID string, username string, userID int) {
 	logOutput(TagWeb, fmt.Sprintf("Connection closed: Game: %s, User: %s", sanitize(gameID), FormatUser(username, userID)))
 }
@@ -127,33 +130,33 @@ func ConnectionClosed(gameID string, username string, userID int) {
 // Errors & Security
 // --------------------------------------------------------------------------------
 
-// Logs a generic error event
+// Error logs a generic error event
 func Error(message string, err error) {
 	logOutput(TagError, fmt.Sprintf("%s: %v", sanitize(message), err))
 }
 
-// Logs an error that includes a user in the message
+// ErrorWithUser logs an error that includes a user in the message
 func ErrorWithUser(message string, username string, userID int, err error) {
 	logOutput(TagError, fmt.Sprintf("%s [User: %s]: %v", sanitize(message), FormatUser(username, userID), err))
 }
 
-// Logs an error that includes two users in the message
-// Use this when 2 users are involved in the error
+// ErrorWith2Users logs an error that includes two users in the message.
+// Use this when 2 users are involved in the error.
 func ErrorWith2Users(message string, username1 string, userID1 int, username2 string, userID2 int, err error) {
 	logOutput(TagError, fmt.Sprintf("%s [User 1: %s, User 2: %s]: %v", sanitize(message), FormatUser(username1, userID1), FormatUser(username2, userID2), err))
 }
 
-// Logs an error that includes an IP address in the message
+// ErrorWithIP logs an error that includes an IP address in the message
 func ErrorWithIP(message string, ip string, err error) {
 	logOutput(TagError, fmt.Sprintf("%s [IP: %s]: %v", sanitize(message), sanitize(ip), err))
 }
 
-// Logs a security warning that includes a user in the message
+// SecurityWarning logs a security warning that includes a user in the message
 func SecurityWarning(message string, details string, username string, userID int) {
 	logOutput(TagSecurity, fmt.Sprintf("%s [User: %s] | Details: %s", sanitize(message), FormatUser(username, userID), sanitize(details)))
 }
 
-// Logs a security warning that includes an IP address in the message
+// SecurityWarningWithIP logs a security warning that includes an IP address in the message
 func SecurityWarningWithIP(message string, details string, ip string) {
 	logOutput(TagSecurity, fmt.Sprintf("%s [IP: %s] | Details: %s", sanitize(message), sanitize(ip), sanitize(details)))
 }
@@ -176,3 +179,4 @@ func Fatalf(format string, v ...any) {
 func LogRaw(s string) {
 	log.Println(s)
 }
+

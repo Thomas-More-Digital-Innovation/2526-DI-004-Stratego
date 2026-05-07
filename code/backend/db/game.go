@@ -1,3 +1,4 @@
+// Package db provides database access and persistence for game data
 package db
 
 import (
@@ -105,6 +106,7 @@ func SaveMoves(ctx context.Context, gameID string, moves []models.HistoricalMove
 	return nil
 }
 
+// GetGameHistory retrieves the full move history of a completed game
 func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, error) {
 	var game models.Game
 	err := DB.WithContext(ctx).Preload("Moves", func(db *gorm.DB) *gorm.DB {

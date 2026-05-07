@@ -6,10 +6,10 @@ import (
 )
 
 // sendMoveResult sends a move result message
-func (c *WSClient) sendMoveResult(success bool, error string) {
+func (c *WSClient) sendMoveResult(success bool, errStr string) {
 	result := MoveResultMessage{
 		Success: success,
-		Error:   error,
+		Error:   errStr,
 	}
 
 	msg := WSMessage{

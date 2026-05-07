@@ -1,12 +1,15 @@
+// Package engine contains the core game logic and state management
 package engine
 
 import "errors"
 
+// Board represents the 10x10 game board
 type Board struct {
 	field [10][10]*Piece
 	lakes [8]Position
 }
 
+// NewBoard creates a new 10x10 game board with lakes initialized
 func NewBoard() *Board {
 	return &Board{
 		field: [10][10]*Piece{},
@@ -134,6 +137,7 @@ func (b *Board) MovePiece(move *Move, piece *Piece) {
 	b.field[move.GetTo().Y][move.GetTo().X] = piece
 }
 
+// ListMoves returns all valid moves for a piece at the given position
 func (b *Board) ListMoves(pos Position) ([]Move, error) {
 	var moves []Move
 	piece := b.GetPieceAt(pos)

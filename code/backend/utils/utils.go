@@ -26,6 +26,7 @@ func IsProduction() bool {
 	return isProd
 }
 
+// TryGetUser returns username and ID of the user if not nil, otherwise "Unknown" and 0
 func TryGetUser(user *models.User) (string, int) {
 	if user == nil {
 		return "Unknown", 0
@@ -33,9 +34,10 @@ func TryGetUser(user *models.User) (string, int) {
 	return user.Username, user.ID
 }
 
+// TryGetUserOrError returns username and ID of the user if not nil, otherwise an error
 func TryGetUserOrError(user *models.User) (string, int, error) {
 	if user == nil {
-		return "", 0, errors.New("Couldn't find user.")
+		return "", 0, errors.New("couldn't find user")
 	}
 	return user.Username, user.ID, nil
 }

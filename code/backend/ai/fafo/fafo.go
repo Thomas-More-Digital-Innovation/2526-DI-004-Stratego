@@ -1,3 +1,5 @@
+// Package fafo implements the FAFO (Fuck Around and Find Out) AI strategy
+// This AI prioritizes random moves and aggression over deep planning
 package fafo
 
 import (
@@ -6,17 +8,20 @@ import (
 	"math/rand/v2"
 )
 
-type FafoAI struct {
+// AI implements a random movement strategy
+type AI struct {
 	ai.BaseAI
 }
 
-func NewFafoAI(player *engine.Player, hasMemory bool) *FafoAI {
-	return &FafoAI{
+// NewAI creates a new AI instance
+func NewAI(player *engine.Player, hasMemory bool) *AI {
+	return &AI{
 		*ai.NewBaseAI(player, hasMemory),
 	}
 }
 
-func (ai *FafoAI) PickRandomPiece() *engine.Piece {
+// PickRandomPiece selects a random piece from the player's alive pieces
+func (ai *AI) PickRandomPiece() *engine.Piece {
 	pieces := ai.GetPlayer().GetAlivePieces()
 	if len(pieces) == 0 {
 		return nil
@@ -26,12 +31,13 @@ func (ai *FafoAI) PickRandomPiece() *engine.Piece {
 	return pieces[random]
 }
 
-func (ai *FafoAI) MakeMove(board *engine.Board) engine.Move {
+// MakeMove implements the PlayerController interface
+func (ai *AI) MakeMove(board *engine.Board) engine.Move {
 	return ai.FindRandomMove(board)
 }
 
-// findRandomMove picks any valid move as last resort
-func (ai *FafoAI) FindRandomMove(board *engine.Board) engine.Move {
+// FindRandomMove picks any valid move for a random piece
+func (ai *AI) FindRandomMove(board *engine.Board) engine.Move {
 	pieces := ai.GetPlayer().GetAlivePieces()
 	shuffled := make([]*engine.Piece, len(pieces))
 	copy(shuffled, pieces)

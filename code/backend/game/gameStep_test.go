@@ -19,7 +19,7 @@ func TestStepWhilePaused(t *testing.T) {
 	g := game.QuickStart(controller1, controller2)
 
 	// Create runner with a delay to trigger the second pause check
-	runner := game.NewGameRunner(g, 10*time.Millisecond, 1000)
+	runner := game.NewRunner(g, 10*time.Millisecond, 1000)
 
 	// Pause the runner
 	runner.Pause()

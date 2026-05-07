@@ -9,10 +9,10 @@ import (
 
 func TestPickRandomPiece(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
-	controller1 := fafo.NewFafoAI(&player1, false)
+	controller1 := fafo.NewAI(&player1, false)
 
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	controller2 := fafo.NewFafoAI(&player2, false)
+	controller2 := fafo.NewAI(&player2, false)
 
 	game.QuickStart(controller1, controller2)
 
@@ -39,10 +39,10 @@ func TestPickRandomPiece(t *testing.T) {
 
 func TestMakeMove(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
-	controller1 := fafo.NewFafoAI(&player1, false)
+	controller1 := fafo.NewAI(&player1, false)
 
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	controller2 := fafo.NewFafoAI(&player2, false)
+	controller2 := fafo.NewAI(&player2, false)
 
 	g := game.QuickStart(controller1, controller2)
 
@@ -64,10 +64,10 @@ func TestMakeMove(t *testing.T) {
 
 func TestNoMovesLeft(t *testing.T) {
 	player1 := engine.NewPlayer(1, "Alice", "red")
-	controller1 := fafo.NewFafoAI(&player1, false)
+	controller1 := fafo.NewAI(&player1, false)
 
 	player2 := engine.NewPlayer(2, "Bob", "blue")
-	controller2 := fafo.NewFafoAI(&player2, false)
+	controller2 := fafo.NewAI(&player2, false)
 
 	g := game.QuickStart(controller1, controller2)
 

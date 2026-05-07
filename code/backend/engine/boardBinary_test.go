@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const testSetupRow = "BBBBBB2222"
+
 func TestEncodeBoard(t *testing.T) {
 	board := NewBoard()
 	player1 := NewPlayer(1, "Player1", "red")
@@ -113,7 +115,7 @@ func TestBoardBase64RoundTrip(t *testing.T) {
 }
 
 func TestEncodeSetup(t *testing.T) {
-	rows := []string{"BBBBBB2222", "4444555566", "6677788399", "M311110333"}
+	rows := []string{testSetupRow, "4444555566", "6677788399", "M311110333"}
 
 	data, err := EncodeSetup(rows, 1)
 	if err != nil {
@@ -137,7 +139,7 @@ func TestEncodeSetup(t *testing.T) {
 }
 
 func TestDecodeSetup(t *testing.T) {
-	originalRows := []string{"BBBBBB2222", "4444555566", "6677788399", "M311110333"}
+	originalRows := []string{testSetupRow, "4444555566", "6677788399", "M311110333"}
 
 	data, _ := EncodeSetup(originalRows, 1)
 	rows, playerID, err := DecodeSetup(data)
@@ -169,7 +171,7 @@ func TestValidateSetup(t *testing.T) {
 	}
 
 	// Invalid: 2 Flags instead of 1
-	invalid := []string{"BBBBBB2222", "2222224444", "5555666677", "00899M3333"}
+	invalid := []string{testSetupRow, "2222224444", "5555666677", "00899M3333"}
 	if err := ValidateSetup(invalid); err == nil {
 		t.Error("Invalid setup accepted")
 	}

@@ -1,3 +1,4 @@
+// Package models defines the data structures used in the game
 package models
 
 import (
@@ -6,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// RefreshToken represents a long-lived session token in the database
 type RefreshToken struct {
 	ID        int            `json:"id" gorm:"primaryKey"`
 	UserID    int            `json:"user_id" gorm:"index;not null"`

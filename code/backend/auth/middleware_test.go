@@ -21,7 +21,13 @@ func TestRequireAuth(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
-		c.Request.AddCookie(&http.Cookie{Name: "access_token", Value: token})
+		c.Request.AddCookie(&http.Cookie{
+			Name:     AccessTokenCookieName,
+			Value:    token,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
 
 		handler := RequireAuth()
 		handler(c)
@@ -70,7 +76,13 @@ func TestRequireAuth(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
-		c.Request.AddCookie(&http.Cookie{Name: "access_token", Value: "invalid-token"})
+		c.Request.AddCookie(&http.Cookie{
+			Name:     AccessTokenCookieName,
+			Value:    "invalid-token",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
 
 		handler := RequireAuth()
 		handler(c)
@@ -92,7 +104,13 @@ func TestOptionalAuth(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
-		c.Request.AddCookie(&http.Cookie{Name: "access_token", Value: token})
+		c.Request.AddCookie(&http.Cookie{
+			Name:     AccessTokenCookieName,
+			Value:    token,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
 
 		handler := OptionalAuth()
 		handler(c)

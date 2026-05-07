@@ -1,3 +1,4 @@
+// Package api provides the HTTP and WebSocket API for the Stratego game
 package api
 
 import (
@@ -17,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 
-	_ "digital-innovation/stratego/docs"
+	_ "digital-innovation/stratego/docs" // Required for Swagger UI
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -27,20 +28,21 @@ const maxGames = 500
 
 // GameServer manages HTTP and WebSocket connections
 type GameServer struct {
-	sessions map[string]*GameSessionHandler
+	sessions map[string]*SessionHandler
 	mutex    sync.RWMutex
 	router   *gin.Engine
 	ctx      context.Context
 	cancel   context.CancelFunc
 }
 
-// GameSessionHandler wraps a game session with its WebSocket hub
-type GameSessionHandler struct {
-	Session  *game.GameSession
+// SessionHandler wraps a game session with its WebSocket hub
+type SessionHandler struct {
+	Session  *game.Session
 	Hub      *WSHub
 	GameType string
 }
 
+// NewGameServer creates and initializes a new GameServer instance
 func NewGameServer() *GameServer {
 	// Set Gin mode based on environment
 	if utils.IsProduction() {
@@ -51,7 +53,7 @@ func NewGameServer() *GameServer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &GameServer{
-		sessions: make(map[string]*GameSessionHandler),
+		sessions: make(map[string]*SessionHandler),
 		router:   gin.New(),
 		ctx:      ctx,
 		cancel:   cancel,
@@ -59,7 +61,7 @@ func NewGameServer() *GameServer {
 }
 
 // CreateGame creates a new game session
-func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 string) (*GameSessionHandler, error) {
+func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 string) (*SessionHandler, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -103,14 +105,14 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 		return nil, fmt.Errorf("unknown game type: %s", gameType)
 	}
 
-	session := game.NewGameSession(gameID, controller1, controller2)
+	session := game.NewSession(gameID, controller1, controller2)
 
 	hub := NewWSHub(session, gameType)
 	hub.OnCleanup = func() {
 		s.RemoveSession(gameID)
 	}
 
-	handler := &GameSessionHandler{
+	handler := &SessionHandler{
 		Session:  session,
 		Hub:      hub,
 		GameType: gameType,
@@ -128,7 +130,7 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 }
 
 // GetSession returns a game session handler
-func (s *GameServer) GetSession(gameID string) (*GameSessionHandler, bool) {
+func (s *GameServer) GetSession(gameID string) (*SessionHandler, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 	handler, exists := s.sessions[gameID]

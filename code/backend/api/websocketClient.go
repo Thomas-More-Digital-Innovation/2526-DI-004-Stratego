@@ -1,3 +1,4 @@
+// Package api provides the HTTP and WebSocket API for the Stratego game
 package api
 
 import (
@@ -15,7 +16,7 @@ import (
 type WSClient struct {
 	conn      *websocket.Conn
 	send      chan []byte
-	session   *game.GameSession
+	session   *game.Session
 	seatIndex int // -1 for spectator, 0 or 1 for player
 	hub       *WSHub
 	Username  string
@@ -25,6 +26,7 @@ type WSClient struct {
 	closed    bool
 }
 
+// Close marks the client as closed and stops sending messages
 func (c *WSClient) Close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -34,12 +36,14 @@ func (c *WSClient) Close() {
 	}
 }
 
+// IsClosed returns whether the client connection is closed
 func (c *WSClient) IsClosed() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.closed
 }
 
+// Send attempts to send data to the client with a timeout
 func (c *WSClient) Send(data []byte, timeout time.Duration) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()

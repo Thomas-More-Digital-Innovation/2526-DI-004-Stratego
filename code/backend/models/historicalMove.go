@@ -1,3 +1,4 @@
+// Package models defines the data structures used in the game
 package models
 
 // HistoricalMove represents a move in the game history with its outcome
@@ -13,14 +14,17 @@ type HistoricalMove struct {
 	Result    MoveResultType `json:"result"`
 }
 
+// PieceData represents a piece's identity in the history
 type PieceData struct {
 	Type    string `json:"type"`
 	Rank    string `json:"rank"`
 	OwnerID int    `json:"ownerId"`
 }
 
+// MoveResultType defines the outcome of a move
 type MoveResultType string
 
+// Move result types
 const (
 	ResultMove    MoveResultType = "move"    // Normal move to empty cell
 	ResultWin     MoveResultType = "win"     // Attacker won combat
