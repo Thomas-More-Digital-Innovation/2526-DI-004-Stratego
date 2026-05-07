@@ -36,7 +36,7 @@ func NewAIWithAggression(player *engine.Player, hasMemory bool, aggression float
 	}
 
 	return &AI{
-		AI:     *fafoAI,
+		AI:         *fafoAI,
 		aggression: aggression,
 	}
 }

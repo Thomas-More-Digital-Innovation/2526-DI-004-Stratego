@@ -32,6 +32,7 @@ const (
 	TagError    = colorBold + colorWhite + colorRed + "[ ERROR  ]" + colorReset
 	TagFatal    = colorBold + colorWhite + colorPurple + "[ FATAL  ]" + colorReset
 )
+
 // GuestUser is the default username for unauthenticated users
 const GuestUser = "Guest"
 
@@ -179,4 +180,3 @@ func Fatalf(format string, v ...any) {
 func LogRaw(s string) {
 	log.Println(s)
 }
-
