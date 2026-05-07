@@ -1,7 +1,7 @@
 package api
 
 import (
-	"digital-innovation/stratego/logging"
+	"digital-innovation/gostrategy/logging"
 	"time"
 )
 

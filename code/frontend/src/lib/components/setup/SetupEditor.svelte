@@ -120,7 +120,7 @@
     // Drag and Drop Handlers
     function handleInventoryDragStart(e: DragEvent, rank: string) {
         if (e.dataTransfer) {
-            e.dataTransfer.setData("application/stratego-rank", rank);
+            e.dataTransfer.setData("application/gostrategy-rank", rank);
             e.dataTransfer.effectAllowed = "move";
             // Highlight the piece being dragged
             selectedPieceRank = rank;
@@ -131,7 +131,7 @@
         if (y === 0) return; // Cannot drag from lake row
         if (e.dataTransfer) {
             e.dataTransfer.setData(
-                "application/stratego-pos",
+                "application/gostrategy-pos",
                 JSON.stringify({ x, y }),
             );
             e.dataTransfer.effectAllowed = "move";
@@ -146,8 +146,8 @@
         if (!e.dataTransfer) return;
 
         const gridY = y - 1;
-        const rank = e.dataTransfer.getData("application/stratego-rank");
-        const posStr = e.dataTransfer.getData("application/stratego-pos");
+        const rank = e.dataTransfer.getData("application/gostrategy-rank");
+        const posStr = e.dataTransfer.getData("application/gostrategy-pos");
 
         if (rank) {
             // Drop from inventory

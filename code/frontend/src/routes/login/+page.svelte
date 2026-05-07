@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — {isLogin ? "Login" : "Register"}</title>
+    <title>GoStrategy — {isLogin ? "Login" : "Register"}</title>
 </svelte:head>
 
 <div class="flex items-center justify-center min-h-[80vh]">
@@ -44,7 +44,7 @@
             <p class="text-white/50 text-sm">
                 {isLogin
                     ? "Sign in to track your stats and save board setups"
-                    : "Create an account to start playing Stratego"}
+                    : "Create an account to start playing GoStrategy"}
             </p>
         </div>
 

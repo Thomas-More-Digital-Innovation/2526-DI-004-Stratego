@@ -3,8 +3,8 @@
 package fafo
 
 import (
-	"digital-innovation/stratego/ai"
-	"digital-innovation/stratego/engine"
+	"digital-innovation/gostrategy/ai"
+	"digital-innovation/gostrategy/engine"
 	"math/rand/v2"
 )
 

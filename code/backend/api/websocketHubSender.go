@@ -1,8 +1,8 @@
 package api
 
 import (
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
 	"encoding/json"
 	"time"
 )

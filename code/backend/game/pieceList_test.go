@@ -1,8 +1,8 @@
 package game_test
 
 import (
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/game"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/game"
 	"testing"
 )
 

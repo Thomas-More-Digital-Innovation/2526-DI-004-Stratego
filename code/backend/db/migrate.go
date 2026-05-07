@@ -2,8 +2,8 @@ package db
 
 import (
 	"context"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
 	"embed"
 	"fmt"
 	"sort"

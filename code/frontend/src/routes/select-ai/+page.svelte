@@ -56,7 +56,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — Select AI</title>
+    <title>GoStrategy — Select AI</title>
 </svelte:head>
 
 <div class="space-y-10 max-w-5xl mx-auto py-10 px-4">
@@ -140,7 +140,9 @@
                             {/if}
                         </div>
                     </div>
-                    <p class="text-white/40 text-sm leading-relaxed font-medium">
+                    <p
+                        class="text-white/40 text-sm leading-relaxed font-medium"
+                    >
                         {ai.description}
                     </p>
                 </div>
@@ -176,4 +178,3 @@
         </div>
     {/if}
 </div>
-

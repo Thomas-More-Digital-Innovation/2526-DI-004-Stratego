@@ -1,9 +1,9 @@
 package api
 
 import (
-	"digital-innovation/stratego/db"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

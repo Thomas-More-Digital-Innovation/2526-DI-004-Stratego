@@ -219,7 +219,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `stratego-${gameId}-${Date.now()}.json`;
+            a.download = `gostrategy-${gameId}-${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
         } catch {
@@ -229,7 +229,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — Game {gameId}</title>
+    <title>GoStrategy — Game {gameId}</title>
 </svelte:head>
 
 {#if !connected}

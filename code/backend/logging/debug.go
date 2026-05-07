@@ -2,14 +2,14 @@
 package logging
 
 import (
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/utils"
 	"fmt"
 	"log"
 )
 
-// Debug logs are only shown if STRATEGO_DEBUG environment variable is set to "true"
+// Debug logs are only shown if GOSTRATEGY_DEBUG environment variable is set to "true"
 func Debug(tag string, format string, v ...any) {
-	if utils.GetEnv("STRATEGO_DEBUG", "true") != "true" {
+	if utils.GetEnv("GOSTRATEGY_DEBUG", "true") != "true" {
 		return
 	}
 
@@ -19,7 +19,7 @@ func Debug(tag string, format string, v ...any) {
 
 // DebugWithUser logs a debug message with standardized user information
 func DebugWithUser(tag string, username string, userID int, format string, v ...any) {
-	if utils.GetEnv("STRATEGO_DEBUG", "true") != "true" {
+	if utils.GetEnv("GOSTRATEGY_DEBUG", "true") != "true" {
 		return
 	}
 

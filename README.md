@@ -1,16 +1,16 @@
-# Stratego
+# GoStrategy
 
 <img src="documents/pictures/logo.png" width=200>
 
-Open-source implementation of the classic Stratego board game. Built with a high-performance Go backend and a modern SvelteKit frontend, designed for both Human-vs-AI and AI-vs-AI experimentation.
+Open-source implementation of the classic GoStrategy board game. Built with a high-performance Go backend and a modern SvelteKit frontend, designed for both Human-vs-AI and AI-vs-AI experimentation.
 
-Play the game here: https://stratego.dotsem.be
+Play the game here: https://gostrategy.dotsem.be
 
 Or run it yourself locally: [see "Running with Docker (Recommended)"](#running-with-docker-recommended).
 
 ## Project Overview
 
-This project aims to provide a robust platform for playing Stratego while serving as a testing ground for various AI strategies. It features real-time gameplay via WebSockets, secure user authentication, and a declarative infrastructure managed via NixOS.
+This project aims to provide a robust platform for playing GoStrategy while serving as a testing ground for various AI strategies. It features real-time gameplay via WebSockets, secure user authentication, and a declarative infrastructure managed via NixOS.
 
 ### Tech Stack
 - **Backend**: Go (Gin, Gorilla WebSocket)

@@ -21,7 +21,7 @@ services:
           memory: 256M
           cpus: "0.50"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/health" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -38,7 +38,7 @@ services:
           memory: 128M
           cpus: "0.25"
 
-  stratego:
+  gostrategy:
     image: postgres:15
     restart: unless-stopped
     environment:
@@ -48,7 +48,7 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - stratego-pg-data:/var/lib/postgresql/data
+      - gostrategy-pg-data:/var/lib/postgresql/data
     deploy:
       resources:
         limits:
@@ -56,4 +56,4 @@ services:
           cpus: "1.00"
 
 volumes:
-  stratego-pg-data:
+  gostrategy-pg-data:

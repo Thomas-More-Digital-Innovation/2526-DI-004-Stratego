@@ -72,7 +72,7 @@
             <div
                 class="border-t border-white/10 p-4 text-center text-xs text-white/50"
             >
-                Stratego v{__VERSION__} — THOMAS MORE DIGITAL INNOVATION
+                GoStrategy v{__VERSION__} — THOMAS MORE DIGITAL INNOVATION
                 <br />
                 Made by Sem Van Broekhoven
             </div>

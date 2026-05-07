@@ -2,9 +2,9 @@
 package auth
 
 import (
-	"digital-innovation/stratego/db"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

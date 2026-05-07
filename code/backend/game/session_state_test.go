@@ -1,7 +1,7 @@
 package game
 
 import (
-	"digital-innovation/stratego/engine"
+	"digital-innovation/gostrategy/engine"
 	"testing"
 	"time"
 )

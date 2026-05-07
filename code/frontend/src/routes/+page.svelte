@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — Command Center</title>
+    <title>GoStrategy — Command Center</title>
 </svelte:head>
 
 <div class="space-y-8">

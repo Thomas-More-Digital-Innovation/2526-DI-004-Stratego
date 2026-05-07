@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"digital-innovation/stratego/db"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"

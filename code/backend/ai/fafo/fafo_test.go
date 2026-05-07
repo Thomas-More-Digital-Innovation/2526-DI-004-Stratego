@@ -1,9 +1,9 @@
 package fafo_test
 
 import (
-	"digital-innovation/stratego/ai/fafo"
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/game"
+	"digital-innovation/gostrategy/ai/fafo"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/game"
 	"testing"
 )
 

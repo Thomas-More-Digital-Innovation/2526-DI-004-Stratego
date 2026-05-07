@@ -1,12 +1,11 @@
 <script lang="ts">
     import { page } from "$app/state";
     import logoWebp from "$lib/assets/favicon.webp";
-    import Loading from "$lib/components/ui/Loading.svelte";
     import { onMount } from "svelte";
     import { authStore } from "$lib/state/auth.svelte";
-    import { serverStore } from "$lib/state/server.svelte";
     import LoggedOut from "./_components/LoggedOut.svelte";
     import LoggedIn from "./_components/LoggedIn.svelte";
+    import goLogo from "$lib/assets/go.svg";
 
     const navItems = [
         { name: "Command Center", href: "/" },
@@ -24,9 +23,14 @@
 >
     <div class="px-4 py-8">
         <h1
-            class="text-2xl font-extrabold tracking-widest uppercase text-white flex items-center gap-3 drop-shadow-md"
+            class="text-xl font-extrabold tracking-widest text-white flex gap-1 items-center drop-shadow-md"
         >
-            <img src={logoWebp} alt="Logo" class="w-12 h-12" />Stratego
+            <img src={logoWebp} alt="Logo" class="w-12 h-12" />
+            <span class="flex items-center"
+                ><a href="https://go.dev/">
+                    <img src={goLogo} alt="go" class="w-10 h-10 mr-1" /></a
+                >STRATEGY</span
+            >
         </h1>
     </div>
 

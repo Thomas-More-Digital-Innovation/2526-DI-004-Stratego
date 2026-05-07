@@ -12,7 +12,7 @@ const docTemplate = `{
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "Sem Van Broekhoven",
-            "url": "https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego",
+            "url": "https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy",
             "email": "[EMAIL_ADDRESS]"
         },
         "license": {
@@ -899,8 +899,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Stratego API",
-	Description:      "This is the API server for the Stratego game.",
+	Title:            "GoStrategy API",
+	Description:      "This is the API server for the GoStrategy game.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

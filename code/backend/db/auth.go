@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/models"
 	"fmt"
 	"time"
 

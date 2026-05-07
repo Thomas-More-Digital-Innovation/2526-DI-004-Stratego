@@ -1,10 +1,10 @@
 package game_test
 
 import (
-	AIhandler "digital-innovation/stratego/ai/handler"
-	"digital-innovation/stratego/engine"
-	"digital-innovation/stratego/game"
-	"digital-innovation/stratego/models"
+	AIhandler "digital-innovation/gostrategy/ai/handler"
+	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/models"
 	"testing"
 	"time"
 )

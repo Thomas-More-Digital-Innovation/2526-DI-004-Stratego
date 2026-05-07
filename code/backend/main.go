@@ -1,13 +1,13 @@
-// Package main is the entry point for the Stratego backend
+// Package main is the entry point for the GoStrategy backend
 package main
 
 import (
-	aivsai "digital-innovation/stratego/ai/AIvsAI"
-	"digital-innovation/stratego/api"
-	"digital-innovation/stratego/db"
-	"digital-innovation/stratego/logging"
-	"digital-innovation/stratego/models"
-	"digital-innovation/stratego/utils"
+	aivsai "digital-innovation/gostrategy/ai/AIvsAI"
+	"digital-innovation/gostrategy/api"
+	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"flag"
 	"fmt"
 	"strings"
@@ -31,7 +31,7 @@ func run() error {
 
 	flag.Parse()
 
-	fmt.Println("=== Stratego Backend Running ===")
+	fmt.Println("=== GoStrategy Backend Running ===")
 
 	if *serverMode {
 		if err := db.InitDB(); err != nil {
@@ -62,7 +62,7 @@ func run() error {
 }
 
 func startServer(addr string) error {
-	fmt.Printf("Starting Stratego Game Server on %s\n", addr)
+	fmt.Printf("Starting GoStrategy Game Server on %s\n", addr)
 
 	server := api.NewGameServer()
 	if err := server.StartServer(addr); err != nil {

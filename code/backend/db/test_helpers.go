@@ -1,7 +1,7 @@
 package db
 
 import (
-	"digital-innovation/stratego/models"
+	"digital-innovation/gostrategy/models"
 	"fmt"
 	"regexp"
 	"testing"

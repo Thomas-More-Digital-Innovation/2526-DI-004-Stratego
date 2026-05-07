@@ -47,7 +47,7 @@
 </script>
 
 <svelte:head>
-    <title>Stratego — Board Setups</title>
+    <title>GoStrategy — Board Setups</title>
 </svelte:head>
 
 <div class="space-y-6">

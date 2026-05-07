@@ -1,15 +1,13 @@
-# Stratego Roadmap
+# GoStrategy Roadmap
 
-This document outlines the planned improvements and future directions for the Stratego project, prioritized by security, infrastructure resilience, and user experience.
+This document outlines the planned improvements and future directions for the GoStrategy project, prioritized by security, infrastructure resilience, and user experience.
 
 ---
 
-### Current Phase: v0.3.0 - Refactoring & Polish
+### Current Phase: v0.3.1 - Refactoring & Polish
 *Focus: Strengthening the core experience and preparing for advanced features.*
 
 #### Backend & Infrastructure
-- [x] **Database**: Remove schema.sql and create a migration system (gorm or similar).
-- [x] **Data Integrity**: Implement `deleted_at` patterns (soft deletes) for users and game sessions.
 - [ ] **Refactoring**: refactoring of backend code, especially the api package.
 - [ ] **Rate Limiting**: Add secondary user-level rate limits for sensitive actions (creation, password changes).
 - [ ] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
@@ -52,7 +50,7 @@ This document outlines the planned improvements and future directions for the St
 ---
 
 ## v0.6.0 - Mobile & PWA
-*Focus: Making Stratego available everywhere.*
+*Focus: Making GoStrategy available everywhere.*
 
 ### Mobile Experience
 - [ ] **Responsive Engine**: Full UI overhaul to support touch interfaces and smaller screens.

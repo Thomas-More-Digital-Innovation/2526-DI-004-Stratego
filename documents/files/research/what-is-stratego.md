@@ -1,4 +1,4 @@
-# what is stratego?
+# what is gostrategy?
 
 ## objective
 capture the **enemy flag** or make the opponent **unable to move**

@@ -2,7 +2,7 @@
 package ai
 
 import (
-	"digital-innovation/stratego/engine"
+	"digital-innovation/gostrategy/engine"
 )
 
 // AI is the interface that all AI implementations must satisfy.
