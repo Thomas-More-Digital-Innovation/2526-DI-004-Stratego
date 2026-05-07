@@ -72,7 +72,7 @@ jobs:
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          source: "docker-compose.prod.yml,code/backend/schema.sql"
+          source: "docker-compose.prod.yml"
           target: ${{ vars.DEPLOY_PATH }}
 
       - name: Deploy to VM
@@ -101,5 +101,3 @@ jobs:
             # Pull and restart
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
-            # Apply database schema
-            docker compose -f docker-compose.prod.yml exec -T gostrategy psql -U ${{ vars.DB_USER }} -d ${{ vars.DB_NAME }} < code/backend/schema.sql
