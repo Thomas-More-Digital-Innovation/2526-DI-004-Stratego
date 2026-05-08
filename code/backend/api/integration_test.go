@@ -2,10 +2,11 @@ package api
 
 import (
 	"bytes"
-	"digital-innovation/gostrategy/auth"
+	"context"
 	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -19,43 +20,7 @@ func setupTestServer(t *testing.T) (*GameServer, *httptest.Server) {
 	db.SetupTestDB(t)
 
 	server := NewGameServer()
-	// Initialize routes (normally done in StartServer, but we want to avoid actual listening)
-	server.router.Use(gin.Recovery())
-	
-	// User & Auth
-	users := server.router.Group("/users")
-	{
-		users.POST("/register", server.RegisterUserHandler)
-		users.POST("/login", server.LoginHandler)
-		users.POST("/logout", server.LogoutHandler)
-		users.POST("/refresh", server.RefreshTokenHandler)
-
-		// Authenticated user routes
-		me := users.Group("/me")
-		me.Use(auth.RequireAuth())
-		{
-			me.POST("/password", server.ChangePasswordHandler)
-		}
-	}
-
-	// Board Setups (Require Auth)
-	setups := server.router.Group("/board-setups")
-	setups.Use(auth.RequireAuth())
-	{
-		setups.POST("", server.CreateBoardSetupHandler)
-		setups.GET("", server.GetUserBoardSetupsHandler)
-		setups.GET("/:id", server.GetBoardSetupHandler)
-		setups.PUT("/:id", server.UpdateBoardSetupHandler)
-		setups.DELETE("/:id", server.DeleteBoardSetupHandler)
-	}
-
-	// Game Endpoints (Optional Auth)
-	games := server.router.Group("/games")
-	games.Use(auth.OptionalAuth())
-	{
-		games.POST("", server.HandleCreateGame)
-		games.GET("", server.HandleListGames)
-	}
+	server.SetupRoutes()
 
 	ts := httptest.NewServer(server.router)
 	return server, ts
@@ -416,6 +381,81 @@ func TestIntegration_GameManagement(t *testing.T) {
 		// Should have at least one game from previous subtest
 		if len(games) < 1 {
 			t.Error("Expected at least one game in listing")
+		}
+	})
+}
+
+func TestIntegration_GameHistory(t *testing.T) {
+	_, ts := setupTestServer(t)
+	defer ts.Close()
+
+	// 1. Create a user and some games
+	regBody, _ := json.Marshal(models.CreateUserRequest{
+		Username: "historyuser",
+		Password: "StrongPassword1",
+	})
+	respReg, _ := http.Post(ts.URL+"/users/register", "application/json", bytes.NewBuffer(regBody))
+	cookies := respReg.Cookies()
+
+	var user models.User
+	json.NewDecoder(respReg.Body).Decode(&user)
+
+	// Save some fake games directly to DB for testing history
+	ctx := context.Background()
+	gameID := "hist-1"
+	db.SaveGame(ctx, gameID, &user.ID, nil, "ranked", map[string]string{"board": "state"}, nil)
+	db.SaveMove(ctx, gameID, models.HistoricalMove{MoveIndex: 1, PlayerID: 0, Result: "move"})
+
+	t.Run("Get Single Game History", func(t *testing.T) {
+		resp, _ := http.Get(ts.URL + "/games/" + gameID + "/history")
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var history models.GameHistory
+		json.NewDecoder(resp.Body).Decode(&history)
+		if history.GameID != gameID {
+			t.Errorf("Expected gameId %s, got %s", gameID, history.GameID)
+		}
+		if len(history.Moves) != 1 {
+			t.Errorf("Expected 1 move, got %d", len(history.Moves))
+		}
+	})
+
+	t.Run("List My Games (Paged)", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", ts.URL+"/users/me/games?limit=5&offset=0", nil)
+		for _, c := range cookies {
+			req.AddCookie(c)
+		}
+
+		client := &http.Client{}
+		resp, _ := client.Do(req)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var result map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&result)
+		
+		games := result["games"].([]interface{})
+		if len(games) != 1 {
+			t.Errorf("Expected 1 game, got %d", len(games))
+		}
+		if int(result["total"].(float64)) != 1 {
+			t.Errorf("Expected total 1, got %v", result["total"])
+		}
+	})
+
+	t.Run("List User Games (Public)", func(t *testing.T) {
+		resp, _ := http.Get(fmt.Sprintf("%s/users/%d/games", ts.URL, user.ID))
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var result map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&result)
+		if int(result["total"].(float64)) != 1 {
+			t.Errorf("Expected total 1, got %v", result["total"])
 		}
 	})
 }

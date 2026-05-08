@@ -73,3 +73,16 @@ func parseID(c *gin.Context, key string) (int, error) {
 
 	return id, nil
 }
+
+// getQueryInt extracts an integer query parameter with a default value
+func getQueryInt(c *gin.Context, key string, defaultValue int) int {
+	valStr := c.Query(key)
+	if valStr == "" {
+		return defaultValue
+	}
+	val, err := strconv.Atoi(valStr)
+	if err != nil {
+		return defaultValue
+	}
+	return val
+}
