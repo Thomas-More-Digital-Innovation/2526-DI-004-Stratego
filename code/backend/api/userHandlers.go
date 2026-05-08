@@ -62,7 +62,8 @@ func (s *GameServer) RegisterUserHandler(c *gin.Context) {
 
 	user, err := db.CreateUser(c.Request.Context(), req.Username, req.Password, req.ProfilePicture)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+		errLower := strings.ToLower(err.Error())
+		if strings.Contains(errLower, "duplicate") || strings.Contains(errLower, "unique") {
 			sendError(c, "Username already exists", http.StatusConflict)
 			return
 		}

@@ -7,7 +7,7 @@ import (
 )
 
 func TestGlobalStats(t *testing.T) {
-	testDB := setupSQLiteDB(t)
+	testDB := SetupTestDB(t)
 	oldDB := DB
 	DB = testDB
 	defer func() { DB = oldDB }()
