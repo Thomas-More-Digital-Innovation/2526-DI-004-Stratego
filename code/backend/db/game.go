@@ -35,15 +35,17 @@ func SaveGame(ctx context.Context, gameID string, p1ID, p2ID *int, gameType stri
 
 // SaveMove persists a single move in a game's history
 func SaveMove(ctx context.Context, gameID string, move models.HistoricalMove) error {
-	var attackerData, defenderData string
+	var attackerData, defenderData *string
 
 	if move.Attacker != nil {
 		b, _ := json.Marshal(move.Attacker)
-		attackerData = string(b)
+		s := string(b)
+		attackerData = &s
 	}
 	if move.Defender != nil {
 		b, _ := json.Marshal(move.Defender)
-		defenderData = string(b)
+		s := string(b)
+		defenderData = &s
 	}
 
 	gameMove := models.GameMove{
@@ -74,15 +76,17 @@ func SaveMoves(ctx context.Context, gameID string, moves []models.HistoricalMove
 
 	var gameMoves []models.GameMove
 	for _, move := range moves {
-		var attackerData, defenderData string
+		var attackerData, defenderData *string
 
 		if move.Attacker != nil {
 			b, _ := json.Marshal(move.Attacker)
-			attackerData = string(b)
+			s := string(b)
+			attackerData = &s
 		}
 		if move.Defender != nil {
 			b, _ := json.Marshal(move.Defender)
-			defenderData = string(b)
+			s := string(b)
+			defenderData = &s
 		}
 
 		gameMoves = append(gameMoves, models.GameMove{
@@ -136,15 +140,15 @@ func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, er
 			Result:    gm.Result,
 		}
 
-		if gm.AttackerData != "" {
+		if gm.AttackerData != nil {
 			var attacker models.PieceData
-			if err := json.Unmarshal([]byte(gm.AttackerData), &attacker); err == nil {
+			if err := json.Unmarshal([]byte(*gm.AttackerData), &attacker); err == nil {
 				m.Attacker = &attacker
 			}
 		}
-		if gm.DefenderData != "" {
+		if gm.DefenderData != nil {
 			var defender models.PieceData
-			if err := json.Unmarshal([]byte(gm.DefenderData), &defender); err == nil {
+			if err := json.Unmarshal([]byte(*gm.DefenderData), &defender); err == nil {
 				m.Defender = &defender
 			}
 		}
