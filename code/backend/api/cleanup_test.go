@@ -17,10 +17,10 @@ func TestWSHub_Cleanup(t *testing.T) {
 
 	// Create hub
 	hub := NewWSHub(session, "human_vs_ai")
-	
+
 	// Set a very short cleanup period for testing
 	hub.cleanupPeriod = 100 * time.Millisecond
-	
+
 	cleanupChan := make(chan bool, 1)
 	hub.OnCleanup = func() {
 		cleanupChan <- true
@@ -51,7 +51,7 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	// Create hub
 	hub := NewWSHub(session, "human_vs_ai")
 	hub.cleanupPeriod = 200 * time.Millisecond
-	
+
 	cleanupChan := make(chan bool, 1)
 	hub.OnCleanup = func() {
 		cleanupChan <- true
@@ -72,7 +72,7 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 			_ = 0 // Consume and discard messages to avoid blocking the hub
 		}
 	}()
-	
+
 	hub.register <- client
 
 	// Wait for hub to process registration and cancel initial timer
