@@ -42,9 +42,14 @@ func NewWSHub(session *game.Session, gameType string) *WSHub {
 // Run starts the hub's main loop
 func (h *WSHub) Run() {
 	// Start an initial cleanup timer to prevent zombie sessions if no one ever connects
-	// We give 2 minutes for the initial connection
+	// We give 2 minutes for the initial connection (or double the custom period)
+	initialPeriod := 2 * time.Minute
+	if h.cleanupPeriod != 1*time.Minute {
+		initialPeriod = h.cleanupPeriod * 2
+	}
+
 	originalPeriod := h.cleanupPeriod
-	h.cleanupPeriod = 2 * time.Minute
+	h.cleanupPeriod = initialPeriod
 	h.startCleanupTimer()
 	h.cleanupPeriod = originalPeriod
 
@@ -72,10 +77,12 @@ func (h *WSHub) Run() {
 			h.mutex.Unlock()
 
 			if clientCount == 0 {
-				if h.session.GetGameState().IsGameOver {
-					h.cleanupPeriod = 30 * time.Second
-				} else {
-					h.cleanupPeriod = 1 * time.Minute
+				if h.cleanupPeriod == 1*time.Minute {
+					if h.session.GetGameState().IsGameOver {
+						h.cleanupPeriod = 30 * time.Second
+					} else {
+						h.cleanupPeriod = 1 * time.Minute
+					}
 				}
 
 				switch h.gameType {

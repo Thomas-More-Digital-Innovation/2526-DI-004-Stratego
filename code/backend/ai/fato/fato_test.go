@@ -41,8 +41,35 @@ func TestIsPieceMemorized(t *testing.T) {
 	}
 }
 
-func TestMakeMove(_ *testing.T) {
-	// TODO
+func TestMakeMove(t *testing.T) {
+	p1 := engine.NewPlayer(0, "ai", "red")
+	p2 := engine.NewPlayer(1, "human", "blue")
+	ai := fato.NewAI(&p1, true)
+	board := engine.NewBoard()
+
+	// Place AI piece
+	pos1 := engine.NewPosition(5, 5)
+	piece1 := engine.NewPiece(models.Marshal, &p1)
+	board.SetPieceAt(pos1, piece1)
+	p1.AddPiece(piece1, pos1)
+
+	// Test case 1: No targets, should find an exploration or random move
+	move := ai.MakeMove(board)
+	if move.IsEmpty() {
+		t.Error("Expected AI to find a move, but got empty")
+	}
+
+	// Test case 2: Visible target, should attack it
+	targetPos := engine.NewPosition(5, 6)
+	targetPiece := engine.NewPiece(models.General, &p2)
+	targetPiece.Reveal()
+	board.SetPieceAt(targetPos, targetPiece)
+	p2.AddPiece(targetPiece, targetPos)
+
+	move = ai.MakeMove(board)
+	if move.GetTo() != targetPos {
+		t.Errorf("Expected AI to attack visible target at %v, but moved to %v", targetPos, move.GetTo())
+	}
 }
 
 func TestAnalyzeMove(t *testing.T) {
