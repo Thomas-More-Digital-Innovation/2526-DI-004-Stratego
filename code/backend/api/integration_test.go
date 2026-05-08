@@ -37,8 +37,8 @@ func TestIntegration_UserRegistration(t *testing.T) {
 	t.Run("Successful Registration", func(t *testing.T) {
 		// #nosec G117
 		reqBody, _ := json.Marshal(models.CreateUserRequest{
-			Username: "testuser",
-			Password: "StrongPassword1",
+			Username: db.TestUser,
+			Password: db.TestPassword,
 		})
 		resp, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
 		if err != nil {
@@ -75,7 +75,7 @@ func TestIntegration_UserRegistration(t *testing.T) {
 		// #nosec G117
 		reqBody, _ := json.Marshal(models.CreateUserRequest{
 			Username: "testuser_dup",
-			Password: "StrongPassword1",
+			Password: db.TestPassword,
 		})
 		// First one
 		resp1, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
@@ -110,8 +110,8 @@ func TestIntegration_LoginLogout(t *testing.T) {
 	// Pre-register
 	// #nosec G117
 	regBody, _ := json.Marshal(models.CreateUserRequest{
-		Username: "loginuser",
-		Password: "StrongPassword1",
+		Username: db.TestUserLogin,
+		Password: db.TestPassword,
 	})
 	respReg, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 	if err == nil {
@@ -121,8 +121,8 @@ func TestIntegration_LoginLogout(t *testing.T) {
 	t.Run("Successful Login", func(t *testing.T) {
 		// #nosec G117
 		loginBody, _ := json.Marshal(models.LoginRequest{
-			Username: "loginuser",
-			Password: "StrongPassword1",
+			Username: db.TestUserLogin,
+			Password: db.TestPassword,
 		})
 		resp, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
 		if resp.StatusCode != http.StatusOK {
@@ -138,7 +138,7 @@ func TestIntegration_LoginLogout(t *testing.T) {
 	t.Run("Invalid Credentials", func(t *testing.T) {
 		// #nosec G117
 		loginBody, _ := json.Marshal(models.LoginRequest{
-			Username: "loginuser",
+			Username: db.TestUserLogin,
 			Password: "WrongPassword1",
 		})
 		resp, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
@@ -151,8 +151,8 @@ func TestIntegration_LoginLogout(t *testing.T) {
 		// Login first to get cookies
 		// #nosec G117
 		loginBody, _ := json.Marshal(models.LoginRequest{
-			Username: "loginuser",
-			Password: "StrongPassword1",
+			Username: db.TestUserLogin,
+			Password: db.TestPassword,
 		})
 		resp, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
 		cookies := resp.Cookies()
@@ -190,7 +190,7 @@ func TestIntegration_BoardSetups(t *testing.T) {
 	// #nosec G117
 	regBody, _ := json.Marshal(models.CreateUserRequest{
 		Username: "boarduser",
-		Password: "StrongPassword1",
+		Password: db.TestPassword,
 	})
 	respReg, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 	cookies := respReg.Cookies()
@@ -243,7 +243,7 @@ func TestIntegration_BoardSetups(t *testing.T) {
 		// #nosec G117
 		regBody, _ := json.Marshal(models.CreateUserRequest{
 			Username: "otheruser",
-			Password: "StrongPassword1",
+			Password: db.TestPassword,
 		})
 		respOther, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 		otherCookies := respOther.Cookies()
@@ -276,7 +276,7 @@ func TestIntegration_TokenManagement(t *testing.T) {
 		// #nosec G117
 		regBody, _ := json.Marshal(models.CreateUserRequest{
 			Username: "refreshuser",
-			Password: "StrongPassword1",
+			Password: db.TestPassword,
 		})
 		respReg, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 		cookies := respReg.Cookies()
@@ -314,17 +314,17 @@ func TestIntegration_TokenManagement(t *testing.T) {
 	t.Run("Change Password", func(t *testing.T) {
 		// #nosec G117
 		regBody, _ := json.Marshal(models.CreateUserRequest{
-			Username: "passuser",
-			Password: "StrongPassword1",
+			Username: db.TestUserPassChange,
+			Password: db.TestPassword,
 		})
 		respReg, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 		cookies := respReg.Cookies()
 		_ = respReg.Body.Close()
 
 		changeReq := models.ChangePasswordRequest{
-			OldPassword:     "StrongPassword1",
-			NewPassword:     "NewStrongPassword2",
-			ConfirmPassword: "NewStrongPassword2",
+			OldPassword:     db.TestPassword,
+			NewPassword:     db.TestPasswordAlt,
+			ConfirmPassword: db.TestPasswordAlt,
 		}
 		reqBody, _ := json.Marshal(changeReq)
 		req, _ := http.NewRequest("POST", ts.URL+"/users/me/password", bytes.NewBuffer(reqBody))
@@ -343,8 +343,8 @@ func TestIntegration_TokenManagement(t *testing.T) {
 		// Try to login with OLD password (should fail)
 		// #nosec G117
 		loginBody, _ := json.Marshal(models.LoginRequest{
-			Username: "passuser",
-			Password: "StrongPassword1",
+			Username: db.TestUserPassChange,
+			Password: db.TestPassword,
 		})
 		respOldLogin, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
 		if respOldLogin.StatusCode != http.StatusUnauthorized {
@@ -355,8 +355,8 @@ func TestIntegration_TokenManagement(t *testing.T) {
 		// Try to login with NEW password (should succeed)
 		// #nosec G117
 		loginBodyNew, _ := json.Marshal(models.LoginRequest{
-			Username: "passuser",
-			Password: "NewStrongPassword2",
+			Username: db.TestUserPassChange,
+			Password: db.TestPasswordAlt,
 		})
 		respNewLogin, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBodyNew))
 		if respNewLogin.StatusCode != http.StatusOK {
@@ -374,7 +374,7 @@ func TestIntegration_GameManagement(t *testing.T) {
 	// #nosec G117
 	regBody, _ := json.Marshal(models.CreateUserRequest{
 		Username: "gameuser",
-		Password: "StrongPassword1",
+		Password: db.TestPassword,
 	})
 	respReg, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 	cookies := respReg.Cookies()
@@ -436,8 +436,8 @@ func TestIntegration_GameHistory(t *testing.T) {
 	// 1. Create a user and some games
 	// #nosec G117
 	regBody, _ := json.Marshal(models.CreateUserRequest{
-		Username: "historyuser",
-		Password: "StrongPassword1",
+		Username: db.TestUserHistory,
+		Password: db.TestPassword,
 	})
 	respReg, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
 	cookies := respReg.Cookies()

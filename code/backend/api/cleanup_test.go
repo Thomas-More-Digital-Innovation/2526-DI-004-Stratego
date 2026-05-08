@@ -1,6 +1,7 @@
 package api
 
 import (
+	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/engine"
 	"digital-innovation/gostrategy/game"
 	"testing"
@@ -63,7 +64,7 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	// Register a client
 	client := &WSClient{
 		hub:      hub,
-		Username: "testuser",
+		Username: db.TestUser,
 		send:     make(chan []byte, 10),
 	}
 	// Background consumer for client messages to avoid blocking hub

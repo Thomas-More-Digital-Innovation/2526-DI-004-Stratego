@@ -10,6 +10,16 @@ import (
 	"gorm.io/gorm"
 )
 
+// Test constants for use across the test suite to ensure consistency and satisfy goconst
+const (
+	TestPassword       = "StrongPassword1"
+	TestPasswordAlt    = "NewStrongPassword2"
+	TestUser           = "testuser"
+	TestUserLogin      = "loginuser"
+	TestUserHistory    = "historyuser"
+	TestUserPassChange = "passuser"
+)
+
 var nameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 
 // SetupTestDB initializes an in-memory SQLite database for testing and sets the global DB instance.
