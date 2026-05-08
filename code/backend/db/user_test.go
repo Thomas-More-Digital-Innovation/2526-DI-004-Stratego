@@ -7,7 +7,7 @@ import (
 )
 
 func TestUserLogic(t *testing.T) {
-	testDB := setupSQLiteDB(t)
+	testDB := SetupTestDB(t)
 	oldDB := DB
 	DB = testDB
 	defer func() { DB = oldDB }()
@@ -48,7 +48,7 @@ func TestUserLogic(t *testing.T) {
 }
 
 func TestUserSoftDelete(t *testing.T) {
-	testDB := setupSQLiteDB(t)
+	testDB := SetupTestDB(t)
 	oldDB := DB
 	DB = testDB
 	defer func() { DB = oldDB }()
@@ -72,7 +72,7 @@ func TestUserSoftDelete(t *testing.T) {
 }
 
 func TestStatsConcurrency(t *testing.T) {
-	testDB := setupSQLiteDB(t)
+	testDB := SetupTestDB(t)
 	oldDB := DB
 	DB = testDB
 	defer func() { DB = oldDB }()

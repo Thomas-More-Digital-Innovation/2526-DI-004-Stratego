@@ -209,3 +209,40 @@ func TestRunnerWithDelay(t *testing.T) {
 		t.Errorf("Expected game to take at least 10ms with delays, took: %v", elapsed)
 	}
 }
+func TestRunner_Immobilization(t *testing.T) {
+	player1 := engine.NewPlayer(0, "AI1", "red")
+	player2 := engine.NewPlayer(1, "AI2", "blue")
+
+	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
+	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+
+	g := game.QuickStart(controller1, controller2)
+	runner := game.NewRunner(g, 0, 1000)
+
+	// Eliminate all movable pieces for player 1
+	alive := append([]*engine.Piece{}, player1.GetAlivePieces()...)
+	for _, piece := range alive {
+		if piece.CanMove() {
+			pos, _ := player1.GetPiecePosition(piece)
+			piece.Eliminate()
+			// We should also remove them from the board to be realistic
+			g.Board.SetPieceAt(pos, nil)
+		}
+	}
+
+	// Try to execute turn for player 1 (who has no movable pieces)
+	// Fafo.MakeMove will return an empty move
+	runner.ExecuteTurn()
+
+	if !g.IsGameOver() {
+		t.Fatal("Expected game to be over due to immobilization")
+	}
+
+	if g.GetWinCause() != game.WinCauseNoMovablePieces {
+		t.Errorf("Expected win cause to be 'no_movable_pieces', got: %s", g.GetWinCause())
+	}
+
+	if g.GetWinner() != &player2 {
+		t.Errorf("Expected Player 2 to win, but winner is: %v", g.GetWinner())
+	}
+}

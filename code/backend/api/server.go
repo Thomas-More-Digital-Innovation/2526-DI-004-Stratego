@@ -166,6 +166,15 @@ func (s *GameServer) PrintRoutes() {
 
 // StartServer starts the HTTP server
 func (s *GameServer) StartServer(addr string) error {
+	s.SetupRoutes()
+	s.PrintRoutes()
+
+	logging.Debug(logging.TagWeb, "Starting game server on %s", addr)
+	return s.router.Run(addr)
+}
+
+// SetupRoutes registers all API routes and middleware
+func (s *GameServer) SetupRoutes() {
 	s.router.Use(gin.Recovery())
 	s.router.Use(gin.LoggerWithConfig(gin.LoggerConfig{
 		SkipPaths: []string{"/health"},
@@ -225,12 +234,14 @@ func (s *GameServer) StartServer(addr string) error {
 		{
 			me.GET("", s.GetCurrentUserHandler)
 			me.GET("/stats", s.GetCurrentUserStatsHandler)
+			me.GET("/games", s.HandleListMyGames)
 			me.POST("/password", s.ChangePasswordHandler)
 		}
 
 		// Public info
 		users.GET("/count", s.UserCountHandler)
 		users.GET("/:id", s.GetUserHandler)
+		users.GET("/:id/games", s.HandleListUserGames)
 		users.GET("/stats", s.GetUserStatsHandler)
 	}
 
@@ -251,14 +262,10 @@ func (s *GameServer) StartServer(addr string) error {
 	{
 		games.POST("", s.HandleCreateGame)
 		games.GET("", s.HandleListGames)
+		games.GET("/:id/history", s.HandleGetGameHistory)
 		games.GET("/count", s.GamesPlayedCountHandler)
 	}
 
 	// WebSocket endpoint
 	s.router.GET("/game/:gameID", auth.OptionalAuth(), s.HandleWebSocketConnection)
-
-	s.PrintRoutes()
-
-	logging.Debug(logging.TagWeb, "Starting game server on %s", addr)
-	return s.router.Run(addr)
 }

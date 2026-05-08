@@ -10,9 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
+// Test constants for use across the test suite to ensure consistency and satisfy goconst
+const (
+	TestPassword       = "StrongPassword1"
+	TestPasswordAlt    = "NewStrongPassword2"
+	TestUser           = "testuser"
+	TestUserLogin      = "loginuser"
+	TestUserHistory    = "historyuser"
+	TestUserPassChange = "passuser"
+)
+
 var nameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 
-func setupSQLiteDB(t *testing.T) *gorm.DB {
+// SetupTestDB initializes an in-memory SQLite database for testing and sets the global DB instance.
+func SetupTestDB(t *testing.T) *gorm.DB {
 	// Sanitize test name to avoid URI issues with slashes/special characters
 	safeName := nameSanitizer.ReplaceAllString(t.Name(), "_")
 
@@ -22,6 +33,9 @@ func setupSQLiteDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to connect database: %v", err)
 	}
+
+	// Set the global DB instance for handlers to use
+	DB = db
 
 	// AutoMigrate all models
 	err = db.AutoMigrate(

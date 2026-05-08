@@ -158,3 +158,32 @@ func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, er
 
 	return &history, nil
 }
+
+// GetGamesForUserPaged retrieves a paged list of completed games for a specific user
+func GetGamesForUserPaged(ctx context.Context, userID int, limit, offset int) ([]models.Game, error) {
+	var games []models.Game
+	err := DB.WithContext(ctx).
+		Where("player1_user_id = ? OR player2_user_id = ?", userID, userID).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&games).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get paged games: %w", err)
+	}
+	return games, nil
+}
+
+// GetGamesCountForUser returns the total count of games for a specific user
+func GetGamesCountForUser(ctx context.Context, userID int) (int64, error) {
+	var count int64
+	err := DB.WithContext(ctx).Model(&models.Game{}).
+		Where("player1_user_id = ? OR player2_user_id = ?", userID, userID).
+		Count(&count).Error
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to count games: %w", err)
+	}
+	return count, nil
+}
