@@ -30,8 +30,8 @@ type GameMove struct {
 	FromY        int            `json:"from_y" gorm:"not null"`
 	ToX          int            `json:"to_x" gorm:"not null"`
 	ToY          int            `json:"to_y" gorm:"not null"`
-	AttackerData string         `json:"attacker_data,omitempty" gorm:"type:jsonb"`
-	DefenderData string         `json:"defender_data,omitempty" gorm:"type:jsonb"`
+	AttackerData *string        `json:"attacker_data,omitempty" gorm:"type:jsonb"`
+	DefenderData *string        `json:"defender_data,omitempty" gorm:"type:jsonb"`
 	Result       MoveResultType `json:"result" gorm:"not null;size:20"`
 	CreatedAt    time.Time      `json:"created_at"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
