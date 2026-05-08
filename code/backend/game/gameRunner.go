@@ -70,26 +70,31 @@ func (gr *Runner) RunToCompletion() *engine.Player {
 		}
 
 		if gr.IsPaused() {
-			time.Sleep(100 * time.Millisecond)
-			continue
+			select {
+			case <-gr.stopChan:
+				logging.Debug(logging.TagGame, "Runner: Stop signal received during pause")
+				return nil
+			case <-time.After(100 * time.Millisecond):
+				continue
+			}
 		}
 
 		executed := gr.ExecuteTurn()
 
 		if executed {
 			turnCount++
-
-			// TODO: figure out what to do with this or delete
-			// logging.Debug(logging.TagGame, "Runner: Turn %d executed, currentPlayer=%s", turnCount, gr.game.CurrentPlayer.GetName())
-
 		} else {
 			if gr.game.IsGameOver() {
 				logging.Debug(logging.TagGame, "Runner: Game ended during ExecuteTurn")
-
 				break
 			}
-			time.Sleep(100 * time.Millisecond)
-			continue
+			select {
+			case <-gr.stopChan:
+				logging.Debug(logging.TagGame, "Runner: Stop signal received while waiting for turn")
+				return nil
+			case <-time.After(100 * time.Millisecond):
+				continue
+			}
 		}
 
 		// Optional delay for visualization is handled in ExecuteTurn
@@ -213,7 +218,12 @@ func (gr *Runner) executeTurn(ignorePause bool) bool {
 		}
 		sleepTime := delay - elapsed
 		if sleepTime > 0 {
-			time.Sleep(sleepTime)
+			select {
+			case <-gr.stopChan:
+				return false
+			case <-time.After(sleepTime):
+				// Continue
+			}
 		}
 
 		// Re-check pause after delay
