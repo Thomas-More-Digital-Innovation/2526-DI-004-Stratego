@@ -20,7 +20,7 @@ func TestIntegration_WebSocket(t *testing.T) {
 	server := NewGameServer()
 	// Add routes
 	server.router.GET("/game/:gameID", server.HandleWebSocketConnection)
-	
+
 	ts := httptest.NewServer(server.router)
 	defer ts.Close()
 
@@ -42,10 +42,10 @@ func TestIntegration_WebSocket(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to connect: %v", err)
 		}
-		defer conn1.Close()
+		defer func() { _ = conn1.Close() }()
 
 		// Should receive initial game state and board state
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			_, message, err := conn1.ReadMessage()
 			if err != nil {
 				t.Fatalf("Failed to read initial message %d: %v", i, err)
@@ -61,13 +61,13 @@ func TestIntegration_WebSocket(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to connect P2: %v", err)
 		}
-		defer conn2.Close()
+		defer func() { _ = conn2.Close() }()
 
 		// Player 1 sends a chat message (if supported) or just wait
 		// Let's simulate a move if possible, but move needs pieces.
 		// For simplicity, let's just check if they are both registered in hub
 		time.Sleep(50 * time.Millisecond)
-		
+
 		handler.Hub.mutex.RLock()
 		clientCount := len(handler.Hub.clients)
 		handler.Hub.mutex.RUnlock()
@@ -96,7 +96,9 @@ func TestIntegration_WebSocket(t *testing.T) {
 					t.Fatalf("Failed to read message for pong: %v", err)
 				}
 				var msg WSMessage
-				json.Unmarshal(message, &msg)
+				if err := json.Unmarshal(message, &msg); err != nil {
+					t.Logf("Failed to unmarshal message: %v", err)
+				}
 				if msg.Type == MsgTypePong {
 					foundPong = true
 				}

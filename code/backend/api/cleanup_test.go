@@ -69,6 +69,7 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	// Background consumer for client messages to avoid blocking hub
 	go func() {
 		for range client.send {
+			_ = 0 // Consume and discard messages to avoid blocking the hub
 		}
 	}()
 	

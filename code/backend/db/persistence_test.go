@@ -101,7 +101,7 @@ func TestComplexJSONSerialization(t *testing.T) {
 
 	t.Run("Empty and Nil Data", func(t *testing.T) {
 		gameID2 := "json-nil-test"
-		SaveGame(ctx, gameID2, nil, nil, "test", map[string]any{}, nil)
+		_ = SaveGame(ctx, gameID2, nil, nil, "test", map[string]any{}, nil)
 
 		move := models.HistoricalMove{
 			MoveIndex: 1,
