@@ -20,6 +20,15 @@ definitions:
       user_id:
         type: integer
     type: object
+  models.ChangePasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
   models.CreateBoardSetupRequest:
     properties:
       description:
@@ -40,11 +49,80 @@ definitions:
       username:
         type: string
     type: object
+  models.GameHistory:
+    properties:
+      gameId:
+        type: string
+      initialState:
+        description: Will be JSONB/Array
+      moves:
+        items:
+          $ref: '#/definitions/models.HistoricalMove'
+        type: array
+      winnerId:
+        type: integer
+    type: object
+  models.HistoricalMove:
+    properties:
+      attacker:
+        $ref: '#/definitions/models.PieceData'
+      defender:
+        $ref: '#/definitions/models.PieceData'
+      fromX:
+        type: integer
+      fromY:
+        type: integer
+      moveIndex:
+        type: integer
+      playerId:
+        type: integer
+      result:
+        $ref: '#/definitions/models.MoveResultType'
+      toX:
+        type: integer
+      toY:
+        type: integer
+    type: object
   models.LoginRequest:
     properties:
       password:
         type: string
       username:
+        type: string
+    type: object
+  models.MoveResultType:
+    enum:
+    - move
+    - win
+    - loss
+    - tie
+    - capture
+    type: string
+    x-enum-comments:
+      ResultCapture: Flag captured (game over)
+      ResultLoss: Attacker lost combat
+      ResultMove: Normal move to empty cell
+      ResultTie: Both pieces died
+      ResultWin: Attacker won combat
+    x-enum-descriptions:
+    - Normal move to empty cell
+    - Attacker won combat
+    - Attacker lost combat
+    - Both pieces died
+    - Flag captured (game over)
+    x-enum-varnames:
+    - ResultMove
+    - ResultWin
+    - ResultLoss
+    - ResultTie
+    - ResultCapture
+  models.PieceData:
+    properties:
+      ownerId:
+        type: integer
+      rank:
+        type: string
+      type:
         type: string
     type: object
   models.UpdateBoardSetupRequest:
@@ -97,28 +175,28 @@ definitions:
 host: localhost:8080
 info:
   contact:
-    email: "[EMAIL_ADDRESS]"
+    email: '[EMAIL_ADDRESS]'
     name: Sem Van Broekhoven
-    url: https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy
-  description: This is the API server for the GoStrategy game.
+    url: https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego
+  description: This is the API server for the Stratego game.
   license:
     name: MIT
     url: https://opensource.org/license/mit/
   termsOfService: http://swagger.io/terms/
-  title: GoStrategy API
+  title: Stratego API
   version: 0.1.1
 paths:
   /board-setups:
     get:
       description: Retrieve all board setups for the authenticated user
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: "#/definitions/models.BoardSetup"
+              $ref: '#/definitions/models.BoardSetup'
             type: array
         "401":
           description: Unauthorized
@@ -127,28 +205,28 @@ paths:
               type: string
             type: object
       security:
-        - ApiKeyAuth: []
+      - ApiKeyAuth: []
       summary: List board setups
       tags:
-        - board-setups
+      - board-setups
     post:
       consumes:
-        - application/json
+      - application/json
       description: Save a new piece configuration for the user
       parameters:
-        - description: Setup details
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/models.CreateBoardSetupRequest"
+      - description: Setup details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateBoardSetupRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: "#/definitions/models.BoardSetup"
+            $ref: '#/definitions/models.BoardSetup'
         "400":
           description: Invalid request body
           schema:
@@ -162,21 +240,21 @@ paths:
               type: string
             type: object
       security:
-        - ApiKeyAuth: []
+      - ApiKeyAuth: []
       summary: Create board setup
       tags:
-        - board-setups
+      - board-setups
   /board-setups/{id}:
     delete:
       description: Remove a board setup by ID
       parameters:
-        - description: Setup ID
-          in: path
-          name: id
-          required: true
-          type: integer
+      - description: Setup ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
-        - application/json
+      - application/json
       responses:
         "204":
           description: No Content
@@ -187,25 +265,25 @@ paths:
               type: string
             type: object
       security:
-        - ApiKeyAuth: []
+      - ApiKeyAuth: []
       summary: Delete board setup
       tags:
-        - board-setups
+      - board-setups
     get:
       description: Retrieve a specific board setup by ID
       parameters:
-        - description: Setup ID
-          in: path
-          name: id
-          required: true
-          type: integer
+      - description: Setup ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.BoardSetup"
+            $ref: '#/definitions/models.BoardSetup'
         "401":
           description: Unauthorized
           schema:
@@ -219,28 +297,28 @@ paths:
               type: string
             type: object
       security:
-        - ApiKeyAuth: []
+      - ApiKeyAuth: []
       summary: Get board setup
       tags:
-        - board-setups
+      - board-setups
     put:
       consumes:
-        - application/json
+      - application/json
       description: Modify an existing board setup by ID
       parameters:
-        - description: Setup ID
-          in: path
-          name: id
-          required: true
-          type: integer
-        - description: Updated details
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/models.UpdateBoardSetupRequest"
+      - description: Setup ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBoardSetupRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "204":
           description: No Content
@@ -257,33 +335,48 @@ paths:
               type: string
             type: object
       security:
-        - ApiKeyAuth: []
+      - ApiKeyAuth: []
       summary: Update board setup
       tags:
-        - board-setups
+      - board-setups
+  /csrf-token:
+    get:
+      description: Set the XSRF-TOKEN cookie and return the token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CSRF token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get CSRF token
+      tags:
+      - auth
   /game/{gameID}:
     get:
-      description: Real-time game connection. Use `player` query param to join as 0
-        (Red), 1 (Blue), or anything else (Spectator)
+      description: Real-time game connection. Use `player` query param to join as
+        0 (Red), 1 (Blue), or anything else (Spectator)
       parameters:
-        - description: Game ID
-          in: path
-          name: gameID
-          required: true
-          type: string
-        - description: Player role (0, 1, or spec)
-          in: query
-          name: player
-          type: string
+      - description: Game ID
+        in: path
+        name: gameID
+        required: true
+        type: string
+      - description: Player role (0, 1, or spec)
+        in: query
+        name: player
+        type: string
       responses: {}
       summary: Game WebSocket
       tags:
-        - games
+      - games
   /games:
     get:
       description: Retrieve a list of all currently active game sessions
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: List of games
@@ -294,22 +387,22 @@ paths:
             type: array
       summary: List active games
       tags:
-        - games
+      - games
     post:
       consumes:
-        - application/json
+      - application/json
       description: Initialize a new game session with specified type and AIs
       parameters:
-        - description: Game creation details (id, type, ai1, ai2)
-          in: body
-          name: request
-          required: true
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+      - description: Game creation details (id, type, ai1, ai2)
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Game created
@@ -325,12 +418,38 @@ paths:
             type: object
       summary: Create a new game
       tags:
-        - games
+      - games
+  /games/{id}/history:
+    get:
+      description: Retrieve the full move history and initial setup of a finished
+        game
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.GameHistory'
+        "404":
+          description: Game not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get game history
+      tags:
+      - games
   /games/count:
     get:
       description: Get the total number of games played
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Games played count
@@ -340,12 +459,12 @@ paths:
             type: object
       summary: Games played count
       tags:
-        - monitoring
+      - monitoring
   /health:
     get:
       description: Confirm the server is running
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Status OK
@@ -355,23 +474,23 @@ paths:
             type: object
       summary: Health check
       tags:
-        - monitoring
+      - monitoring
   /users/{id}:
     get:
       description: Retrieve profile of a user by ID
       parameters:
-        - description: User ID
-          in: path
-          name: id
-          required: true
-          type: integer
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.User"
+            $ref: '#/definitions/models.User'
         "400":
           description: Invalid or missing user ID
           schema:
@@ -386,12 +505,42 @@ paths:
             type: object
       summary: Get user profile
       tags:
-        - users
+      - users
+  /users/{id}/games:
+    get:
+      description: Retrieve a paged list of finished games for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 10
+        description: Maximum number of games to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of games to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of games and total count
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List user's finished games
+      tags:
+      - users
   /users/count:
     get:
       description: Get the total number of users
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: User count
@@ -401,26 +550,26 @@ paths:
             type: object
       summary: User count
       tags:
-        - monitoring
+      - monitoring
   /users/login:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Authenticate user and create session
       parameters:
-        - description: Login details
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/models.LoginRequest"
+      - description: Login details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.User"
+            $ref: '#/definitions/models.User'
         "400":
           description: Invalid request body
           schema:
@@ -441,12 +590,12 @@ paths:
             type: object
       summary: User login
       tags:
-        - users
+      - users
   /users/logout:
     post:
       description: Delete user session and clear cookie
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Logged out successfully
@@ -456,17 +605,17 @@ paths:
             type: object
       summary: User logout
       tags:
-        - users
+      - users
   /users/me:
     get:
       description: Retrieve profile of the authenticated user
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.User"
+            $ref: '#/definitions/models.User'
         "401":
           description: Unauthorized
           schema:
@@ -481,17 +630,84 @@ paths:
             type: object
       summary: Get current user
       tags:
-        - users
+      - users
+  /users/me/games:
+    get:
+      description: Retrieve a paged list of finished games for the authenticated user
+      parameters:
+      - default: 10
+        description: Maximum number of games to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of games to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of games and total count
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List current user's finished games
+      tags:
+      - users
+  /users/me/password:
+    post:
+      consumes:
+      - application/json
+      description: Update the authenticated user's password and revoke all sessions
+      parameters:
+      - description: Password change details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid old password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Change user password
+      tags:
+      - users
   /users/me/stats:
     get:
       description: Retrieve game statistics for the authenticated user
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.UserStats"
+            $ref: '#/definitions/models.UserStats'
         "401":
           description: Unauthorized
           schema:
@@ -506,26 +722,47 @@ paths:
             type: object
       summary: Get current user statistics
       tags:
-        - users
+      - users
+  /users/refresh:
+    post:
+      description: Use a refresh token to get a new access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid refresh token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - users
   /users/register:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Create a new user with username and password
       parameters:
-        - description: User registration details
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/models.CreateUserRequest"
+      - description: User registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: "#/definitions/models.User"
+            $ref: '#/definitions/models.User'
         "400":
           description: Invalid request body
           schema:
@@ -546,23 +783,23 @@ paths:
             type: object
       summary: Register a new user
       tags:
-        - users
+      - users
   /users/stats:
     get:
       description: Retrieve game statistics for a specific user or the user specified
         by "id" query/path param
       parameters:
-        - description: User ID
-          in: query
-          name: id
-          type: integer
+      - description: User ID
+        in: query
+        name: id
+        type: integer
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.UserStats"
+            $ref: '#/definitions/models.UserStats'
         "400":
           description: Invalid or missing user ID
           schema:
@@ -577,5 +814,5 @@ paths:
             type: object
       summary: Get user statistics
       tags:
-        - users
+      - users
 swagger: "2.0"

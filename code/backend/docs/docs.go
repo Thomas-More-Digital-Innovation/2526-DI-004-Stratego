@@ -12,7 +12,7 @@ const docTemplate = `{
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "Sem Van Broekhoven",
-            "url": "https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy",
+            "url": "https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego",
             "email": "[EMAIL_ADDRESS]"
         },
         "license": {
@@ -265,6 +265,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/csrf-token": {
+            "get": {
+                "description": "Set the XSRF-TOKEN cookie and return the token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get CSRF token",
+                "responses": {
+                    "200": {
+                        "description": "CSRF token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/game/{gameID}": {
             "get": {
                 "description": "Real-time game connection. Use ` + "`" + `player` + "`" + ` query param to join as 0 (Red), 1 (Blue), or anything else (Spectator)",
@@ -378,6 +401,44 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": {
                                 "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/games/{id}/history": {
+            "get": {
+                "description": "Retrieve the full move history and initial setup of a finished game",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "games"
+                ],
+                "summary": "Get game history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.GameHistory"
+                        }
+                    },
+                    "404": {
+                        "description": "Game not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -552,6 +613,107 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/me/games": {
+            "get": {
+                "description": "Retrieve a paged list of finished games for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List current user's finished games",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum number of games to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of games to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of games and total count",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/password": {
+            "post": {
+                "description": "Update the authenticated user's password and revoke all sessions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "description": "Password change details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password updated",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or weak password",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid old password",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users/me/stats": {
             "get": {
                 "description": "Retrieve game statistics for the authenticated user",
@@ -580,6 +742,38 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Stats not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/refresh": {
+            "post": {
+                "description": "Use a refresh token to get a new access token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Refresh access token",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid refresh token",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -743,6 +937,50 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{id}/games": {
+            "get": {
+                "description": "Retrieve a paged list of finished games for a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List user's finished games",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum number of games to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of games to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of games and total count",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -773,6 +1011,20 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.ChangePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
+                    "type": "string"
                 }
             }
         },
@@ -807,6 +1059,58 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GameHistory": {
+            "type": "object",
+            "properties": {
+                "gameId": {
+                    "type": "string"
+                },
+                "initialState": {
+                    "description": "Will be JSONB/Array"
+                },
+                "moves": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.HistoricalMove"
+                    }
+                },
+                "winnerId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.HistoricalMove": {
+            "type": "object",
+            "properties": {
+                "attacker": {
+                    "$ref": "#/definitions/models.PieceData"
+                },
+                "defender": {
+                    "$ref": "#/definitions/models.PieceData"
+                },
+                "fromX": {
+                    "type": "integer"
+                },
+                "fromY": {
+                    "type": "integer"
+                },
+                "moveIndex": {
+                    "type": "integer"
+                },
+                "playerId": {
+                    "type": "integer"
+                },
+                "result": {
+                    "$ref": "#/definitions/models.MoveResultType"
+                },
+                "toX": {
+                    "type": "integer"
+                },
+                "toY": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.LoginRequest": {
             "type": "object",
             "properties": {
@@ -814,6 +1118,51 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MoveResultType": {
+            "type": "string",
+            "enum": [
+                "move",
+                "win",
+                "loss",
+                "tie",
+                "capture"
+            ],
+            "x-enum-comments": {
+                "ResultCapture": "Flag captured (game over)",
+                "ResultLoss": "Attacker lost combat",
+                "ResultMove": "Normal move to empty cell",
+                "ResultTie": "Both pieces died",
+                "ResultWin": "Attacker won combat"
+            },
+            "x-enum-descriptions": [
+                "Normal move to empty cell",
+                "Attacker won combat",
+                "Attacker lost combat",
+                "Both pieces died",
+                "Flag captured (game over)"
+            ],
+            "x-enum-varnames": [
+                "ResultMove",
+                "ResultWin",
+                "ResultLoss",
+                "ResultTie",
+                "ResultCapture"
+            ]
+        },
+        "models.PieceData": {
+            "type": "object",
+            "properties": {
+                "ownerId": {
+                    "type": "integer"
+                },
+                "rank": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -899,8 +1248,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "GoStrategy API",
-	Description:      "This is the API server for the GoStrategy game.",
+	Title:            "Stratego API",
+	Description:      "This is the API server for the Stratego game.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

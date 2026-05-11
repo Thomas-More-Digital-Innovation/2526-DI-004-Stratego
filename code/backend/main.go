@@ -14,6 +14,21 @@ import (
 	"time"
 )
 
+// @title GoStrategy API
+// @version 0.1.1
+// @description This is the API server for the GoStrategy game.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Sem Van Broekhoven
+// @contact.url https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy
+// @contact.email info@dotsem.be
+
+// @license.name MIT
+// @license.url https://opensource.org/license/mit/
+
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	if err := run(); err != nil {
 		logging.Fatalf("%v", err)
