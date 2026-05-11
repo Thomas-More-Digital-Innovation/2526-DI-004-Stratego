@@ -1,3 +1,4 @@
+// Package api_test provides integration tests for the API.
 package api
 
 import (
@@ -26,7 +27,7 @@ func setupTestServer(t *testing.T) (*GameServer, *httptest.Server) {
 	server := NewGameServer()
 	server.SetupRoutes()
 
-	ts := httptest.NewServer(server.router)
+	ts := httptest.NewServer(server.Router)
 	return server, ts
 }
 

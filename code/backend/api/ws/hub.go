@@ -1,6 +1,8 @@
-package api
+// Package ws provides WebSocket functionality for the game server.
+package ws
 
 import (
+	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/game"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/models"
@@ -8,14 +10,14 @@ import (
 	"time"
 )
 
-// WSHub manages all WebSocket connections for a game
-type WSHub struct {
-	clients       map[*WSClient]bool
+// Hub manages all WebSocket connections for a game
+type Hub struct {
+	clients       map[*Client]bool
 	broadcast     chan []byte
-	register      chan *WSClient
-	unregister    chan *WSClient
-	session       *game.Session
-	gameType      string
+	register      chan *Client
+	unregister    chan *Client
+	Session       *game.Session
+	GameType      string
 	mutex         sync.RWMutex
 	cleanupTimer  *time.Timer
 	timerMutex    sync.Mutex
@@ -25,22 +27,25 @@ type WSHub struct {
 	stopped       bool
 }
 
-// NewWSHub creates a new WSHub instance for a session
-func NewWSHub(session *game.Session, gameType string) *WSHub {
-	return &WSHub{
-		clients:       make(map[*WSClient]bool),
+// GetGameType returns the game type
+func (h *Hub) GetGameType() string { return h.GameType }
+
+// NewHub creates a new Hub instance for a session
+func NewHub(session *game.Session, gameType string) *Hub {
+	return &Hub{
+		clients:       make(map[*Client]bool),
 		broadcast:     make(chan []byte, 256),
-		register:      make(chan *WSClient, 128),
-		unregister:    make(chan *WSClient, 128),
-		session:       session,
-		gameType:      gameType,
+		register:      make(chan *Client, 128),
+		unregister:    make(chan *Client, 128),
+		Session:       session,
+		GameType:      gameType,
 		cleanupPeriod: 1 * time.Minute, // 1 minute grace period for reconnection
 		stop:          make(chan bool, 1),
 	}
 }
 
 // Run starts the hub's main loop
-func (h *WSHub) Run() {
+func (h *Hub) Run() {
 	// Start an initial cleanup timer to prevent zombie sessions if no one ever connects
 	// We give 2 minutes for the initial connection (or double the custom period)
 	initialPeriod := 2 * time.Minute
@@ -78,18 +83,18 @@ func (h *WSHub) Run() {
 
 			if clientCount == 0 {
 				if h.cleanupPeriod == 1*time.Minute {
-					if h.session.GetGameState().IsGameOver {
+					if h.Session.GetGameState().IsGameOver {
 						h.cleanupPeriod = 30 * time.Second
 					} else {
 						h.cleanupPeriod = 1 * time.Minute
 					}
 				}
 
-				switch h.gameType {
+				switch h.GameType {
 				case models.AiVsAi:
 					// Stop AI vs AI games immediately - no point running without observers
-					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, stopping game immediately: %s", h.session.ID)
-					h.session.Stop()
+					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, stopping game immediately: %s", h.Session.ID)
+					h.Session.Stop()
 					h.Stop()
 					if h.OnCleanup != nil {
 						h.OnCleanup()
@@ -97,7 +102,7 @@ func (h *WSHub) Run() {
 
 				case models.HumanVsAi, models.HumanVsHuman:
 					// Start cleanup timer with appropriate grace period
-					logging.Debug(logging.TagWeb, "All clients disconnected from %s game, starting cleanup timer (%v): %s", h.gameType, h.cleanupPeriod, h.session.ID)
+					logging.Debug(logging.TagWeb, "All clients disconnected from %s game, starting cleanup timer (%v): %s", h.GameType, h.cleanupPeriod, h.Session.ID)
 					h.startCleanupTimer()
 				}
 			}
@@ -105,7 +110,7 @@ func (h *WSHub) Run() {
 		case message := <-h.broadcast:
 			h.mutex.RLock()
 			// Copy clients to a slice to avoid holding RLock during potential mutations/sends
-			clients := make([]*WSClient, 0, len(h.clients))
+			clients := make([]*Client, 0, len(h.clients))
 			for client := range h.clients {
 				clients = append(clients, client)
 			}
@@ -134,14 +139,14 @@ func (h *WSHub) Run() {
 				}
 			}
 		case <-h.stop:
-			logging.Debug(logging.TagWeb, "Stopping hub loop for game %s", h.session.ID)
+			logging.Debug(logging.TagWeb, "Stopping hub loop for game %s", h.Session.ID)
 			return
 		}
 	}
 }
 
 // Stop stops the hub loop and closes all connections
-func (h *WSHub) Stop() {
+func (h *Hub) Stop() {
 	h.mutex.Lock()
 	if h.stopped {
 		h.mutex.Unlock()
@@ -165,14 +170,21 @@ func (h *WSHub) Stop() {
 }
 
 // IsStopped returns whether the hub is stopped
-func (h *WSHub) IsStopped() bool {
+func (h *Hub) IsStopped() bool {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 	return h.stopped
 }
+ 
+// ClientCount returns the number of connected clients
+func (h *Hub) ClientCount() int {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+	return len(h.clients)
+}
 
 // startCleanupTimer starts a timer to stop the game after the cleanup period
-func (h *WSHub) startCleanupTimer() {
+func (h *Hub) startCleanupTimer() {
 	h.timerMutex.Lock()
 	defer h.timerMutex.Unlock()
 
@@ -180,11 +192,11 @@ func (h *WSHub) startCleanupTimer() {
 		h.cleanupTimer.Stop()
 	}
 
-	logging.Debug(logging.TagWeb, "Starting cleanup timer for %s game (will stop in %v): %s", h.gameType, h.cleanupPeriod, h.session.ID)
+	logging.Debug(logging.TagWeb, "Starting cleanup timer for %s game (will stop in %v): %s", h.GameType, h.cleanupPeriod, h.Session.ID)
 
 	h.cleanupTimer = time.AfterFunc(h.cleanupPeriod, func() {
-		logging.Debug(logging.TagWeb, "Cleanup timer expired for %s game, stopping and cleaning up: %s", h.gameType, h.session.ID)
-		h.session.Stop()
+		logging.Debug(logging.TagWeb, "Cleanup timer expired for %s game, stopping and cleaning up: %s", h.GameType, h.Session.ID)
+		h.Session.Stop()
 		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
@@ -194,7 +206,7 @@ func (h *WSHub) startCleanupTimer() {
 
 // StartGameOverCleanup starts a mandatory timer to stop the game after it's over
 // This timer is NOT cancelled by reconnections, ensuring we eventually clean up
-func (h *WSHub) StartGameOverCleanup(duration time.Duration) {
+func (h *Hub) StartGameOverCleanup(duration time.Duration) {
 	h.timerMutex.Lock()
 	defer h.timerMutex.Unlock()
 
@@ -203,11 +215,11 @@ func (h *WSHub) StartGameOverCleanup(duration time.Duration) {
 		h.cleanupTimer.Stop()
 	}
 
-	logging.Debug(logging.TagWeb, "Starting mandatory game-over cleanup for game (will stop in %v): %s", duration, h.session.ID)
+	logging.Debug(logging.TagWeb, "Starting mandatory game-over cleanup for game (will stop in %v): %s", duration, h.Session.ID)
 
 	h.cleanupTimer = time.AfterFunc(duration, func() {
-		logging.Debug(logging.TagWeb, "Mandatory game-over cleanup triggered for game: %s", h.session.ID)
-		h.session.Stop()
+		logging.Debug(logging.TagWeb, "Mandatory game-over cleanup triggered for game: %s", h.Session.ID)
+		h.Session.Stop()
 		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
@@ -216,25 +228,25 @@ func (h *WSHub) StartGameOverCleanup(duration time.Duration) {
 }
 
 // cancelCleanupTimer cancels the cleanup timer if it's running
-func (h *WSHub) cancelCleanupTimer() {
+func (h *Hub) cancelCleanupTimer() {
 	h.timerMutex.Lock()
 	defer h.timerMutex.Unlock()
 
 	if h.cleanupTimer != nil {
 		wasActive := h.cleanupTimer.Stop()
 		if wasActive {
-			logging.Debug(logging.TagWeb, "Cleanup timer cancelled for %s game (client reconnected): %s", h.gameType, h.session.ID)
+			logging.Debug(logging.TagWeb, "Cleanup timer cancelled for %s game (client reconnected): %s", h.GameType, h.Session.ID)
 		}
 		h.cleanupTimer = nil
 	}
 }
 
-func (h *WSHub) setupBoard() BoardStateMessage {
-	session := h.session
+func (h *Hub) setupBoard() dto.BoardStateMessage {
+	session := h.Session
 
-	boardDTO := make([][]PieceDTO, 10)
+	boardDTO := make([][]dto.PieceDTO, 10)
 	for y := range 10 {
-		boardDTO[y] = make([]PieceDTO, 10)
+		boardDTO[y] = make([]dto.PieceDTO, 10)
 	}
 
 	// Place player 1 pieces in setup area (rows 6-9)
@@ -244,12 +256,12 @@ func (h *WSHub) setupBoard() BoardStateMessage {
 		for x := range 10 {
 			if idx < len(player1Pieces) {
 				piece := player1Pieces[idx]
-				dto := PieceToDTO(piece, 0) // Player 0 can see their own pieces
-				if h.gameType == models.AiVsAi {
-					dto.Revealed = true // Force visibility for spectators during setup
+				dtoPiece := dto.PieceToDTO(piece, 0) // Player 0 can see their own pieces
+				if h.GameType == models.AiVsAi {
+					dtoPiece.Revealed = true // Force visibility for spectators during setup
 				}
-				dto.Position = PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dto
+				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
 				idx++
 			}
 		}
@@ -264,21 +276,21 @@ func (h *WSHub) setupBoard() BoardStateMessage {
 			if idx < len(player2Pieces) {
 				piece := player2Pieces[idx]
 				viewerID := -1
-				if h.gameType == models.AiVsAi {
+				if h.GameType == models.AiVsAi {
 					viewerID = 1 // Show all pieces in AI vs AI
 				}
-				dto := PieceToDTO(piece, viewerID) // Hide pieces
-				if h.gameType == models.AiVsAi {
-					dto.Revealed = true // Force visibility for spectators during setup
+				dtoPiece := dto.PieceToDTO(piece, viewerID) // Hide pieces
+				if h.GameType == models.AiVsAi {
+					dtoPiece.Revealed = true // Force visibility for spectators during setup
 				}
-				dto.Position = PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dto
+				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
 				idx++
 			}
 		}
 	}
 
-	return BoardStateMessage{
+	return dto.BoardStateMessage{
 		Board:  boardDTO,
 		Width:  10,
 		Height: 10,

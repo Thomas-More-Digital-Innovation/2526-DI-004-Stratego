@@ -1,7 +1,7 @@
-package api
+package ws_test
 
 import (
-	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/api/ws"
 	"digital-innovation/gostrategy/engine"
 	"digital-innovation/gostrategy/game"
 	"testing"
@@ -17,10 +17,10 @@ func TestWSHub_Cleanup(t *testing.T) {
 	session := game.NewSession("cleanup-test", c1, c2)
 
 	// Create hub
-	hub := NewWSHub(session, "human_vs_ai")
+	hub := ws.NewHub(session, "human_vs_ai")
 
 	// Set a very short cleanup period for testing
-	hub.cleanupPeriod = 100 * time.Millisecond
+	hub.SetCleanupPeriod(100 * time.Millisecond)
 
 	cleanupChan := make(chan bool, 1)
 	hub.OnCleanup = func() {
@@ -31,7 +31,7 @@ func TestWSHub_Cleanup(t *testing.T) {
 	go hub.Run()
 	defer hub.Stop()
 
-	// Initially, Run() starts a cleanup timer (double cleanupPeriod in our case)
+	// Initially, Run() starts a cleanup timer
 	// Wait for the initial cleanup timer to fire
 	select {
 	case <-cleanupChan:
@@ -50,8 +50,8 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	session := game.NewSession("cleanup-cancel-test", c1, c2)
 
 	// Create hub
-	hub := NewWSHub(session, "human_vs_ai")
-	hub.cleanupPeriod = 200 * time.Millisecond
+	hub := ws.NewHub(session, "human_vs_ai")
+	hub.SetCleanupPeriod(200 * time.Millisecond)
 
 	cleanupChan := make(chan bool, 1)
 	hub.OnCleanup = func() {
@@ -62,19 +62,15 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	defer hub.Stop()
 
 	// Register a client
-	client := &WSClient{
-		hub:      hub,
-		Username: db.TestUser,
-		send:     make(chan []byte, 10),
-	}
-	// Background consumer for client messages to avoid blocking hub
+	client := &ws.Client{}
+	// Background consumer for client messages
 	go func() {
-		for range client.send {
-			_ = 0 // Consume and discard messages to avoid blocking the hub
+		for range client.SendChan() {
+			_ = 0
 		}
 	}()
 
-	hub.register <- client
+	hub.Register() <- client
 
 	// Wait for hub to process registration and cancel initial timer
 	time.Sleep(100 * time.Millisecond)
@@ -87,7 +83,7 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	}
 
 	// Unregister client
-	hub.unregister <- client
+	hub.Unregister() <- client
 
 	// Now it should trigger cleanup
 	select {

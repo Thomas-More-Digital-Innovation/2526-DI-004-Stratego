@@ -1,6 +1,7 @@
-package api
+package handlers_test
 
 import (
+	"digital-innovation/gostrategy/api/rest/handlers"
 	"testing"
 )
 
@@ -23,8 +24,8 @@ func TestIsStrongPassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.password, func(t *testing.T) {
-			if got := isStrongPassword(tt.password); got != tt.want {
-				t.Errorf("isStrongPassword(%q) = %v, want %v", tt.password, got, tt.want)
+			if got := handlers.IsStrongPassword(tt.password); got != tt.want {
+				t.Errorf("IsStrongPassword(%q) = %v, want %v", tt.password, got, tt.want)
 			}
 		})
 	}

@@ -1,6 +1,8 @@
-package api
-
+// Package ws provides WebSocket functionality for the game server.
+package ws
+ 
 import (
+	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/models"
 	"encoding/json"
@@ -8,20 +10,20 @@ import (
 )
 
 // sendGameState sends the current game state to a specific client
-func (h *WSHub) sendGameState(client *WSClient) {
-	state := h.session.GetGameState()
+func (h *Hub) sendGameState(client *Client) {
+	state := h.Session.GetGameState()
 
 	var winnerName string
 	var winCause string
 	if state.WinnerID != nil {
-		winner := h.session.GetWinner()
+		winner := h.Session.GetWinner()
 		if winner != nil {
 			winnerName = winner.GetName()
 		}
-		winCause = string(h.session.GetWinCause())
+		winCause = string(h.Session.GetWinCause())
 	}
 
-	stateMsg := GameStateMessage{
+	stateMsg := dto.GameStateMessage{
 		Round:              state.Round,
 		CurrentPlayerID:    state.CurrentPlayerID,
 		CurrentPlayerName:  state.CurrentPlayerName,
@@ -43,8 +45,8 @@ func (h *WSHub) sendGameState(client *WSClient) {
 		Player2Username:    state.Player2Username,
 	}
 
-	msg := WSMessage{
-		Type: MsgTypeGameState,
+	msg := dto.WSMessage{
+		Type: dto.MsgTypeGameState,
 		Data: stateMsg,
 	}
 
@@ -66,54 +68,54 @@ func (h *WSHub) sendGameState(client *WSClient) {
 }
 
 // sendBoardState sends the current board state to a specific client
-func (h *WSHub) sendBoardState(client *WSClient) {
-	if h.session.IsSetupPhase() {
+func (h *Hub) sendBoardState(client *Client) {
+	if h.Session.IsSetupPhase() {
 		h.sendSetupBoard(client)
 		return
 	}
 
-	board := h.session.GetBoard()
+	board := h.Session.GetBoard()
 	field := board.GetField()
 
-	boardDTO := make([][]PieceDTO, 10)
+	boardDTO := make([][]dto.PieceDTO, 10)
 	for y := range 10 {
-		boardDTO[y] = make([]PieceDTO, 10)
+		boardDTO[y] = make([]dto.PieceDTO, 10)
 		for x := range 10 {
-			boardDTO[y][x] = PieceDTO{OwnerID: -1}
+			boardDTO[y][x] = dto.PieceDTO{OwnerID: -1}
 			piece := field[y][x]
 			if piece != nil {
-				dto := PieceToDTO(piece, client.seatIndex)
+				dtoPiece := dto.PieceToDTO(piece, client.SeatIndex)
 				// Force reveal all pieces for AI vs AI spectators or when game is over
-				if h.gameType == models.AiVsAi || h.session.GetGameState().IsGameOver {
+				if h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver {
 					pieceType := piece.GetType()
-					dto.Type = pieceType.GetName()
-					dto.Rank = string(pieceType.GetRank())
-					dto.Icon = pieceType.GetIcon()
-					dto.Revealed = true
+					dtoPiece.Type = pieceType.GetName()
+					dtoPiece.Rank = string(pieceType.GetRank())
+					dtoPiece.Icon = pieceType.GetIcon()
+					dtoPiece.Revealed = true
 				}
-				dto.Position = PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dto
+				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
 			}
 		}
 	}
 
-	lastMove := h.session.GetLastHistoricalMove()
+	lastMove := h.Session.GetLastHistoricalMove()
 	var filteredLastMove *models.HistoricalMove
 	if lastMove != nil {
 		// For the board state's LastMove, we don't force filter combat so the visualization works
-		fm := h.filterHistoricalMove(*lastMove, client.seatIndex, false)
+		fm := h.filterHistoricalMove(*lastMove, client.SeatIndex, false)
 		filteredLastMove = &fm
 	}
 
-	boardMsg := BoardStateMessage{
+	boardMsg := dto.BoardStateMessage{
 		Board:    boardDTO,
 		Width:    10,
 		Height:   10,
 		LastMove: filteredLastMove,
 	}
 
-	msg := WSMessage{
-		Type: MsgTypeBoardState,
+	msg := dto.WSMessage{
+		Type: dto.MsgTypeBoardState,
 		Data: boardMsg,
 	}
 
@@ -129,10 +131,10 @@ func (h *WSHub) sendBoardState(client *WSClient) {
 }
 
 // sendSetupBoard sends the setup board state to a specific client
-func (h *WSHub) sendSetupBoard(client *WSClient) {
+func (h *Hub) sendSetupBoard(client *Client) {
 	boardMsg := h.setupBoard()
-	msg := WSMessage{
-		Type: MsgTypeBoardState,
+	msg := dto.WSMessage{
+		Type: dto.MsgTypeBoardState,
 		Data: boardMsg,
 	}
 
@@ -148,27 +150,27 @@ func (h *WSHub) sendSetupBoard(client *WSClient) {
 }
 
 // sendMoveHistory sends the move history to a specific client
-func (h *WSHub) sendMoveHistory(client *WSClient) {
-	g := h.session.GetGame()
+func (h *Hub) sendMoveHistory(client *Client) {
+	g := h.Session.GetGame()
 	moveHistory := g.MoveHistory
 
-	moveDTOs := make([]MoveDTO, len(moveHistory))
+	moveDTOs := make([]dto.MoveDTO, len(moveHistory))
 	for i, move := range moveHistory {
-		moveDTOs[i] = MoveToDTO(move)
+		moveDTOs[i] = dto.MoveToDTO(move)
 	}
 
 	// Filter history if not AI vs AI and game is not over
 	fullHistory := g.HistoricalHistory
 	initialState := g.InitialState
 
-	if h.gameType != models.AiVsAi && !g.IsGameOver() {
+	if h.GameType != models.AiVsAi && !g.IsGameOver() {
 		// Filter initial state
 		initialState = make([][]models.PieceData, len(g.InitialState))
 		for y, row := range g.InitialState {
 			initialState[y] = make([]models.PieceData, len(row))
 			for x, piece := range row {
 				p := piece
-				if p.OwnerID != client.seatIndex && p.OwnerID != -1 && p.Type != "" {
+				if p.OwnerID != client.SeatIndex && p.OwnerID != -1 && p.Type != "" {
 					p.Type = ""
 					p.Rank = ""
 				}
@@ -179,18 +181,18 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 		fullHistory = make([]models.HistoricalMove, len(g.HistoricalHistory))
 		for i, m := range g.HistoricalHistory {
 			// For history, we force filter combat to prevent leaking piece ranks in a live game
-			fullHistory[i] = h.filterHistoricalMove(m, client.seatIndex, true)
+			fullHistory[i] = h.filterHistoricalMove(m, client.SeatIndex, true)
 		}
 	}
 
-	historyMsg := MoveHistoryMessage{
+	historyMsg := dto.MoveHistoryMessage{
 		Moves:        moveDTOs,
 		FullHistory:  fullHistory,
 		InitialState: initialState,
 	}
 
-	msg := WSMessage{
-		Type: MsgTypeMoveHistory,
+	msg := dto.WSMessage{
+		Type: dto.MsgTypeMoveHistory,
 		Data: historyMsg,
 	}
 
@@ -205,8 +207,8 @@ func (h *WSHub) sendMoveHistory(client *WSClient) {
 	}
 }
 
-func (h *WSHub) filterHistoricalMove(m models.HistoricalMove, seatIndex int, forceFilterCombat bool) models.HistoricalMove {
-	if h.gameType == models.AiVsAi || h.session.GetGameState().IsGameOver {
+func (h *Hub) filterHistoricalMove(m models.HistoricalMove, seatIndex int, forceFilterCombat bool) models.HistoricalMove {
+	if h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver {
 		return m
 	}
 

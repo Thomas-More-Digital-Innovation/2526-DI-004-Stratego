@@ -1,9 +1,12 @@
-// Package api provides the HTTP and WebSocket API for the GoStrategy game
-package api
+// Package ws provides WebSocket functionality for the game server.
+package ws
 
 import (
+	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/game"
 	"digital-innovation/gostrategy/logging"
+	"digital-innovation/gostrategy/models"
+	"encoding/json"
 	"time"
 
 	"sync"
@@ -12,13 +15,13 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// WSClient represents a WebSocket client connection
-type WSClient struct {
+// Client represents a WebSocket client connection
+type Client struct {
 	conn      *websocket.Conn
 	send      chan []byte
-	session   *game.Session
-	seatIndex int // -1 for spectator, 0 or 1 for player
-	hub       *WSHub
+	Session   *game.Session
+	SeatIndex int // -1 for spectator, 0 or 1 for player
+	Hub       *Hub
 	Username  string
 	UserID    int
 	limiter   *rate.Limiter
@@ -26,8 +29,41 @@ type WSClient struct {
 	closed    bool
 }
 
+// GetSeatIndex returns the client's seat index
+func (c *Client) GetSeatIndex() int { return c.SeatIndex }
+
+// GetSession returns the client's game session
+func (c *Client) GetSession() *game.Session { return c.Session }
+
+// GetHub returns the client's hub
+func (c *Client) GetHub() *Hub { return c.Hub }
+
+// GetUsername returns the client's username
+func (c *Client) GetUsername() string { return c.Username }
+
+// GetUserID returns the client's user ID
+func (c *Client) GetUserID() int { return c.UserID }
+
+// SendJSON helper to send a JSON message
+func (c *Client) SendJSON(msgType string, data any) {
+	msg := dto.WSMessage{
+		Type: msgType,
+		Data: data,
+	}
+	if jsonData, err := json.Marshal(msg); err == nil {
+		c.Send(jsonData, 100*time.Millisecond)
+	}
+}
+
+// IsAuthorized checks if the client is a player or the creator of an AI game
+func (c *Client) IsAuthorized() bool {
+	p1ID, _ := c.Session.GetPlayerIDs()
+	isCreator := p1ID == nil || c.UserID == *p1ID
+	return c.SeatIndex >= 0 || (c.Hub.GameType == models.HumanVsAi && isCreator) || (c.Hub.GameType == models.AiVsAi && isCreator)
+}
+
 // Close marks the client as closed and stops sending messages
-func (c *WSClient) Close() {
+func (c *Client) Close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.closed {
@@ -37,14 +73,14 @@ func (c *WSClient) Close() {
 }
 
 // IsClosed returns whether the client connection is closed
-func (c *WSClient) IsClosed() bool {
+func (c *Client) IsClosed() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.closed
 }
 
 // Send attempts to send data to the client with a timeout
-func (c *WSClient) Send(data []byte, timeout time.Duration) bool {
+func (c *Client) Send(data []byte, timeout time.Duration) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -61,10 +97,10 @@ func (c *WSClient) Send(data []byte, timeout time.Duration) bool {
 }
 
 // readPump pumps messages from the websocket connection to the hub
-func (c *WSClient) readPump() {
+func (c *Client) readPump() {
 	defer func() {
 		select {
-		case c.hub.unregister <- c:
+		case c.Hub.unregister <- c:
 		default:
 			// Hub is already stopped or busy; avoid blocking here to prevent goroutine leak
 		}
@@ -73,7 +109,7 @@ func (c *WSClient) readPump() {
 
 	err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	if err != nil {
-		logging.ConnectionError(c.session.ID, c.Username, c.UserID, err)
+		logging.ConnectionError(c.Session.ID, c.Username, c.UserID, err)
 		return
 	}
 	c.conn.SetPongHandler(func(string) error {
@@ -88,9 +124,9 @@ func (c *WSClient) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				logging.ConnectionError(c.session.ID, c.Username, c.UserID, err)
+				logging.ConnectionError(c.Session.ID, c.Username, c.UserID, err)
 			} else {
-				logging.ConnectionClosed(c.session.ID, c.Username, c.UserID)
+				logging.ConnectionClosed(c.Session.ID, c.Username, c.UserID)
 			}
 			break
 		}
@@ -110,7 +146,7 @@ func (c *WSClient) readPump() {
 }
 
 // writePump pumps messages from the hub to the websocket connection
-func (c *WSClient) writePump() {
+func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
@@ -123,7 +159,7 @@ func (c *WSClient) writePump() {
 		case message, ok := <-c.send:
 			err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err != nil {
-				logging.ConnectionError(c.session.ID, c.Username, c.UserID, err)
+				logging.ConnectionError(c.Session.ID, c.Username, c.UserID, err)
 				return
 			}
 			if !ok {

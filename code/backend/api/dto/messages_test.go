@@ -1,7 +1,7 @@
-package api_test
+package dto_test
 
 import (
-	"digital-innovation/gostrategy/api"
+	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/engine"
 	"digital-innovation/gostrategy/models"
 	"testing"
@@ -12,19 +12,19 @@ func TestPieceToDTO(t *testing.T) {
 	piece := engine.NewPiece(models.Captain, &player)
 
 	// Test as owner
-	dto := api.PieceToDTO(piece, 0)
-	if dto.Type != "Captain" {
-		t.Errorf("Expected type Captain, got: %s", dto.Type)
+	d := dto.PieceToDTO(piece, 0)
+	if d.Type != "Captain" {
+		t.Errorf("Expected type Captain, got: %s", d.Type)
 	}
-	if dto.Rank != "6" {
-		t.Errorf("Expected rank '6' for Captain, got: %s", dto.Rank)
+	if d.Rank != "6" {
+		t.Errorf("Expected rank '6' for Captain, got: %s", d.Rank)
 	}
-	if dto.OwnerID != 0 {
-		t.Errorf("Expected owner 0, got: %d", dto.OwnerID)
+	if d.OwnerID != 0 {
+		t.Errorf("Expected owner 0, got: %d", d.OwnerID)
 	}
 
 	// Test as opponent - piece should be hidden
-	dtoHidden := api.PieceToDTO(piece, 1)
+	dtoHidden := dto.PieceToDTO(piece, 1)
 	if dtoHidden.Type != "" {
 		t.Errorf("Expected type to be empty for opponent, got: %s", dtoHidden.Type)
 	}
@@ -42,35 +42,35 @@ func TestPieceToDTORevealed(t *testing.T) {
 	piece.Reveal()
 
 	// Even as opponent, revealed piece should show details
-	dto := api.PieceToDTO(piece, 1)
-	if dto.Type != "Scout" {
-		t.Errorf("Expected type Scout for revealed piece, got: %s", dto.Type)
+	d := dto.PieceToDTO(piece, 1)
+	if d.Type != "Scout" {
+		t.Errorf("Expected type Scout for revealed piece, got: %s", d.Type)
 	}
-	if !dto.Revealed {
+	if !d.Revealed {
 		t.Error("Expected Revealed to be true")
 	}
 }
 
 func TestPieceToDTONil(t *testing.T) {
-	dto := api.PieceToDTO(nil, 0)
+	d := dto.PieceToDTO(nil, 0)
 
-	if dto.Type != "" {
-		t.Errorf("Expected empty type for nil piece, got: %s", dto.Type)
+	if d.Type != "" {
+		t.Errorf("Expected empty type for nil piece, got: %s", d.Type)
 	}
-	if dto.OwnerID != -1 {
-		t.Errorf("Expected OwnerID -1 for nil piece, got: %d", dto.OwnerID)
+	if d.OwnerID != -1 {
+		t.Errorf("Expected OwnerID -1 for nil piece, got: %d", d.OwnerID)
 	}
 }
 
 func TestPositionToDTO(t *testing.T) {
 	pos := engine.NewPosition(3, 7)
-	dto := api.PositionToDTO(pos)
+	d := dto.PositionToDTO(pos)
 
-	if dto.X != 3 {
-		t.Errorf("Expected X=3, got: %d", dto.X)
+	if d.X != 3 {
+		t.Errorf("Expected X=3, got: %d", d.X)
 	}
-	if dto.Y != 7 {
-		t.Errorf("Expected Y=7, got: %d", dto.Y)
+	if d.Y != 7 {
+		t.Errorf("Expected Y=7, got: %d", d.Y)
 	}
 }
 
@@ -80,13 +80,13 @@ func TestMoveToDTO(t *testing.T) {
 	to := engine.NewPosition(2, 5)
 	move := engine.NewMove(from, to, &player)
 
-	dto := api.MoveToDTO(move)
+	d := dto.MoveToDTO(move)
 
-	if dto.From.X != 2 || dto.From.Y != 6 {
-		t.Errorf("Expected from position (2,6), got: (%d,%d)", dto.From.X, dto.From.Y)
+	if d.From.X != 2 || d.From.Y != 6 {
+		t.Errorf("Expected from position (2,6), got: (%d,%d)", d.From.X, d.From.Y)
 	}
-	if dto.To.X != 2 || dto.To.Y != 5 {
-		t.Errorf("Expected to position (2,5), got: (%d,%d)", dto.To.X, dto.To.Y)
+	if d.To.X != 2 || d.To.Y != 5 {
+		t.Errorf("Expected to position (2,5), got: (%d,%d)", d.To.X, d.To.Y)
 	}
 }
 
@@ -110,13 +110,13 @@ func TestPieceToDTOAllPieceTypes(t *testing.T) {
 
 	for _, pieceType := range pieceTypes {
 		piece := engine.NewPiece(pieceType, &player)
-		dto := api.PieceToDTO(piece, 0)
+		d := dto.PieceToDTO(piece, 0)
 
-		if dto.Type != pieceType.GetName() {
-			t.Errorf("Expected type %s, got: %s", pieceType.GetName(), dto.Type)
+		if d.Type != pieceType.GetName() {
+			t.Errorf("Expected type %s, got: %s", pieceType.GetName(), d.Type)
 		}
-		if dto.Icon != pieceType.GetIcon() {
-			t.Errorf("Expected icon %s for %s, got: %s", pieceType.GetIcon(), pieceType.GetName(), dto.Icon)
+		if d.Icon != pieceType.GetIcon() {
+			t.Errorf("Expected icon %s for %s, got: %s", pieceType.GetIcon(), pieceType.GetName(), d.Icon)
 		}
 	}
 }

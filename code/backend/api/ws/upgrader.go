@@ -1,12 +1,13 @@
-package api
-
+// Package ws provides WebSocket functionality for the game server.
+package ws
+ 
 import (
 	"digital-innovation/gostrategy/game"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/utils"
 	"net/http"
 	"strings"
-
+ 
 	"github.com/gorilla/websocket"
 )
 
@@ -42,19 +43,19 @@ var upgrader = websocket.Upgrader{
 }
 
 // HandleWebSocket handles WebSocket connections
-func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.Session, hub *WSHub, seatIndex int, username string, userID int) {
+func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.Session, hub *Hub, seatIndex int, username string, userID int) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logging.ConnectionError(session.ID, "", 0, err)
 		return
 	}
 
-	client := &WSClient{
+	client := &Client{
 		conn:      conn,
 		send:      make(chan []byte, 256),
-		session:   session,
-		seatIndex: seatIndex,
-		hub:       hub,
+		Session:   session,
+		SeatIndex: seatIndex,
+		Hub:       hub,
 		Username:  username,
 		UserID:    userID,
 	}

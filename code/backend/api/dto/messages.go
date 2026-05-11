@@ -1,5 +1,5 @@
-// Package api provides the HTTP and WebSocket API for the GoStrategy game
-package api
+// Package dto provides data transfer objects for WebSocket messages.
+package dto
 
 import (
 	"digital-innovation/gostrategy/engine"
