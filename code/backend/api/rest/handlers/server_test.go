@@ -30,8 +30,8 @@ func TestHandleCreateGame(t *testing.T) {
 
 	t.Run("GuestCreatesGame", func(t *testing.T) {
 		body := map[string]string{
-			"gameType": models.HumanVsAi,
-			"ai1":      models.Fafo,
+			keyGameType: models.HumanVsAi,
+			keyAI1:      models.Fafo,
 		}
 		jsonBody, _ := json.Marshal(body)
 		req, _ := http.NewRequest("POST", "/games", bytes.NewBuffer(jsonBody))
@@ -56,8 +56,8 @@ func TestHandleCreateGame(t *testing.T) {
 		rWithAuth.POST("/games", h.HandleCreateGame)
 
 		body := map[string]string{
-			"gameType": models.HumanVsAi,
-			"ai1":      models.Fafo,
+			keyGameType: models.HumanVsAi,
+			keyAI1:      models.Fafo,
 		}
 		jsonBody, _ := json.Marshal(body)
 		req, _ := http.NewRequest("POST", "/games", bytes.NewBuffer(jsonBody))
@@ -89,8 +89,8 @@ func TestHandleCreateGame(t *testing.T) {
 		rWithAuth.POST("/games", h.HandleCreateGame)
 
 		body := map[string]string{
-			"gameType": models.HumanVsAi,
-			"ai1":      models.Fafo,
+			keyGameType: models.HumanVsAi,
+			keyAI1:      models.Fafo,
 		}
 		jsonBody, _ := json.Marshal(body)
 		req, _ := http.NewRequest("POST", "/games", bytes.NewBuffer(jsonBody))
@@ -115,8 +115,8 @@ func TestHandleCreateGame(t *testing.T) {
 		rWithAuth.POST("/games", h.HandleCreateGame)
 
 		body := map[string]string{
-			"gameType": models.HumanVsAi,
-			"ai1":      models.Fafo,
+			keyGameType: models.HumanVsAi,
+			keyAI1:      models.Fafo,
 		}
 		jsonBody, _ := json.Marshal(body)
 		req, _ := http.NewRequest("POST", "/games", bytes.NewBuffer(jsonBody))

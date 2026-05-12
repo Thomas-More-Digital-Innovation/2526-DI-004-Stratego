@@ -14,6 +14,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	keyGameType = "gameType"
+	keyAI1      = "ai1"
+)
+
 // Handler provides REST API handlers with access to the game server
 type Handler struct {
 	*core.GameServer
@@ -101,9 +106,9 @@ func (h *Handler) HandleCreateGame(c *gin.Context) {
 	}
 
 	core.SendJSON(c, gin.H{
-		"gameId":   req.GameID,
-		"gameType": req.GameType,
-		"wsUrl":    fmt.Sprintf("/game/%s", req.GameID),
+		"gameId":    req.GameID,
+		keyGameType: req.GameType,
+		"wsUrl":     fmt.Sprintf("/game/%s", req.GameID),
 	}, http.StatusOK)
 
 	logging.GameStarted(req.GameID, req.GameType, username, userID)
