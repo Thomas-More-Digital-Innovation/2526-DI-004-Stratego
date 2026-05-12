@@ -68,7 +68,9 @@ func (c *Client) Close() {
 	defer c.mu.Unlock()
 	if !c.closed {
 		c.closed = true
-		close(c.send)
+		if c.send != nil {
+			close(c.send)
+		}
 	}
 }
 

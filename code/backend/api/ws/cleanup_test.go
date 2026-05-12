@@ -62,7 +62,7 @@ func TestWSHub_CleanupCancelledOnConnect(t *testing.T) {
 	defer hub.Stop()
 
 	// Register a client
-	client := &ws.Client{}
+	client := ws.NewTestClient()
 	// Background consumer for client messages
 	go func() {
 		for range client.SendChan() {

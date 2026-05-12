@@ -20,7 +20,7 @@ func TestWSHub_RegisterUnregister(t *testing.T) {
 	go hub.Run()
 	defer hub.Stop()
 
-	client := &ws.Client{}
+	client := ws.NewTestClient()
 
 	// Register
 	hub.Register() <- client
@@ -60,7 +60,7 @@ func TestWSHub_AICleanup(t *testing.T) {
 
 	go hub.Run()
 
-	client := &ws.Client{}
+	client := ws.NewTestClient()
 
 	// Register then unregister
 	hub.Register() <- client
@@ -91,7 +91,7 @@ func TestWSHub_Broadcast(t *testing.T) {
 	go hub.Run()
 	defer hub.Stop()
 
-	client := &ws.Client{}
+	client := ws.NewTestClient()
 	hub.Register() <- client
 
 	// Drain the initial messages (gameState and boardState) sent upon registration
