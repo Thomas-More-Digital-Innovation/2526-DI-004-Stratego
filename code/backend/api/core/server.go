@@ -114,6 +114,26 @@ func (s *GameServer) GetSession(gameID string) (*SessionHandler, bool) {
 	return handler, exists
 }
 
+// IsUserInActiveGame checks if a user is already in a game session (active or stale)
+func (s *GameServer) IsUserInActiveGame(userID int) (*SessionHandler, bool) {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+
+	for _, handler := range s.Sessions {
+		p1, p2 := handler.Session.GetPlayerIDs()
+		if (p1 != nil && *p1 == userID) || (p2 != nil && *p2 == userID) {
+			return handler, true
+		}
+	}
+
+	return nil, false
+}
+
+// IsWaitingForCleanup checks if the user is waiting for cleanup in this session (game over or user disconnected)
+func (sh *SessionHandler) IsWaitingForCleanup(userID int) bool {
+	return sh.Session.GetGameState().IsGameOver || !sh.Hub.IsUserConnected(userID)
+}
+
 // RemoveSession removes a game session from the server and stops its resources
 func (s *GameServer) RemoveSession(gameID string) {
 	s.Mutex.Lock()

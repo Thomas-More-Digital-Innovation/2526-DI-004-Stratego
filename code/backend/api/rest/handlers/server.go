@@ -63,6 +63,19 @@ func (h *Handler) HandleCreateGame(c *gin.Context) {
 		req.GameType = models.HumanVsAi
 	}
 
+	// Limiter: A player can only play one game at a time
+	if userID != -1 {
+		if existingHandler, found := h.IsUserInActiveGame(userID); found {
+			if !existingHandler.IsWaitingForCleanup(userID) {
+				core.SendError(c, fmt.Sprintf("You are already in an active game (%s). Please finish it before starting a new one.", existingHandler.Session.ID), http.StatusConflict)
+				return
+			}
+			// Stale/Waiting for cleanup: clean up directly and allow new game
+			logging.Debug(logging.TagWeb, "User %d starting new game, force cleaning up stale session %s", userID, existingHandler.Session.ID)
+			h.RemoveSession(existingHandler.Session.ID)
+		}
+	}
+
 	name1 := username
 	name2 := req.AI1
 	switch req.GameType {
@@ -138,19 +151,48 @@ func (h *Handler) HandleWebSocketConnection(c *gin.Context) {
 	p1ID, p2ID := handler.Session.GetPlayerIDs()
 	switch playerID {
 	case 0:
-		if p1ID != nil && (currentUserID == nil || *currentUserID != *p1ID) {
-			core.SendError(c, "Unauthorized: You are not Player 1", http.StatusForbidden)
+		if !h.associatePlayer(c, currentUserID, p1ID, user, gameID) {
 			return
 		}
+		if p1ID == nil && user != nil && handler.GameType != models.AiVsAi {
+			handler.Session.SetPlayer1Associate(user.ID, user.Username)
+		}
 	case 1:
-		if p2ID != nil && (currentUserID == nil || *currentUserID != *p2ID) {
-			core.SendError(c, "Unauthorized: You are not Player 2", http.StatusForbidden)
+		if !h.associatePlayer(c, currentUserID, p2ID, user, gameID) {
 			return
+		}
+		if p2ID == nil && user != nil && handler.GameType != models.AiVsAi {
+			handler.Session.SetPlayer2Associate(user.ID, user.Username)
 		}
 	}
 
 	username, userID := utils.TryGetUser(user)
 	ws.HandleWebSocket(c.Writer, c.Request, handler.Session, handler.Hub, playerID, username, userID)
+}
+
+func (h *Handler) associatePlayer(c *gin.Context, currentUserID *int, associatedUserID *int, user *models.User, gameID string) bool {
+	if associatedUserID != nil {
+		if currentUserID == nil || *currentUserID != *associatedUserID {
+			core.SendError(c, "Unauthorized: You are not logged in as the correct player.", http.StatusForbidden)
+			return false
+		}
+		return true // Already associated and matches
+	}
+
+	if user != nil {
+		// Associate if slot empty
+		if existingHandler, found := h.IsUserInActiveGame(user.ID); found && existingHandler.Session.ID != gameID {
+			if !existingHandler.IsWaitingForCleanup(user.ID) {
+				core.SendError(c, fmt.Sprintf("You are already in another active game (%s).", existingHandler.Session.ID), http.StatusConflict)
+				return false
+			}
+			// Stale/Waiting for cleanup
+			logging.Debug(logging.TagWeb, "User %d joining game %s, force cleaning up stale session %s", user.ID, gameID, existingHandler.Session.ID)
+			h.RemoveSession(existingHandler.Session.ID)
+		}
+	}
+
+	return true // Allowed to connect (either as guest or new associate)
 }
 
 // HandleListGames returns a list of active games
