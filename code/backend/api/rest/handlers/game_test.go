@@ -55,7 +55,8 @@ func TestHandleListMyGames(t *testing.T) {
 
 	// Save a game for this user
 	userID := 100
-	db.SaveGame(context.TODO(), "my-game", &userID, nil, models.HumanVsAi, map[string]any{}, nil)
+	err := db.SaveGame(context.TODO(), "my-game", &userID, nil, models.HumanVsAi, map[string]any{}, nil)
+	assert.NoError(t, err)
 
 	t.Run("ListGames", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/users/me/games", nil)

@@ -21,7 +21,7 @@ func TestIsUserInActiveGame(t *testing.T) {
 	p2 := engine.NewPlayer(1, "Blue", "blue")
 	session := game.NewSession(gameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
 	session.Player1UserID = &userID
-	
+
 	handler := &SessionHandler{
 		Session: session,
 	}
@@ -45,7 +45,7 @@ func TestIsWaitingForCleanup(t *testing.T) {
 	p2 := engine.NewPlayer(1, "Blue", "blue")
 	session := game.NewSession(gameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
 	hub := ws.NewHub(session, models.HumanVsAi)
-	
+
 	sh := &SessionHandler{
 		Session: session,
 		Hub:     hub,
@@ -57,20 +57,20 @@ func TestIsWaitingForCleanup(t *testing.T) {
 	// 2. User connects
 	client := ws.NewTestClient()
 	client.UserID = userID
-	
+
 	// Start hub if not already running (Hub.Run() is normally started by GameServer, but here we created it manually)
 	go hub.Run()
-	
+
 	hub.Register() <- client
 	// Give it a bit of time to process registration
 	time.Sleep(10 * time.Millisecond)
-	
+
 	// Now user is connected, so it should NOT be waiting for cleanup
 	assert.False(t, sh.IsWaitingForCleanup(userID))
 
 	// 3. Game is over
 	sh.Session.GetGame().SetWinner(&p1, game.WinCauseFlagCaptured)
-	
+
 	// Even if user is connected, if game is over, it should be waiting for cleanup
 	assert.True(t, sh.IsWaitingForCleanup(userID))
 }
