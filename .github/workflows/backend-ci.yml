@@ -142,6 +142,14 @@ jobs:
           # Run tests with gotestsum for a clear overview of failures in CI logs
           $(go env GOPATH)/bin/gotestsum --format pkgname-and-test-fails --junitfile unit-tests.xml -- -race ./... -coverprofile=coverage.out -covermode=atomic
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: code/backend/coverage.out
+          flags: backend
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -189,7 +197,7 @@ jobs:
           if [ $? -eq 0 ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: post coverage report
         if: always() && steps.find_pr.outputs.pull_request_id
         uses: thollander/actions-comment-pull-request@v3
