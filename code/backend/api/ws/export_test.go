@@ -11,7 +11,7 @@ func (h *Hub) Mutex() any                       { return &h.mutex }
 func (h *Hub) SetCleanupPeriod(d time.Duration) { h.cleanupPeriod = d }
 
 func (c *Client) SendChan() chan []byte { return c.send }
- 
+
 func NewTestClient() *Client {
 	return &Client{
 		send: make(chan []byte, 256),
