@@ -6,12 +6,12 @@ concurrency:
 
 on:
   push:
-    branches: [ "*" ]
+    branches: ["*"]
     paths:
       - "code/backend/**"
       - ".github/workflows/backend-ci.yml"
   pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
     paths:
       - "code/backend/**"
       - ".github/workflows/backend-ci.yml"
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ "1.25" ]
+        go-version: ["1.25"]
 
     steps:
       - name: Checkout repository
@@ -76,7 +76,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        go-version: [ "1.25" ]
+        go-version: ["1.25"]
 
     services:
       postgres:
@@ -138,7 +138,7 @@ jobs:
         run: |
           # Install gotestsum for better failure overview
           go install gotest.tools/gotestsum@latest
-          
+
           # Run tests with gotestsum for a clear overview of failures in CI logs
           $(go env GOPATH)/bin/gotestsum --format pkgname-and-test-fails --junitfile unit-tests.xml -- -race ./... -coverprofile=coverage.out -covermode=atomic
 
@@ -156,7 +156,117 @@ jobs:
           name: backend-test-results
           path: code/backend/unit-tests.xml
 
-      - name: Summary
-        if: failure()
+      - name: check test coverage
+        id: coverage
+        uses: vladopajic/go-test-coverage@v2
+        continue-on-error: true # Should fail after coverage comment is posted
+        with:
+          config: ./.github/.testcoverage.yml
+
+      - name: Generate Detailed Coverage Report
+        id: detailed_report
+        if: always()
+        working-directory: code/backend
         run: |
-          echo "Backend CI failed. Review the logs above to see test/lint failures."
+          if [ -f coverage.out ]; then
+            REPORT=$(awk '
+              BEGIN { FS="[ :]" }
+              $1 == "mode" { next }
+              {
+                full_path = $1
+                # Remove module prefix
+                sub(/^digital-innovation\/gostrategy\//, "", full_path)
+                
+                # Extract package and file
+                if (full_path ~ /\//) {
+                  pkg = full_path
+                  sub(/\/[^\/]+$/, "", pkg)
+                  file = full_path
+                  sub(/.*\//, "", file)
+                } else {
+                  pkg = "(root)"
+                  file = full_path
+                }
+                
+                key = pkg "|" file
+                f_stmts[key] += $3
+                if ($4 > 0) { f_hits[key] += $3 }
+              }
+              END {
+                for (k in f_stmts) {
+                  split(k, a, "|")
+                  cov = f_stmts[k] > 0 ? (f_hits[k]/f_stmts[k])*100 : 0
+                  printf "%s|%s|%.1f%%\n", a[1], a[2], cov
+                }
+              }
+            ' coverage.out | sort -t'|' -k1,1 -k2,2 | awk -F'|' '
+              BEGIN { 
+                print "| Package | File | Coverage |"
+                print "| :--- | :--- | :--- |" 
+              }
+              {
+                pkg = $1; file = $2; cov = $3
+                if (pkg == last_pkg) {
+                  printf "| | `%s` | %s |\n", file, cov
+                } else {
+                  printf "| **%s** | `%s` | %s |\n", pkg, file, cov
+                  last_pkg = pkg
+                }
+              }
+            ')
+            
+            # Use multi-line output delimiter
+            echo "table<<EOF" >> $GITHUB_OUTPUT
+            echo "$REPORT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "table=No coverage data available." >> $GITHUB_OUTPUT
+          fi
+
+      # Post coverage report as comment (in 2 steps)
+      - name: find pull request ID
+        id: find_pr
+        if: always()
+        run: |
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.ref_name }}&state=open")
+          PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
+
+          if [ "$PR_ID" != "null" ] && [ "$PR_ID" != "" ]; then
+            echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
+          else
+            echo "No open pull request found for this branch."
+          fi
+
+      - name: post coverage report
+        if: always() && steps.find_pr.outputs.pull_request_id
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-tag: coverage-report
+          pr-number: ${{ steps.find_pr.outputs.pull_request_id }}
+          message: |
+            ### Test Coverage Report
+
+            ${{ fromJSON(steps.coverage.outputs.report) }}
+
+            <details>
+            <summary>View Detailed Package Coverage</summary>
+
+            ${{ steps.detailed_report.outputs.table }}
+
+            </details>
+
+      - name: "finally check coverage"
+        if: always() && steps.coverage.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "### ❌ Coverage Check Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Test coverage does not meet the required thresholds. Check the PR comment for details." >> $GITHUB_STEP_SUMMARY
+          exit 1
+
+      - name: Final Status
+        if: failure() && steps.coverage.outcome != 'failure'
+        run: |
+          echo "### ❌ CI Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Backend CI failed. Review the logs above to see test/lint failures." >> $GITHUB_STEP_SUMMARY
