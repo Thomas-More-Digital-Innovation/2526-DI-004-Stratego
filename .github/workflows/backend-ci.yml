@@ -173,31 +173,49 @@ jobs:
               BEGIN { FS="[ :]" }
               $1 == "mode" { next }
               {
-                pkg = $1
+                full_path = $1
                 # Remove module prefix
-                sub(/^digital-innovation\/gostrategy\//, "", pkg)
-                # Remove filename to get package path
-                if (pkg ~ /\//) {
-                  sub(/\/[^\/]+\.go$/, "", pkg)
-                } else if (pkg ~ /\.go$/) {
+                sub(/^digital-innovation\/gostrategy\//, "", full_path)
+                
+                # Extract package and file
+                if (full_path ~ /\//) {
+                  pkg = full_path
+                  sub(/\/[^\/]+$/, "", pkg)
+                  file = full_path
+                  sub(/.*\//, "", file)
+                } else {
                   pkg = "(root)"
+                  file = full_path
                 }
                 
-                pkg_stmts[pkg] += $3
-                if ($4 > 0) { pkg_hits[pkg] += $3 }
+                key = pkg "|" file
+                f_stmts[key] += $3
+                if ($4 > 0) { f_hits[key] += $3 }
               }
               END {
-                for (p in pkg_stmts) {
-                  coverage = pkg_stmts[p] > 0 ? (pkg_hits[p]/pkg_stmts[p])*100 : 0
-                  printf "%s %.1f%%\n", p, coverage
+                for (k in f_stmts) {
+                  split(k, a, "|")
+                  cov = f_stmts[k] > 0 ? (f_hits[k]/f_stmts[k])*100 : 0
+                  printf "%s|%s|%.1f%%\n", a[1], a[2], cov
                 }
               }
-            ' coverage.out | sort | awk '
-              BEGIN { print "| Package | Coverage |"; print "| :--- | :--- |" }
-              { print "| `" $1 "` | " $2 " |" }
+            ' coverage.out | sort -t'|' -k1,1 -k2,2 | awk -F'|' '
+              BEGIN { 
+                print "| Package | File | Coverage |"
+                print "| :--- | :--- | :--- |" 
+              }
+              {
+                pkg = $1; file = $2; cov = $3
+                if (pkg == last_pkg) {
+                  printf "| | `%s` | %s |\n", file, cov
+                } else {
+                  printf "| **%s** | `%s` | %s |\n", pkg, file, cov
+                  last_pkg = pkg
+                }
+              }
             ')
             
-            # Escape newlines for GITHUB_OUTPUT
+            # Use multi-line output delimiter
             echo "table<<EOF" >> $GITHUB_OUTPUT
             echo "$REPORT" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
