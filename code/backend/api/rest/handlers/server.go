@@ -99,9 +99,11 @@ func (h *Handler) HandleCreateGame(c *gin.Context) {
 	}
 
 	if userID != -1 {
-		handler.Session.Player1UserID = &userID
 		if req.GameType != models.AiVsAi {
-			handler.Session.Player1Username = username
+			handler.Session.SetPlayer1Associate(userID, username)
+		} else {
+			// For AI vs AI, just set the ID without changing the AI name
+			handler.Session.SetPlayer1Associate(userID, name1)
 		}
 	}
 

@@ -20,7 +20,7 @@ func TestIsUserInActiveGame(t *testing.T) {
 	p1 := engine.NewPlayer(0, "Red", "red")
 	p2 := engine.NewPlayer(1, "Blue", "blue")
 	session := game.NewSession(gameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
-	session.Player1UserID = &userID
+	session.SetPlayer1Associate(userID, "Red")
 
 	handler := &SessionHandler{
 		Session: session,
@@ -69,7 +69,7 @@ func TestIsWaitingForCleanup(t *testing.T) {
 	assert.False(t, sh.IsWaitingForCleanup(userID))
 
 	// 3. Game is over
-	sh.Session.GetGame().SetWinner(&p1, game.WinCauseFlagCaptured)
+	sh.Session.SetWinner(&p1, game.WinCauseFlagCaptured)
 
 	// Even if user is connected, if game is over, it should be waiting for cleanup
 	assert.True(t, sh.IsWaitingForCleanup(userID))

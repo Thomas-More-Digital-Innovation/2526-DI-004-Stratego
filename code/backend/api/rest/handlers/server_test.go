@@ -72,7 +72,7 @@ func TestHandleCreateGame(t *testing.T) {
 
 		// Setup existing active game
 		handler, _ := h.CreateGame("busy-game", models.HumanVsAi, "busyuser", models.Fafo)
-		handler.Session.Player1UserID = &user.ID
+		handler.Session.SetPlayer1Associate(user.ID, "busyuser")
 
 		// Register a client to make it "active"
 		client := ws.NewTestClient()
@@ -105,7 +105,7 @@ func TestHandleCreateGame(t *testing.T) {
 
 		// Setup existing game that is "stale" (no one connected)
 		handler, _ := h.CreateGame("stale-game", models.HumanVsAi, "staleuser", models.Fafo)
-		handler.Session.Player1UserID = &user.ID
+		handler.Session.SetPlayer1Associate(user.ID, "staleuser")
 
 		rWithAuth := gin.New()
 		rWithAuth.Use(func(c *gin.Context) {
