@@ -3,6 +3,7 @@ package handlers
 import (
 	"digital-innovation/gostrategy/api/core"
 	"digital-innovation/gostrategy/api/dto"
+	"digital-innovation/gostrategy/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,22 @@ import (
 // @Success 200 {object} map[string]string
 // @Router /health [get]
 func (h *Handler) HealthHandler(c *gin.Context) {
-	core.SendJSON(c, gin.H{"status": "UP"}, http.StatusOK)
+	// Check database connection
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		core.SendError(c, "Database connection error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		core.SendError(c, "Database unreachable", http.StatusInternalServerError)
+		return
+	}
+
+	core.SendJSON(c, gin.H{
+		"status": "ok",
+		"db":     "connected",
+	}, http.StatusOK)
 }
 
 // GetCSRFToken returns a message for CSRF token retrieval
