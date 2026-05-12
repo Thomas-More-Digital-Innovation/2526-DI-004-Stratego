@@ -156,88 +156,40 @@ jobs:
           name: backend-test-results
           path: code/backend/unit-tests.xml
 
+      # --- Test & Coverage Analysis ---
       - name: check test coverage
         id: coverage
         uses: vladopajic/go-test-coverage@v2
-        continue-on-error: true # Should fail after coverage comment is posted
+        continue-on-error: true
         with:
           config: ./.github/.testcoverage.yml
 
       - name: Generate Detailed Coverage Report
         id: detailed_report
         if: always()
-        working-directory: code/backend
         run: |
-          if [ -f coverage.out ]; then
-            REPORT=$(awk '
-              BEGIN { FS="[ :]" }
-              $1 == "mode" { next }
-              {
-                full_path = $1
-                # Remove module prefix
-                sub(/^digital-innovation\/gostrategy\//, "", full_path)
-                
-                # Extract package and file
-                if (full_path ~ /\//) {
-                  pkg = full_path
-                  sub(/\/[^\/]+$/, "", pkg)
-                  file = full_path
-                  sub(/.*\//, "", file)
-                } else {
-                  pkg = "(root)"
-                  file = full_path
-                }
-                
-                key = pkg "|" file
-                f_stmts[key] += $3
-                if ($4 > 0) { f_hits[key] += $3 }
-              }
-              END {
-                for (k in f_stmts) {
-                  split(k, a, "|")
-                  cov = f_stmts[k] > 0 ? (f_hits[k]/f_stmts[k])*100 : 0
-                  printf "%s|%s|%.1f%%\n", a[1], a[2], cov
-                }
-              }
-            ' coverage.out | sort -t'|' -k1,1 -k2,2 | awk -F'|' '
-              BEGIN { 
-                print "| Package | File | Coverage |"
-                print "| :--- | :--- | :--- |" 
-              }
-              {
-                pkg = $1; file = $2; cov = $3
-                if (pkg == last_pkg) {
-                  printf "| | `%s` | %s |\n", file, cov
-                } else {
-                  printf "| **%s** | `%s` | %s |\n", pkg, file, cov
-                  last_pkg = pkg
-                }
-              }
-            ')
-            
-            # Use multi-line output delimiter
-            echo "table<<EOF" >> $GITHUB_OUTPUT
-            echo "$REPORT" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "table=No coverage data available." >> $GITHUB_OUTPUT
-          fi
+          REPORT=$(./code/backend/scripts/coverage_report.sh code/backend/coverage.out)
+          echo "table<<EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      # Post coverage report as comment (in 2 steps)
+      # --- Pull Request Interaction ---
       - name: find pull request ID
         id: find_pr
         if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.ref_name }}&state=open")
-          PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
-
-          if [ "$PR_ID" != "null" ] && [ "$PR_ID" != "" ]; then
+          PR_ID=$(./code/backend/scripts/find_pr.sh \
+            "${{ github.repository }}" \
+            "${{ github.repository_owner }}" \
+            "${{ github.ref_name }}" \
+            "$GITHUB_TOKEN" \
+            "${{ github.event.pull_request.number }}")
+          if [ $? -eq 0 ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
-          else
-            echo "No open pull request found for this branch."
           fi
-
+      
       - name: post coverage report
         if: always() && steps.find_pr.outputs.pull_request_id
         uses: thollander/actions-comment-pull-request@v3
@@ -257,6 +209,7 @@ jobs:
 
             </details>
 
+      # --- Verification & Cleanup ---
       - name: "finally check coverage"
         if: always() && steps.coverage.outcome == 'failure'
         shell: bash
