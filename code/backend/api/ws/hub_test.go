@@ -28,7 +28,7 @@ func TestWSHub_RegisterUnregister(t *testing.T) {
 	// Wait a bit for processing
 	time.Sleep(10 * time.Millisecond)
 
-	count := len(hub.Clients())
+	count := hub.ClientCount()
 
 	if count != 1 {
 		t.Errorf("Expected 1 client, got %d", count)
@@ -38,7 +38,7 @@ func TestWSHub_RegisterUnregister(t *testing.T) {
 	hub.Unregister() <- client
 	time.Sleep(10 * time.Millisecond)
 
-	count = len(hub.Clients())
+	count = hub.ClientCount()
 
 	if count != 0 {
 		t.Errorf("Expected 0 clients after unregister, got %d", count)
