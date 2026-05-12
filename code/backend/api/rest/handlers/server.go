@@ -13,12 +13,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
- 
+
 // Handler provides REST API handlers with access to the game server
 type Handler struct {
 	*core.GameServer
 }
- 
+
 // NewHandler creates a new REST handler
 func NewHandler(s *core.GameServer) *Handler {
 	return &Handler{s}

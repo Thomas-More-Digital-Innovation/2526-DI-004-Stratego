@@ -1,13 +1,13 @@
 // Package ws provides WebSocket functionality for the game server.
 package ws
- 
+
 import (
 	"digital-innovation/gostrategy/game"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/utils"
 	"net/http"
 	"strings"
- 
+
 	"github.com/gorilla/websocket"
 )
 

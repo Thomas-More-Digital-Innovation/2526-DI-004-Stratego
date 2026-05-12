@@ -175,7 +175,7 @@ func (h *Hub) IsStopped() bool {
 	defer h.mutex.RUnlock()
 	return h.stopped
 }
- 
+
 // ClientCount returns the number of connected clients
 func (h *Hub) ClientCount() int {
 	h.mutex.RLock()

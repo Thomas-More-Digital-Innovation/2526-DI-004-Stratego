@@ -1,6 +1,6 @@
 // Package ws provides WebSocket functionality for the game server.
 package ws
- 
+
 import (
 	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/logging"
