@@ -79,24 +79,19 @@ func TestIntegration_WebSocket(t *testing.T) {
 		}
  
 		// Wait for pong
-		timeout := time.After(200 * time.Millisecond)
+		conn1.SetReadDeadline(time.Now().Add(2 * time.Second))
 		foundPong := false
 		for !foundPong {
-			select {
-			case <-timeout:
-				t.Fatal("Timed out waiting for pong")
-			default:
-				_, message, err := conn1.ReadMessage()
-				if err != nil {
-					t.Fatalf("Failed to read message for pong: %v", err)
-				}
-				var msg dto.WSMessage
-				if err := json.Unmarshal(message, &msg); err != nil {
-					t.Logf("Failed to unmarshal message: %v", err)
-				}
-				if msg.Type == dto.MsgTypePong {
-					foundPong = true
-				}
+			_, message, err := conn1.ReadMessage()
+			if err != nil {
+				t.Fatalf("Timed out or failed waiting for pong: %v", err)
+			}
+			var msg dto.WSMessage
+			if err := json.Unmarshal(message, &msg); err != nil {
+				continue
+			}
+			if msg.Type == dto.MsgTypePong {
+				foundPong = true
 			}
 		}
 	})

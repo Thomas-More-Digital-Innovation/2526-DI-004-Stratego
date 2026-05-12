@@ -3,6 +3,8 @@ package api
 import (
 	"digital-innovation/gostrategy/api/core"
 	"digital-innovation/gostrategy/logging"
+
+	_ "digital-innovation/gostrategy/api/ws/handlers" // Register WebSocket handlers
 )
 
 // GameServer wraps the core GameServer to add routing and server management
