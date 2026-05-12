@@ -180,7 +180,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_ID=$(./code/backend/scripts/find_pr.sh "${{ github.repository }}" "${{ github.repository_owner }}" "${{ github.ref_name }}" "$GITHUB_TOKEN")
+          PR_ID=$(./code/backend/scripts/find_pr.sh \
+            "${{ github.repository }}" \
+            "${{ github.repository_owner }}" \
+            "${{ github.ref_name }}" \
+            "$GITHUB_TOKEN" \
+            "${{ github.event.pull_request.number }}")
           if [ $? -eq 0 ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
           fi

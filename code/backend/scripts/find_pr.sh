@@ -5,10 +5,17 @@ REPO=$1
 OWNER=$2
 BRANCH=$3
 TOKEN=$4
+EXISTING_PR=$5
+
+# If we already have the ID (from pull_request event), just use it
+if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+    echo "$EXISTING_PR"
+    exit 0
+fi
 
 if [ -z "$TOKEN" ]; then
     echo "No GitHub token provided."
-    exit 0
+    exit 1
 fi
 
 PR_DATA=$(curl -s -H "Authorization: token $TOKEN" \
