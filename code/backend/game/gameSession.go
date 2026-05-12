@@ -400,6 +400,13 @@ func (gs *Session) GetWinCause() WinCause {
 	return gs.game.GetWinCause()
 }
 
+// SetWinner manually declares a winner and ends the game
+func (gs *Session) SetWinner(player *engine.Player, cause WinCause) {
+	gs.mutex.Lock()
+	defer gs.mutex.Unlock()
+	gs.game.SetWinner(player, cause)
+}
+
 // GetLastCombat returns the last combat result if any
 func (gs *Session) GetLastCombat() *CombatResult {
 	gs.mutex.RLock()

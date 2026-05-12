@@ -183,6 +183,18 @@ func (h *Hub) ClientCount() int {
 	return len(h.clients)
 }
 
+// IsUserConnected returns whether a specific user is currently connected to the hub
+func (h *Hub) IsUserConnected(userID int) bool {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+	for client := range h.clients {
+		if client.UserID == userID {
+			return true
+		}
+	}
+	return false
+}
+
 // startCleanupTimer starts a timer to stop the game after the cleanup period
 func (h *Hub) startCleanupTimer() {
 	h.timerMutex.Lock()

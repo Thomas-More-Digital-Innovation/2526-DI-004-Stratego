@@ -90,9 +90,17 @@
 
     {#if error}
         <div
-            class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-2xl px-6 py-4 text-sm font-medium text-center"
+            class="bg-brand-secondary/20 border border-brand-secondary/30 text-brand-secondary rounded-2xl px-6 py-4 text-sm font-medium flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300"
         >
-            {error}
+            <span class="flex-1 text-center md:text-left">{error}</span>
+            <Button
+                variant="secondary"
+                size="sm"
+                onclick={start}
+                disabled={creating}
+            >
+                {creating ? "Retrying..." : "Retry"}
+            </Button>
         </div>
     {/if}
 
