@@ -150,13 +150,16 @@ func (h *Handler) LogoutHandler(c *gin.Context) {
 // @Failure 401 {object} map[string]string "Refresh token missing or invalid"
 // @Router /users/refresh [post]
 func (h *Handler) RefreshTokenHandler(c *gin.Context) {
-	refreshToken, err := c.Cookie("refresh_token")
+	oldRefreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
 		core.SendError(c, "Refresh token missing", http.StatusUnauthorized)
 		return
 	}
 
-	userID, err := db.GetUserIDByRefreshToken(c.Request.Context(), refreshToken)
+	newRefreshToken, _ := auth.GenerateRefreshToken()
+	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
+
+	userID, err := db.RotateRefreshToken(c.Request.Context(), oldRefreshToken, newRefreshToken, expiresAt)
 	if err != nil {
 		core.SendError(c, "Invalid or expired refresh token", http.StatusUnauthorized)
 		return
@@ -166,5 +169,7 @@ func (h *Handler) RefreshTokenHandler(c *gin.Context) {
 	accessToken, _ := auth.GenerateToken(user.ID, user.Username)
 
 	auth.SetSessionCookie(c, accessToken)
+	auth.SetRefreshTokenCookie(c, newRefreshToken)
+
 	core.SendJSON(c, gin.H{dto.MsgTypeMessage: "Token refreshed"}, http.StatusOK)
 }

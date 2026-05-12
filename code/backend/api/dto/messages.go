@@ -198,18 +198,18 @@ func MoveToDTO(move engine.Move) MoveDTO {
 }
 
 // PieceToDTO converts an engine.Piece to a PieceDTO, hiding information if necessary
-func PieceToDTO(piece *engine.Piece, viewerID int) PieceDTO {
+func PieceToDTO(piece *engine.Piece, viewerID int, forceReveal bool) PieceDTO {
 	if piece == nil {
 		return PieceDTO{OwnerID: -1}
 	}
 
 	ownerID := piece.GetOwner().GetID()
-	canSee := piece.IsRevealed() || ownerID == viewerID
+	canSee := forceReveal || piece.IsRevealed() || ownerID == viewerID
 
 	dto := PieceDTO{
 		OwnerID:   ownerID,
 		OwnerName: piece.GetOwner().GetName(),
-		Revealed:  piece.IsRevealed(),
+		Revealed:  piece.IsRevealed() || forceReveal,
 		Position:  PositionDTO{}, // Will be set by caller
 	}
 

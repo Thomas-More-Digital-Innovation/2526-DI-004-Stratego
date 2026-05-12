@@ -58,7 +58,8 @@ func (c *Client) SendJSON(msgType string, data any) {
 // IsAuthorized checks if the client is a player or the creator of an AI game
 func (c *Client) IsAuthorized() bool {
 	p1ID, _ := c.Session.GetPlayerIDs()
-	isCreator := p1ID == nil || c.UserID == *p1ID
+	// Only consider it a creator match if p1ID is actually set (logged in creator)
+	isCreator := p1ID != nil && c.UserID == *p1ID
 	return c.SeatIndex >= 0 || (c.Hub.GameType == models.HumanVsAi && isCreator) || (c.Hub.GameType == models.AiVsAi && isCreator)
 }
 

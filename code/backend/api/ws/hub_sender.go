@@ -84,15 +84,9 @@ func (h *Hub) sendBoardState(client *Client) {
 			boardDTO[y][x] = dto.PieceDTO{OwnerID: -1}
 			piece := field[y][x]
 			if piece != nil {
-				dtoPiece := dto.PieceToDTO(piece, client.SeatIndex)
 				// Force reveal all pieces for AI vs AI spectators or when game is over
-				if h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver {
-					pieceType := piece.GetType()
-					dtoPiece.Type = pieceType.GetName()
-					dtoPiece.Rank = string(pieceType.GetRank())
-					dtoPiece.Icon = pieceType.GetIcon()
-					dtoPiece.Revealed = true
-				}
+				forceReveal := h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver
+				dtoPiece := dto.PieceToDTO(piece, client.SeatIndex, forceReveal)
 				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dtoPiece
 			}

@@ -96,6 +96,11 @@ func (h *Handler) ChangePasswordHandler(c *gin.Context) {
 		return
 	}
 
+	if !IsStrongPassword(req.NewPassword) {
+		core.SendError(c, "Password must be at least 8 characters and contain at least one number, one uppercase and one lowercase letter", http.StatusBadRequest)
+		return
+	}
+
 	// Update password
 	if err := db.UpdateUserPassword(c.Request.Context(), user.ID, req.NewPassword); err != nil {
 		logging.Debug(logging.TagWeb, "Failed to update password for user %d: %v", user.ID, err)

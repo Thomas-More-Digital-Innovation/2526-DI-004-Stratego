@@ -12,7 +12,7 @@ func TestPieceToDTO(t *testing.T) {
 	piece := engine.NewPiece(models.Captain, &player)
 
 	// Test as owner
-	d := dto.PieceToDTO(piece, 0)
+	d := dto.PieceToDTO(piece, 0, false)
 	if d.Type != "Captain" {
 		t.Errorf("Expected type Captain, got: %s", d.Type)
 	}
@@ -24,7 +24,7 @@ func TestPieceToDTO(t *testing.T) {
 	}
 
 	// Test as opponent - piece should be hidden
-	dtoHidden := dto.PieceToDTO(piece, 1)
+	dtoHidden := dto.PieceToDTO(piece, 1, false)
 	if dtoHidden.Type != "" {
 		t.Errorf("Expected type to be empty for opponent, got: %s", dtoHidden.Type)
 	}
@@ -42,7 +42,7 @@ func TestPieceToDTORevealed(t *testing.T) {
 	piece.Reveal()
 
 	// Even as opponent, revealed piece should show details
-	d := dto.PieceToDTO(piece, 1)
+	d := dto.PieceToDTO(piece, 1, false)
 	if d.Type != "Scout" {
 		t.Errorf("Expected type Scout for revealed piece, got: %s", d.Type)
 	}
@@ -52,7 +52,7 @@ func TestPieceToDTORevealed(t *testing.T) {
 }
 
 func TestPieceToDTONil(t *testing.T) {
-	d := dto.PieceToDTO(nil, 0)
+	d := dto.PieceToDTO(nil, 0, false)
 
 	if d.Type != "" {
 		t.Errorf("Expected empty type for nil piece, got: %s", d.Type)
@@ -110,7 +110,7 @@ func TestPieceToDTOAllPieceTypes(t *testing.T) {
 
 	for _, pieceType := range pieceTypes {
 		piece := engine.NewPiece(pieceType, &player)
-		d := dto.PieceToDTO(piece, 0)
+		d := dto.PieceToDTO(piece, 0, false)
 
 		if d.Type != pieceType.GetName() {
 			t.Errorf("Expected type %s, got: %s", pieceType.GetName(), d.Type)

@@ -98,4 +98,5 @@ func ClearSessionCookie(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(AccessTokenCookieName, "", -1, "/", "", cookieSecure, true)
 	c.SetCookie(RefreshTokenCookieName, "", -1, "/", "", cookieSecure, true)
+	c.SetCookie(XSRFTokenCookieName, "", -1, "/", "", cookieSecure, false)
 }

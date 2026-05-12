@@ -30,10 +30,30 @@ func handleSwapPieces(c *ws.Client, data json.RawMessage) error {
 			return fmt.Errorf("spectators cannot swap pieces")
 		}
 		// Creator in AI vs AI can swap for both players
-		if pos1.Y >= 6 {
+		// Ensure both positions are in the same player's setup area
+		p1_0 := pos1.Y >= 6 && pos1.Y <= 9
+		p2_0 := pos2.Y >= 6 && pos2.Y <= 9
+		p1_1 := pos1.Y >= 0 && pos1.Y <= 3
+		p2_1 := pos2.Y >= 0 && pos2.Y <= 3
+
+		switch {
+		case p1_0 && p2_0:
 			playerID = 0
-		} else {
+		case p1_1 && p2_1:
 			playerID = 1
+		default:
+			return fmt.Errorf("both positions must be within the same player's setup area")
+		}
+	} else {
+		// Regular player - ensure both positions are in their area
+		if playerID == 0 {
+			if pos1.Y < 6 || pos1.Y > 9 || pos2.Y < 6 || pos2.Y > 9 {
+				return fmt.Errorf("positions outside setup area")
+			}
+		} else {
+			if pos1.Y < 0 || pos1.Y > 3 || pos2.Y < 0 || pos2.Y > 3 {
+				return fmt.Errorf("positions outside setup area")
+			}
 		}
 	}
 

@@ -256,10 +256,8 @@ func (h *Hub) setupBoard() dto.BoardStateMessage {
 		for x := range 10 {
 			if idx < len(player1Pieces) {
 				piece := player1Pieces[idx]
-				dtoPiece := dto.PieceToDTO(piece, 0) // Player 0 can see their own pieces
-				if h.GameType == models.AiVsAi {
-					dtoPiece.Revealed = true // Force visibility for spectators during setup
-				}
+				forceReveal := h.GameType == models.AiVsAi
+				dtoPiece := dto.PieceToDTO(piece, 0, forceReveal)
 				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dtoPiece
 				idx++
@@ -276,13 +274,11 @@ func (h *Hub) setupBoard() dto.BoardStateMessage {
 			if idx < len(player2Pieces) {
 				piece := player2Pieces[idx]
 				viewerID := -1
-				if h.GameType == models.AiVsAi {
+				forceReveal := h.GameType == models.AiVsAi
+				if forceReveal {
 					viewerID = 1 // Show all pieces in AI vs AI
 				}
-				dtoPiece := dto.PieceToDTO(piece, viewerID) // Hide pieces
-				if h.GameType == models.AiVsAi {
-					dtoPiece.Revealed = true // Force visibility for spectators during setup
-				}
+				dtoPiece := dto.PieceToDTO(piece, viewerID, forceReveal)
 				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dtoPiece
 				idx++

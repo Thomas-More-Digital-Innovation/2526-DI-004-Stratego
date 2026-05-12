@@ -7,6 +7,7 @@ import (
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/models"
 	"encoding/json"
+	"time"
 )
 
 // BroadcastMessage sends a message to all connected clients
@@ -99,9 +100,69 @@ func (h *Hub) broadcastBoardStatePerClient() {
 	}
 	h.mutex.RUnlock()
 
-	for _, client := range clients {
-		h.sendBoardState(client)
+	// Optimize: Build boards for each perspective (Red, Blue, Spectator)
+	// seatIndex: 0 (Red), 1 (Blue), -1 (Spectator)
+	perspectives := []int{0, 1, -1}
+	cache := make(map[int][]byte)
+
+	for _, seat := range perspectives {
+		data := h.buildBoardStateJSON(seat)
+		if data != nil {
+			cache[seat] = data
+		}
 	}
+
+	for _, client := range clients {
+		if data, ok := cache[client.SeatIndex]; ok {
+			client.Send(data, 500*time.Millisecond)
+		} else {
+			// Fallback for unexpected seat indices
+			h.sendBoardState(client)
+		}
+	}
+}
+
+// buildBoardStateJSON helper to build and marshal board state for a perspective
+func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
+	board := h.Session.GetBoard()
+	field := board.GetField()
+
+	boardDTO := make([][]dto.PieceDTO, 10)
+	for y := range 10 {
+		boardDTO[y] = make([]dto.PieceDTO, 10)
+		for x := range 10 {
+			boardDTO[y][x] = dto.PieceDTO{OwnerID: -1}
+			piece := field[y][x]
+			if piece != nil {
+				forceReveal := h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver
+				dtoPiece := dto.PieceToDTO(piece, seatIndex, forceReveal)
+				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
+			}
+		}
+	}
+
+	lastMove := h.Session.GetLastHistoricalMove()
+	var filteredLastMove *models.HistoricalMove
+	if lastMove != nil {
+		fm := h.filterHistoricalMove(*lastMove, seatIndex, false)
+		filteredLastMove = &fm
+	}
+
+	boardMsg := dto.BoardStateMessage{
+		Board:    boardDTO,
+		Width:    10,
+		Height:   10,
+		LastMove: filteredLastMove,
+	}
+
+	msg := dto.WSMessage{
+		Type: dto.MsgTypeBoardState,
+		Data: boardMsg,
+	}
+
+	jsonData, _ := json.Marshal(msg)
+	return jsonData
 }
 
 // broadcastBoardStateRevealed sends board with all pieces revealed
@@ -110,14 +171,13 @@ func (h *Hub) broadcastBoardStateRevealed() {
 	field := board.GetField()
 
 	boardDTO := make([][]dto.PieceDTO, 10)
-	for y := 0; y < 10; y++ {
+	for y := range 10 {
 		boardDTO[y] = make([]dto.PieceDTO, 10)
-		for x := 0; x < 10; x++ {
+		for x := range 10 {
 			piece := field[y][x]
 			if piece != nil && piece.IsAlive() {
-				dtoPiece := dto.PieceToDTO(piece, piece.GetOwner().GetID())
+				dtoPiece := dto.PieceToDTO(piece, piece.GetOwner().GetID(), true)
 				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
-				dtoPiece.Revealed = true
 				boardDTO[y][x] = dtoPiece
 			}
 		}
@@ -157,13 +217,11 @@ func (h *Hub) BroadcastCombat(combat *game.CombatResult) {
 	attacker := combat.AttackerPiece
 	defender := combat.DefenderPiece
 
-	attackerDTO := dto.PieceToDTO(attacker, attacker.GetOwner().GetID())
+	attackerDTO := dto.PieceToDTO(attacker, attacker.GetOwner().GetID(), true)
 	attackerDTO.Position = dto.PositionToDTO(combat.AttackerPosition)
-	attackerDTO.Revealed = true
 
-	defenderDTO := dto.PieceToDTO(defender, defender.GetOwner().GetID())
+	defenderDTO := dto.PieceToDTO(defender, defender.GetOwner().GetID(), true)
 	defenderDTO.Position = dto.PositionToDTO(combat.DefenderPosition)
-	defenderDTO.Revealed = true
 
 	combatMsg := dto.CombatMessage{
 		Attacker:     attackerDTO,
