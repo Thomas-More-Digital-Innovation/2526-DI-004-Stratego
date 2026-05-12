@@ -8,7 +8,7 @@ This document outlines the planned improvements and future directions for the Go
 *Focus: Strengthening the core experience and preparing for advanced features.*
 
 #### Backend & Infrastructure
-- [ ] **Refactoring**: refactoring of backend code, especially the api package.
+- [x] **Refactoring**: refactoring of backend code, especially the api package.
 - [ ] **Rate Limiting**: Add secondary user-level rate limits for sensitive actions (creation, password changes).
 - [ ] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
 - [ ] **Reliability**: Implement exponential backoff for WebSocket reconnections with UI feedback.
