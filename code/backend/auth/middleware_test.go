@@ -1,6 +1,7 @@
-package auth
+package auth_test
 
 import (
+	"digital-innovation/gostrategy/auth"
 	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/models"
 	"net/http"
@@ -16,20 +17,20 @@ func TestRequireAuth(t *testing.T) {
 	t.Run("Valid Token", func(t *testing.T) {
 		userID := 1
 		username := "authuser"
-		token, _ := GenerateToken(userID, username)
+		token, _ := auth.GenerateToken(userID, username)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
 		c.Request.AddCookie(&http.Cookie{
-			Name:     AccessTokenCookieName,
+			Name:     auth.AccessTokenCookieName,
 			Value:    token,
 			HttpOnly: true,
 			Secure:   true,
 			SameSite: http.SameSiteLaxMode,
 		})
 
-		handler := RequireAuth()
+		handler := auth.RequireAuth()
 		handler(c)
 
 		if w.Code != http.StatusOK {
@@ -39,7 +40,7 @@ func TestRequireAuth(t *testing.T) {
 			t.Error("Expected context not to be aborted")
 		}
 
-		user := GetCurrentUser(c)
+		user := auth.GetCurrentUser(c)
 		if user == nil {
 			t.Fatal("Expected user in context, got nil")
 		}
@@ -61,7 +62,7 @@ func TestRequireAuth(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
 
-		handler := RequireAuth()
+		handler := auth.RequireAuth()
 		handler(c)
 
 		if w.Code != http.StatusUnauthorized {
@@ -77,14 +78,14 @@ func TestRequireAuth(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
 		c.Request.AddCookie(&http.Cookie{
-			Name:     AccessTokenCookieName,
+			Name:     auth.AccessTokenCookieName,
 			Value:    "invalid-token",
 			HttpOnly: true,
 			Secure:   true,
 			SameSite: http.SameSiteLaxMode,
 		})
 
-		handler := RequireAuth()
+		handler := auth.RequireAuth()
 		handler(c)
 
 		if w.Code != http.StatusUnauthorized {
@@ -100,22 +101,22 @@ func TestOptionalAuth(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	t.Run("With Valid Token", func(t *testing.T) {
-		token, _ := GenerateToken(1, "test")
+		token, _ := auth.GenerateToken(1, "test")
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
 		c.Request.AddCookie(&http.Cookie{
-			Name:     AccessTokenCookieName,
+			Name:     auth.AccessTokenCookieName,
 			Value:    token,
 			HttpOnly: true,
 			Secure:   true,
 			SameSite: http.SameSiteLaxMode,
 		})
 
-		handler := OptionalAuth()
+		handler := auth.OptionalAuth()
 		handler(c)
 
-		if GetCurrentUser(c) == nil {
+		if auth.GetCurrentUser(c) == nil {
 			t.Error("Expected user in context, got nil")
 		}
 		if c.IsAborted() {
@@ -128,10 +129,10 @@ func TestOptionalAuth(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/", nil)
 
-		handler := OptionalAuth()
+		handler := auth.OptionalAuth()
 		handler(c)
 
-		if GetCurrentUser(c) != nil {
+		if auth.GetCurrentUser(c) != nil {
 			t.Error("Expected no user in context, but found one")
 		}
 		if c.IsAborted() {
@@ -144,20 +145,20 @@ func TestGetCurrentUser(t *testing.T) {
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 
 	// Test empty context
-	if GetCurrentUser(c) != nil {
+	if auth.GetCurrentUser(c) != nil {
 		t.Error("Expected nil for empty context")
 	}
 
 	// Test with valid user
 	testUser := &models.User{ID: 1, Username: "test"}
-	c.Set(UserContextKey, testUser)
-	if GetCurrentUser(c) != testUser {
+	c.Set(auth.UserContextKey, testUser)
+	if auth.GetCurrentUser(c) != testUser {
 		t.Error("Expected to retrieve the same user set in context")
 	}
 
 	// Test with invalid type in context
-	c.Set(UserContextKey, "not-a-user")
-	if GetCurrentUser(c) != nil {
+	c.Set(auth.UserContextKey, "not-a-user")
+	if auth.GetCurrentUser(c) != nil {
 		t.Error("Expected nil for invalid type in context")
 	}
 }

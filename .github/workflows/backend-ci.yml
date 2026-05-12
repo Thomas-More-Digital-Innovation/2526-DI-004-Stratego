@@ -136,8 +136,11 @@ jobs:
           TEST_DB_DSN: "host=localhost user=appuser password=apppass
             dbname=gostrategy_test sslmode=disable"
         run: |
-          # run tests with race detector and produce a coverprofile
-          go test -v -race ./... -coverprofile=coverage.out -covermode=atomic
+          # Install gotestsum for better failure overview
+          go install gotest.tools/gotestsum@latest
+          
+          # Run tests with gotestsum for a clear overview of failures in CI logs
+          $(go env GOPATH)/bin/gotestsum --format pkgname-and-test-fails --junitfile unit-tests.xml -- -race ./... -coverprofile=coverage.out -covermode=atomic
 
       - name: Upload coverage report
         if: always()
@@ -145,6 +148,13 @@ jobs:
         with:
           name: backend-coverage-report
           path: code/backend/coverage.out
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: code/backend/unit-tests.xml
 
       - name: Summary
         if: failure()

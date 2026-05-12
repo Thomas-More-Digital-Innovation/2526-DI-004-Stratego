@@ -45,16 +45,16 @@ func SaveRefreshToken(ctx context.Context, userID int, token string, expiresAt t
 		Token:     hashToken(token),
 		ExpiresAt: expiresAt,
 	}
-	err := DB.WithContext(ctx).Create(&rt).Error
-	if err != nil {
-		return fmt.Errorf("failed to save refresh token: %w", err)
-	}
-	return nil
+	return WithRLS(ctx, func(tx *gorm.DB) error {
+		return tx.Create(&rt).Error
+	})
 }
 
 // GetUserIDByRefreshToken validates a refresh token and returns the owner's ID
 func GetUserIDByRefreshToken(ctx context.Context, token string) (int, error) {
 	var rt models.RefreshToken
+	// We don't use WithRLS here because we might be refreshing without an active session
+	// The token itself is the secret.
 	err := DB.WithContext(ctx).Where("token = ? AND expires_at > ?", hashToken(token), time.Now()).First(&rt).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -70,7 +70,36 @@ func DeleteRefreshToken(ctx context.Context, token string) error {
 	return DB.WithContext(ctx).Where("token = ?", hashToken(token)).Delete(&models.RefreshToken{}).Error
 }
 
+// RotateRefreshToken atomically invalidates an old token and saves a new one
+func RotateRefreshToken(ctx context.Context, oldToken, newToken string, expiresAt time.Time) (int, error) {
+	var rt models.RefreshToken
+	err := DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Find and delete the old token first
+		if err := tx.Where("token = ? AND expires_at > ?", hashToken(oldToken), time.Now()).First(&rt).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&rt).Error; err != nil {
+			return err
+		}
+
+		// Save the new token
+		newRt := models.RefreshToken{
+			UserID:    rt.UserID,
+			Token:     hashToken(newToken),
+			ExpiresAt: expiresAt,
+		}
+		return tx.Create(&newRt).Error
+	})
+
+	if err != nil {
+		return 0, err
+	}
+	return rt.UserID, nil
+}
+
 // DeleteAllUserRefreshTokens revokes all sessions for a user
 func DeleteAllUserRefreshTokens(ctx context.Context, userID int) error {
-	return DB.WithContext(ctx).Where("user_id = ?", userID).Delete(&models.RefreshToken{}).Error
+	return WithRLS(ctx, func(tx *gorm.DB) error {
+		return tx.Where("user_id = ?", userID).Delete(&models.RefreshToken{}).Error
+	})
 }

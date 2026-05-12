@@ -1,9 +1,13 @@
-package api
+// Package api provides helper functions for the API.
+package api_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"digital-innovation/gostrategy/api/core"
+	"digital-innovation/gostrategy/api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +19,7 @@ func TestParseID(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		c.Params = gin.Params{{Key: "id", Value: "123"}}
 
-		id, err := parseID(c, "id")
+		id, err := core.ParseID(c, "id")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -29,7 +33,7 @@ func TestParseID(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/?user_id=456", nil)
 		c.Request = req
 
-		id, err := parseID(c, "user_id")
+		id, err := core.ParseID(c, "user_id")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -42,7 +46,7 @@ func TestParseID(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		c.Params = gin.Params{{Key: "id", Value: "abc"}}
 
-		_, err := parseID(c, "id")
+		_, err := core.ParseID(c, "id")
 		if err == nil {
 			t.Error("Expected error for invalid ID, got nil")
 		}
@@ -51,7 +55,7 @@ func TestParseID(t *testing.T) {
 	t.Run("Missing ID", func(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 
-		id, err := parseID(c, "id")
+		id, err := core.ParseID(c, "id")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -64,7 +68,7 @@ func TestParseID(t *testing.T) {
 func TestSecurityMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.Use(SecurityMiddleware())
+	r.Use(middleware.SecurityMiddleware())
 	r.GET("/test", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})

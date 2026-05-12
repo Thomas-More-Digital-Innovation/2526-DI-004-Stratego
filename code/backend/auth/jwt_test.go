@@ -1,6 +1,7 @@
-package auth
+package auth_test
 
 import (
+	"digital-innovation/gostrategy/auth"
 	"testing"
 	"time"
 
@@ -12,7 +13,7 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 	username := "testuser"
 
 	// Generate token
-	token, err := GenerateToken(userID, username)
+	token, err := auth.GenerateToken(userID, username)
 	if err != nil {
 		t.Fatalf("Failed to generate token: %v", err)
 	}
@@ -21,7 +22,7 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 	}
 
 	// Verify token
-	user, err := VerifyToken(token)
+	user, err := auth.VerifyToken(token)
 	if err != nil {
 		t.Fatalf("Failed to verify token: %v", err)
 	}
@@ -38,7 +39,7 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 
 func TestVerifyInvalidToken(t *testing.T) {
 	// Test with malformed token
-	user, err := VerifyToken("invalid.token.string")
+	user, err := auth.VerifyToken("invalid.token.string")
 	if err == nil {
 		t.Error("Expected error for invalid token, got nil")
 	}
@@ -47,7 +48,7 @@ func TestVerifyInvalidToken(t *testing.T) {
 	}
 
 	// Test with expired token
-	claims := CustomClaims{
+	claims := auth.CustomClaims{
 		Username: "expired",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   "456",
@@ -55,9 +56,9 @@ func TestVerifyInvalidToken(t *testing.T) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString(jwtSecret)
+	tokenString, _ := token.SignedString(auth.GetJWTSecret())
 
-	user, err = VerifyToken(tokenString)
+	user, err = auth.VerifyToken(tokenString)
 	if err == nil {
 		t.Error("Expected error for expired token, got nil")
 	}
@@ -67,7 +68,7 @@ func TestVerifyInvalidToken(t *testing.T) {
 }
 
 func TestGenerateRefreshToken(t *testing.T) {
-	token1, err := GenerateRefreshToken()
+	token1, err := auth.GenerateRefreshToken()
 	if err != nil {
 		t.Fatalf("Failed to generate refresh token 1: %v", err)
 	}
@@ -75,7 +76,7 @@ func TestGenerateRefreshToken(t *testing.T) {
 		t.Fatal("Refresh token 1 is empty")
 	}
 
-	token2, err := GenerateRefreshToken()
+	token2, err := auth.GenerateRefreshToken()
 	if err != nil {
 		t.Fatalf("Failed to generate refresh token 2: %v", err)
 	}

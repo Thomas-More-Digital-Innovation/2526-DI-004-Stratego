@@ -1,7 +1,8 @@
-package game
+package game_test
 
 import (
 	"digital-innovation/gostrategy/engine"
+	"digital-innovation/gostrategy/game"
 	"testing"
 	"time"
 )
@@ -13,7 +14,7 @@ func TestSession_SetupTimeout(t *testing.T) {
 	c2 := engine.NewHumanPlayerController(&player2)
 
 	// Use functional option to set a short timeout for testing
-	session := NewSession("test-timeout", c1, c2, WithSetupTimeout(100*time.Millisecond))
+	session := game.NewSession("test-timeout", c1, c2, game.WithSetupTimeout(100*time.Millisecond))
 
 	if !session.IsSetupPhase() {
 		t.Error("Expected game to start in setup phase")
@@ -35,7 +36,7 @@ func TestSession_Abort(t *testing.T) {
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := NewSession("test-abort", c1, c2)
+	session := game.NewSession("test-abort", c1, c2)
 
 	if err := session.StartGameFromSetup(true); err != nil {
 		t.Fatalf("Failed to start game: %v", err)
@@ -64,20 +65,20 @@ func TestSession_SwapSetupPieces(t *testing.T) {
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
 	c2 := engine.NewHumanPlayerController(&player2)
-	session := NewSession("test-swap", c1, c2)
+	session := game.NewSession("test-swap", c1, c2)
 
 	p1 := engine.NewPosition(0, 6)
 	p2 := engine.NewPosition(1, 6)
 
-	piecesBefore := make([]*engine.Piece, len(session.player1Pieces))
-	copy(piecesBefore, session.player1Pieces)
+	piecesBefore := make([]*engine.Piece, len(session.GetPlayer1Pieces()))
+	copy(piecesBefore, session.GetPlayer1Pieces())
 
 	err := session.SwapSetupPieces(0, p1, p2)
 	if err != nil {
 		t.Fatalf("Swap failed: %v", err)
 	}
 
-	if session.player1Pieces[0] != piecesBefore[1] || session.player1Pieces[1] != piecesBefore[0] {
+	if session.GetPlayer1Pieces()[0] != piecesBefore[1] || session.GetPlayer1Pieces()[1] != piecesBefore[0] {
 		t.Error("Pieces were not swapped correctly at indices 0 and 1")
 	}
 
@@ -100,9 +101,9 @@ func TestSession_SetupWarning(t *testing.T) {
 	c2 := engine.NewHumanPlayerController(&player2)
 
 	// Set warning at 50ms, timeout at 200ms
-	session := NewSession("test-warning", c1, c2,
-		WithSetupTimeout(200*time.Millisecond),
-		WithSetupWarning(50*time.Millisecond),
+	session := game.NewSession("test-warning", c1, c2,
+		game.WithSetupTimeout(200*time.Millisecond),
+		game.WithSetupWarning(50*time.Millisecond),
 	)
 
 	// We expect a notification to be sent to moveNotifyChan when the warning fires

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/models"
 	"encoding/json"
@@ -18,10 +19,9 @@ func TestIntegration_WebSocket(t *testing.T) {
 	db.SetupTestDB(t)
 
 	server := NewGameServer()
-	// Add routes
-	server.router.GET("/game/:gameID", server.HandleWebSocketConnection)
+	server.SetupRoutes()
 
-	ts := httptest.NewServer(server.router)
+	ts := httptest.NewServer(server.Router)
 	defer ts.Close()
 
 	// Convert http URL to ws URL
@@ -50,7 +50,7 @@ func TestIntegration_WebSocket(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to read initial message %d: %v", i, err)
 			}
-			var msg WSMessage
+			var msg dto.WSMessage
 			if err := json.Unmarshal(message, &msg); err != nil {
 				t.Fatalf("Failed to unmarshal initial message %d: %v", i, err)
 			}
@@ -64,44 +64,37 @@ func TestIntegration_WebSocket(t *testing.T) {
 		defer func() { _ = conn2.Close() }()
 
 		// Player 1 sends a chat message (if supported) or just wait
-		// Let's simulate a move if possible, but move needs pieces.
-		// For simplicity, let's just check if they are both registered in hub
 		time.Sleep(50 * time.Millisecond)
 
-		handler.Hub.mutex.RLock()
-		clientCount := len(handler.Hub.clients)
-		handler.Hub.mutex.RUnlock()
-
+		clientCount := handler.Hub.ClientCount()
 		if clientCount != 2 {
 			t.Errorf("Expected 2 clients in hub, got %d", clientCount)
 		}
 
 		// Test Ping/Pong
-		pingMsg := WSMessage{Type: MsgTypePing}
+		pingMsg := dto.WSMessage{Type: dto.MsgTypePing}
 		pingBytes, _ := json.Marshal(pingMsg)
 		if err := conn1.WriteMessage(websocket.TextMessage, pingBytes); err != nil {
 			t.Fatalf("Failed to send ping: %v", err)
 		}
 
 		// Wait for pong
-		timeout := time.After(200 * time.Millisecond)
+		err = conn1.SetReadDeadline(time.Now().Add(2 * time.Second))
+		if err != nil {
+			t.Fatalf("Failed to set read deadline: %v", err)
+		}
 		foundPong := false
 		for !foundPong {
-			select {
-			case <-timeout:
-				t.Fatal("Timed out waiting for pong")
-			default:
-				_, message, err := conn1.ReadMessage()
-				if err != nil {
-					t.Fatalf("Failed to read message for pong: %v", err)
-				}
-				var msg WSMessage
-				if err := json.Unmarshal(message, &msg); err != nil {
-					t.Logf("Failed to unmarshal message: %v", err)
-				}
-				if msg.Type == MsgTypePong {
-					foundPong = true
-				}
+			_, message, err := conn1.ReadMessage()
+			if err != nil {
+				t.Fatalf("Timed out or failed waiting for pong: %v", err)
+			}
+			var msg dto.WSMessage
+			if err := json.Unmarshal(message, &msg); err != nil {
+				continue
+			}
+			if msg.Type == dto.MsgTypePong {
+				foundPong = true
 			}
 		}
 	})
