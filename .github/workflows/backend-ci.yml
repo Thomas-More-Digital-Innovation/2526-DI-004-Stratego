@@ -148,6 +148,7 @@ jobs:
           file: code/backend/coverage.out
           flags: backend
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage report
         if: always()
@@ -196,7 +197,7 @@ jobs:
           if [ $? -eq 0 ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: post coverage report
         if: always() && steps.find_pr.outputs.pull_request_id
         uses: thollander/actions-comment-pull-request@v3
