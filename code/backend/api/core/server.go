@@ -218,8 +218,9 @@ func (s *GameServer) handleGameOver(session *game.Session, hub *ws.Hub) {
 		logging.Error("Failed to save game moves to database", err)
 	}
 
-	// Broadcast final state
-	hub.BroadcastGameState()
+	// Broadcast final state, full board, and move history
+	hub.BroadcastFullState()
+	hub.BroadcastMoveHistory()
 
 	// Start cleanup timer for the hub (e.g., 5 minutes to let players see the result)
 	hub.StartGameOverCleanup(5 * time.Minute)
