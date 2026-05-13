@@ -5,6 +5,7 @@ import (
 	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -58,6 +59,15 @@ func (h *Handler) CreateBoardSetupHandler(c *gin.Context) {
 		return
 	}
 
+	if err := utils.ValidateGeneric(req.Name, "name"); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := utils.ValidateGeneric(req.Description, "description"); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	req.UserID = user.ID
 	setup, err := db.CreateBoardSetup(c.Request.Context(), user.ID, req.Name, req.Description, req.SetupData, req.IsDefault)
 	if err != nil {
@@ -92,6 +102,15 @@ func (h *Handler) UpdateBoardSetupHandler(c *gin.Context) {
 	var req models.BoardSetup
 	if err := c.ShouldBindJSON(&req); err != nil {
 		core.SendError(c, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := utils.ValidateGeneric(req.Name, "name"); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := utils.ValidateGeneric(req.Description, "description"); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 

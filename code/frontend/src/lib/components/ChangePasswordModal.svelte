@@ -132,6 +132,7 @@
                         placeholder="••••••••"
                         bind:value={oldPassword}
                         disabled={loading}
+                        sanitize="password"
                     />
 
                     <div class="h-px w-full bg-white/5 my-2"></div>
@@ -142,6 +143,7 @@
                         placeholder="••••••••"
                         bind:value={newPassword}
                         disabled={loading}
+                        sanitize="password"
                     />
 
                     <Input
@@ -150,6 +152,7 @@
                         placeholder="••••••••"
                         bind:value={confirmPassword}
                         disabled={loading}
+                        sanitize="password"
                     />
                 </div>
 

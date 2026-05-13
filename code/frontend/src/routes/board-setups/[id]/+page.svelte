@@ -7,6 +7,7 @@
     import { boardSetups } from "$lib/api/client";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
     import { toastStore } from "$lib/state/toast.svelte";
     import type { BoardSetup } from "$lib/types/board-setup";
 
@@ -92,34 +93,18 @@
     {:else if setup}
         <Card class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <label
-                        for="name"
-                        class="text-xs font-bold text-white/40 uppercase tracking-widest pl-1"
-                        >Setup Name</label
-                    >
-                    <input
-                        id="name"
-                        type="text"
-                        bind:value={name}
-                        placeholder="e.g., Aggressive Scout Rush"
-                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-accent/50 transition-colors"
-                    />
-                </div>
-                <div class="space-y-2">
-                    <label
-                        for="description"
-                        class="text-xs font-bold text-white/40 uppercase tracking-widest pl-1"
-                        >Description (Optional)</label
-                    >
-                    <input
-                        id="description"
-                        type="text"
-                        bind:value={description}
-                        placeholder="Briefly describe your strategy..."
-                        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-accent/50 transition-colors"
-                    />
-                </div>
+                <Input
+                    label="Setup Name"
+                    placeholder="e.g., Aggressive Scout Rush"
+                    bind:value={name}
+                    sanitize="generic"
+                />
+                <Input
+                    label="Description (Optional)"
+                    placeholder="Briefly describe your strategy..."
+                    bind:value={description}
+                    sanitize="generic"
+                />
             </div>
 
             <div class="flex items-center gap-3">
