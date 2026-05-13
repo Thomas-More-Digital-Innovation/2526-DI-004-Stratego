@@ -29,7 +29,7 @@ func ValidateUsername(username string) error {
 // ValidatePassword returns an error if the password contains invalid characters
 func ValidatePassword(password string) error {
 	if passwordForbiddenRegex.MatchString(password) {
-		return fmt.Errorf(`password contains invalid characters (allowed: a-z, A-Z, 0-9, spaces, and !@#$%%^&*()_+=-.). Leading or trailing spaces are not allowed.`)
+		return fmt.Errorf(`password contains invalid characters (allowed: a-z, A-Z, 0-9, spaces, and !@#$%%^&*()_+=-.), leading or trailing spaces are not allowed`)
 	}
 	return nil
 }
