@@ -25,6 +25,6 @@ PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
 
 if [ "$PR_ID" != "null" ] && [ "$PR_ID" != "" ]; then
     echo "$PR_ID"
-else
-    exit 1
 fi
+
+exit 0
