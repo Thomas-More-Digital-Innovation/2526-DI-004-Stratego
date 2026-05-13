@@ -1,0 +1,348 @@
+asyncapi: 3.0.0
+info:
+  title: GoStrategy WebSocket API
+  version: 1.0.0
+  description: |
+    Real-time communication protocol for the GoStrategy game engine. 
+    All messages follow a common wrapper format:
+    ```json
+    {
+      "type": "messageType",
+      "data": { ... }
+    }
+    ```
+  contact:
+    name: GoStrategy Team
+    url: https://gostrategy.dotsem.be
+
+servers:
+  local:
+    host: localhost:8080
+    protocol: ws
+    description: Local development server
+  production:
+    host: api.gostrategy.dotsem.be
+    protocol: wss
+    description: Production server
+
+channels:
+  game:
+    address: /ws/game/{gameID}
+    parameters:
+      gameID:
+        description: The unique ID of the game session.
+    messages:
+      # Client to Server
+      move:
+        $ref: '#/components/messages/MoveRequest'
+      getValidMoves:
+        $ref: '#/components/messages/GetValidMovesRequest'
+      swapPieces:
+        $ref: '#/components/messages/SwapPiecesRequest'
+      randomizeSetup:
+        $ref: '#/components/messages/RandomizeSetupRequest'
+      loadSetup:
+        $ref: '#/components/messages/LoadSetupRequest'
+      startGame:
+        $ref: '#/components/messages/StartGameRequest'
+      setSpeed:
+        $ref: '#/components/messages/SetSpeedRequest'
+      animationComplete:
+        $ref: '#/components/messages/SimpleCommand'
+      pause:
+        $ref: '#/components/messages/SimpleCommand'
+      unpause:
+        $ref: '#/components/messages/SimpleCommand'
+      ping:
+        $ref: '#/components/messages/SimpleCommand'
+      step:
+        $ref: '#/components/messages/SimpleCommand'
+      
+      # Server to Client
+      gameState:
+        $ref: '#/components/messages/GameStateUpdate'
+      boardState:
+        $ref: '#/components/messages/BoardStateUpdate'
+      combat:
+        $ref: '#/components/messages/CombatUpdate'
+      moveResult:
+        $ref: '#/components/messages/MoveResult'
+      validMoves:
+        $ref: '#/components/messages/ValidMovesResponse'
+      gameOver:
+        $ref: '#/components/messages/GameOverEvent'
+      error:
+        $ref: '#/components/messages/ErrorEvent'
+      moveHistory:
+        $ref: '#/components/messages/MoveHistoryUpdate'
+      pong:
+        $ref: '#/components/messages/SimpleEvent'
+
+operations:
+  sendCommands:
+    action: send
+    channel:
+      $ref: '#/channels/game'
+    messages:
+      - $ref: '#/channels/game/messages/move'
+      - $ref: '#/channels/game/messages/getValidMoves'
+      - $ref: '#/channels/game/messages/swapPieces'
+      - $ref: '#/channels/game/messages/randomizeSetup'
+      - $ref: '#/channels/game/messages/loadSetup'
+      - $ref: '#/channels/game/messages/startGame'
+      - $ref: '#/channels/game/messages/setSpeed'
+      - $ref: '#/channels/game/messages/animationComplete'
+      - $ref: '#/channels/game/messages/pause'
+      - $ref: '#/channels/game/messages/unpause'
+      - $ref: '#/channels/game/messages/ping'
+      - $ref: '#/channels/game/messages/step'
+
+  receiveEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/game'
+    messages:
+      - $ref: '#/channels/game/messages/gameState'
+      - $ref: '#/channels/game/messages/boardState'
+      - $ref: '#/channels/game/messages/combat'
+      - $ref: '#/channels/game/messages/moveResult'
+      - $ref: '#/channels/game/messages/validMoves'
+      - $ref: '#/channels/game/messages/gameOver'
+      - $ref: '#/channels/game/messages/error'
+      - $ref: '#/channels/game/messages/moveHistory'
+      - $ref: '#/channels/game/messages/pong'
+
+components:
+  messages:
+    # CLIENT -> SERVER
+    MoveRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: move }
+          data:
+            type: object
+            required: [from, to]
+            properties:
+              from: { $ref: '#/components/schemas/Position' }
+              to: { $ref: '#/components/schemas/Position' }
+    
+    GetValidMovesRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: getValidMoves }
+          data:
+            type: object
+            required: [position]
+            properties:
+              position: { $ref: '#/components/schemas/Position' }
+
+    SwapPiecesRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: swapPieces }
+          data:
+            type: object
+            required: [pos1, pos2]
+            properties:
+              pos1: { $ref: '#/components/schemas/Position' }
+              pos2: { $ref: '#/components/schemas/Position' }
+
+    RandomizeSetupRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: randomizeSetup }
+          data:
+            type: object
+            properties:
+              playerId: { type: integer, description: "Optional player ID for AI vs AI games" }
+
+    LoadSetupRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: loadSetup }
+          data:
+            type: object
+            required: [setupData]
+            properties:
+              playerId: { type: integer }
+              setupData: { type: string, description: "Base64 encoded 40 bytes of setup data" }
+
+    StartGameRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: startGame }
+          data:
+            type: object
+            properties:
+              headless: { type: boolean, default: false }
+
+    SetSpeedRequest:
+      payload:
+        type: object
+        properties:
+          type: { const: setSpeed }
+          data:
+            type: object
+            required: [speedMs]
+            properties:
+              speedMs: { type: integer, minimum: 500, maximum: 5000 }
+
+    SimpleCommand:
+      payload:
+        type: object
+        properties:
+          type: { type: string, enum: [animationComplete, pause, unpause, ping, step] }
+
+    # SERVER -> CLIENT
+    GameStateUpdate:
+      payload:
+        type: object
+        properties:
+          type: { const: gameState }
+          data: { $ref: '#/components/schemas/GameState' }
+
+    BoardStateUpdate:
+      payload:
+        type: object
+        properties:
+          type: { const: boardState }
+          data: { $ref: '#/components/schemas/BoardState' }
+
+    CombatUpdate:
+      payload:
+        type: object
+        properties:
+          type: { const: combat }
+          data: { $ref: '#/components/schemas/CombatResult' }
+
+    MoveResult:
+      payload:
+        type: object
+        properties:
+          type: { const: moveResult }
+          data:
+            type: object
+            properties:
+              success: { type: boolean }
+              error: { type: string }
+
+    ValidMovesResponse:
+      payload:
+        type: object
+        properties:
+          type: { const: validMoves }
+          data:
+            type: object
+            properties:
+              position: { $ref: '#/components/schemas/Position' }
+              validMoves:
+                type: array
+                items: { $ref: '#/components/schemas/Position' }
+
+    GameOverEvent:
+      payload:
+        type: object
+        properties:
+          type: { const: gameOver }
+          data:
+            type: object
+            properties:
+              winnerId: { type: integer, nullable: true }
+              winnerName: { type: string }
+              winCause: { type: string }
+              round: { type: integer }
+
+    ErrorEvent:
+      payload:
+        type: object
+        properties:
+          type: { const: error }
+          data:
+            type: object
+            properties:
+              error: { type: string }
+
+    MoveHistoryUpdate:
+      payload:
+        type: object
+        properties:
+          type: { const: moveHistory }
+          data:
+            type: object
+            properties:
+              moves:
+                type: array
+                items: { $ref: '#/components/schemas/Move' }
+
+    SimpleEvent:
+      payload:
+        type: object
+        properties:
+          type: { type: string, enum: [pong] }
+
+  schemas:
+    Position:
+      type: object
+      required: [x, y]
+      properties:
+        x: { type: integer, minimum: 0, maximum: 9 }
+        y: { type: integer, minimum: 0, maximum: 9 }
+
+    Move:
+      type: object
+      properties:
+        from: { $ref: '#/components/schemas/Position' }
+        to: { $ref: '#/components/schemas/Position' }
+
+    Piece:
+      type: object
+      properties:
+        type: { type: string, example: "Marshal" }
+        rank: { type: string, example: "10" }
+        ownerId: { type: integer }
+        ownerName: { type: string }
+        revealed: { type: boolean }
+        icon: { type: string }
+        position: { $ref: '#/components/schemas/Position' }
+
+    GameState:
+      type: object
+      properties:
+        round: { type: integer }
+        currentPlayerId: { type: integer }
+        currentPlayerName: { type: string }
+        isGameOver: { type: boolean }
+        winnerId: { type: integer, nullable: true }
+        player1Score: { type: integer }
+        player2Score: { type: integer }
+        waitingForInput: { type: boolean }
+        paused: { type: boolean }
+        isSetupPhase: { type: boolean }
+        setupRemainingSecs: { type: integer }
+
+    BoardState:
+      type: object
+      properties:
+        board:
+          type: array
+          items:
+            type: array
+            items: { $ref: '#/components/schemas/Piece' }
+        width: { type: integer, const: 10 }
+        height: { type: integer, const: 10 }
+
+    CombatResult:
+      type: object
+      properties:
+        attacker: { $ref: '#/components/schemas/Piece' }
+        defender: { $ref: '#/components/schemas/Piece' }
+        attackerWon: { type: boolean }
+        defenderWon: { type: boolean }
+        attackerDied: { type: boolean }
+        defenderDied: { type: boolean }

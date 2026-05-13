@@ -58,6 +58,8 @@ func (s *GameServer) SetupRoutes() {
 	// Debug and Documentation (Dev only)
 	if !utils.IsProduction() {
 		s.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		s.Router.Static("/asyncapi", "./docs/asyncapi-docs")
+
 		// s.Router.GET("/debug/stats", h.DebugStats) // Add if needed
 	}
 
