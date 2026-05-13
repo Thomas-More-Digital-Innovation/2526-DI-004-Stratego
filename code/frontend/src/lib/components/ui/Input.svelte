@@ -28,7 +28,7 @@
         if (sanitize === "username") {
             val = val.replace(/[^a-zA-Z0-9_]/g, "");
         } else if (sanitize === "password") {
-            val = val.replace(/[^a-zA-Z0-9!@#$%^&*()_+=\-.]/g, "");
+            val = val.replace(/(^ )|( $)|[^a-zA-Z0-9!@#$%^&*()_+=\-\. ]/g, "");
         } else if (sanitize === "generic") {
             val = val.replace(/[<>"'%;]/g, "");
         }

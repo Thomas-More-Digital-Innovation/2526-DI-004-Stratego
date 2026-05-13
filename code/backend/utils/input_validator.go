@@ -10,10 +10,11 @@ var (
 	// The ^ character negates the set of characters inside []. So it matches any character that is NOT in the set.
 	// Examples:
 	// [^a-zA-Z0-9_] matches any character that is not a letter, number, or underscore
-	// [^a-zA-Z0-9!@#$%^&*()_+=\-\.] matches any character that is not a letter, number, or one of the specified special characters
+	// [^a-zA-Z0-9!@#$%^&*()_+=\-\. ] matches any character that is not a letter, number, special character, or space.
+	// The |^ | $ part matches spaces at the beginning or end of the string.
 	// [^<>] matches any character that is not < or >
 	usernameForbiddenRegex = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-	passwordForbiddenRegex = regexp.MustCompile(`[^a-zA-Z0-9!@#$%^&*()_+=\-\.]`)
+	passwordForbiddenRegex = regexp.MustCompile(`(^ )|( $)|[^a-zA-Z0-9!@#$%^&*()_+=\-\. ]`)
 	genericForbiddenRegex  = regexp.MustCompile(`[<>"'%;]`)
 )
 
@@ -28,7 +29,7 @@ func ValidateUsername(username string) error {
 // ValidatePassword returns an error if the password contains invalid characters
 func ValidatePassword(password string) error {
 	if passwordForbiddenRegex.MatchString(password) {
-		return fmt.Errorf(`password contains invalid characters (allowed: a-z, A-Z, 0-9 and !@#$%%^&*()_+=-.)`)
+		return fmt.Errorf(`password contains invalid characters (allowed: a-z, A-Z, 0-9, spaces, and !@#$%%^&*()_+=-.). Leading or trailing spaces are not allowed.`)
 	}
 	return nil
 }
