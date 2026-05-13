@@ -1,0 +1,75 @@
+sequenceDiagram
+    participant C as Client (Human Player)
+    participant H as WebSocket Hub
+    participant S as Game Session
+    participant M as Monitor (Server)
+    participant R as Game Runner
+    participant AI as AI Controller
+
+    Note over C, AI: Initial Connection & Setup Phase
+
+    C->>+M: POST /api/game/create (Human vs AI)
+    M-->>-C: { gameID: "xyz" }
+
+    C->>+H: WebSocket Connect (gameID, player=0)
+    H->>S: Register Client
+    S-->>H: Initial State
+    H-->>C: MsgTypeGameState + MsgTypeBoardState (Setup)
+
+    rect rgb(240, 248, 255)
+        Note right of C: Setup Interactions
+        C->>H: MsgTypeSwapPieces / MsgTypeRandomizeSetup
+        H->>S: Update Setup Area
+        S-->>H: Setup Updated
+        H-->>C: MsgTypeBoardState
+    end
+
+    C->>H: MsgTypeStartGame
+    H->>S: StartGameFromSetup()
+    S->>R: Start() (Asynchronous Loop)
+    S-->>H: Transition to Game
+    H-->>C: MsgTypeGameState (isSetupPhase: false)
+
+    Note over C, AI: Gameplay Loop
+
+    loop Until Game Over
+        alt Human Turn
+            R->>S: Wait for Input
+            S-->>H: Broadcast GameState (waitingForInput: true)
+            H-->>C: MsgTypeGameState
+            C->>H: MsgTypeMove {from, to}
+            H->>S: SubmitMove()
+            S->>R: Signal Move Received
+        else AI Turn
+            R->>AI: Request Move
+            AI-->>R: Move Decision
+        end
+
+        R->>S: Execute Move
+        S->>M: NotifyMoveExecuted()
+        
+        alt Combat Occurred
+            M->>H: MsgTypeCombat (Reveals ranks)
+            H-->>C: MsgTypeCombat
+            C-->>M: MsgTypeAnimationComplete (Optional)
+            M->>S: WaitForAnimationComplete (3s timeout)
+        end
+
+        M->>H: BroadcastFullState()
+        H-->>C: MsgTypeGameState + MsgTypeBoardState
+        M->>S: AckMoveProcessed()
+        S->>R: Resume Runner
+    end
+
+    Note over C, AI: Game Over & Cleanup
+
+    R->>S: SetWinner()
+    S->>M: Game Over Detected
+    M->>H: BroadcastFullState() + MsgTypeMoveHistory
+    H-->>C: MsgTypeGameOver + Final History
+    M->>S: Save Game to DB
+    M->>H: StartGameOverCleanup (5m timer)
+    
+    Note right of H: After 5 minutes or disconnection
+    H->>S: Stop()
+    M->>M: RemoveSession(gameID)
