@@ -8,6 +8,7 @@ import (
 	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/models"
+	"digital-innovation/gostrategy/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -53,6 +54,15 @@ func (h *Handler) RegisterUserHandler(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		core.SendError(c, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := utils.ValidateUsername(req.Username); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := utils.ValidatePassword(req.Password); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -104,6 +114,15 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		core.SendError(c, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := utils.ValidateUsername(req.Username); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := utils.ValidatePassword(req.Password); err != nil {
+		core.SendError(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 

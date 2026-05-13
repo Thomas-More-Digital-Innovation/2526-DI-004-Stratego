@@ -59,12 +59,14 @@
                 label="Username"
                 placeholder="Enter your username"
                 bind:value={username}
+                sanitize="username"
             />
             <Input
                 label="Password"
                 type="password"
                 placeholder="Enter your password"
                 bind:value={password}
+                sanitize="password"
             />
             <Button
                 type="submit"
