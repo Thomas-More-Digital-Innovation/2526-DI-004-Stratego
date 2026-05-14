@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
+	"strconv"
 )
 
 type visitor struct {
@@ -19,79 +20,101 @@ type visitor struct {
 	lastSeen time.Time
 }
 
-// IPRateLimiter manages rate limiters for different IP addresses
-type IPRateLimiter struct {
-	ips map[string]*visitor
-	mu  *sync.RWMutex
-	r   rate.Limit
-	b   int
+// RateLimiter manages rate limiters for different keys (IP, User ID, etc.)
+type RateLimiter struct {
+	visitors map[string]*visitor
+	mu       *sync.RWMutex
+	r        rate.Limit
+	b        int
 }
 
-// NewIPRateLimiter creates a new IPRateLimiter instance
-func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
-	i := &IPRateLimiter{
-		ips: make(map[string]*visitor),
-		mu:  &sync.RWMutex{},
-		r:   r,
-		b:   b,
+// NewRateLimiter creates a new RateLimiter instance
+func NewRateLimiter(r rate.Limit, b int) *RateLimiter {
+	rl := &RateLimiter{
+		visitors: make(map[string]*visitor),
+		mu:       &sync.RWMutex{},
+		r:        r,
+		b:        b,
 	}
 
-	go i.cleanupVisitors()
+	go rl.cleanupVisitors()
 
-	return i
+	return rl
 }
 
-// GetLimiter returns the rate limiter for a specific IP address
-func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+// GetLimiter returns the rate limiter for a specific key
+func (rl *RateLimiter) GetLimiter(key string) *rate.Limiter {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
 
-	v, exists := i.ips[ip]
+	v, exists := rl.visitors[key]
 	if !exists {
-		if len(i.ips) >= 10000 {
-			for ipToEvict := range i.ips {
-				delete(i.ips, ipToEvict)
+		if len(rl.visitors) >= 10000 {
+			// Basic eviction: clear all if limit reached
+			// In a production app, we might use LRU or more granular eviction
+			for k := range rl.visitors {
+				delete(rl.visitors, k)
 				break
 			}
 		}
 
 		v = &visitor{
-			limiter: rate.NewLimiter(i.r, i.b),
+			limiter: rate.NewLimiter(rl.r, rl.b),
 		}
-		i.ips[ip] = v
+		rl.visitors[key] = v
 	}
 
 	v.lastSeen = time.Now()
 	return v.limiter
 }
 
-func (i *IPRateLimiter) cleanupVisitors() {
+func (rl *RateLimiter) cleanupVisitors() {
 	for {
 		time.Sleep(1 * time.Hour)
 
-		i.mu.Lock()
-		for ip, v := range i.ips {
+		rl.mu.Lock()
+		for key, v := range rl.visitors {
 			if time.Since(v.lastSeen) > 3*time.Hour {
-				delete(i.ips, ip)
+				delete(rl.visitors, key)
 			}
 		}
-		i.mu.Unlock()
+		rl.mu.Unlock()
 	}
 }
 
-// RateLimitMiddleware limits requests per IP
-func RateLimitMiddleware(limiter *IPRateLimiter) gin.HandlerFunc {
+// IPRateLimitMiddleware limits requests per IP
+func IPRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		if !limiter.GetLimiter(ip).Allow() {
 			user := auth.GetCurrentUser(c)
 			username, userID, err := utils.TryGetUserOrError(user)
 			if err != nil {
-				logging.SecurityWarningWithIP("Rate limit triggered", "Too many requests from this IP", ip)
+				logging.SecurityWarningWithIP("IP Rate limit triggered", "Too many requests from this IP", ip)
 			} else {
-				logging.SecurityWarning("Rate limit triggered", "Too many requests", username, userID)
+				logging.SecurityWarning("IP Rate limit triggered", "Too many requests from this IP", username, userID)
 			}
-			c.JSON(http.StatusTooManyRequests, gin.H{dto.MsgTypeError: "Too many requests"})
+			c.JSON(http.StatusTooManyRequests, gin.H{dto.MsgTypeError: "Too many requests from this IP"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// UserRateLimitMiddleware limits requests per authenticated user
+func UserRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := auth.GetCurrentUser(c)
+		if user == nil {
+			c.Next()
+			return
+		}
+
+		key := strconv.Itoa(user.ID)
+		if !limiter.GetLimiter(key).Allow() {
+			logging.SecurityWarning("User rate limit triggered", "Too many requests for this user account", user.Username, user.ID)
+			c.JSON(http.StatusTooManyRequests, gin.H{dto.MsgTypeError: "Too many requests for this user account"})
 			c.Abort()
 			return
 		}

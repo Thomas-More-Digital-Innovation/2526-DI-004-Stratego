@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
+	"time"
 
 	_ "digital-innovation/gostrategy/docs" // Required for Swagger UI
 
@@ -48,8 +49,12 @@ func (s *GameServer) SetupRoutes() {
 	s.Router.Use(middleware.JSONLoggerMiddleware())
 	s.Router.Use(middleware.CSRFMiddleware())
 
-	limiter := middleware.NewIPRateLimiter(rate.Limit(5), 10)
-	s.Router.Use(middleware.RateLimitMiddleware(limiter))
+	// Rate limiters
+	globalLimiter := middleware.NewRateLimiter(rate.Limit(10), 20)
+	authLimiter := middleware.NewRateLimiter(rate.Every(time.Hour/5), 5)        // 5 per hour
+	actionLimiter := middleware.NewRateLimiter(rate.Every(time.Minute/10), 10) // 10 per minute
+
+	s.Router.Use(middleware.IPRateLimitMiddleware(globalLimiter))
 
 	// Health check
 	s.Router.GET("/health", h.HealthHandler)
@@ -78,7 +83,7 @@ func (s *GameServer) SetupRoutes() {
 			me.GET("", h.GetCurrentUserHandler)
 			me.GET("/stats", h.GetCurrentUserStatsHandler)
 			me.GET("/games", h.HandleListMyGames)
-			me.POST("/password", h.ChangePasswordHandler)
+			me.POST("/password", middleware.UserRateLimitMiddleware(authLimiter), h.ChangePasswordHandler)
 		}
 
 		// Public info
@@ -91,6 +96,7 @@ func (s *GameServer) SetupRoutes() {
 	// Board setup endpoints (all require auth)
 	setups := s.Router.Group("/board-setups")
 	setups.Use(auth.RequireAuth())
+	setups.Use(middleware.UserRateLimitMiddleware(actionLimiter))
 	{
 		setups.GET("", h.GetUserBoardSetupsHandler)
 		setups.GET("/:id", h.GetBoardSetupHandler)
@@ -103,7 +109,7 @@ func (s *GameServer) SetupRoutes() {
 	games := s.Router.Group("/games")
 	games.Use(auth.OptionalAuth())
 	{
-		games.POST("", h.HandleCreateGame)
+		games.POST("", middleware.UserRateLimitMiddleware(actionLimiter), h.HandleCreateGame)
 		games.GET("", h.HandleListGames)
 		games.GET("/:id/history", h.HandleGetGameHistory)
 		games.GET("/count", h.GamesPlayedCountHandler)
