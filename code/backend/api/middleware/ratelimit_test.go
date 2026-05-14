@@ -2,8 +2,8 @@ package middleware_test
 
 import (
 	"digital-innovation/gostrategy/api/middleware"
-	"digital-innovation/gostrategy/models"
 	"digital-innovation/gostrategy/auth"
+	"digital-innovation/gostrategy/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,7 +38,7 @@ func TestRateLimiter(t *testing.T) {
 
 func TestIPRateLimitMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	// 1 req/s, burst 1
 	rl := middleware.NewRateLimiter(rate.Limit(1), 1)
 	mw := middleware.IPRateLimitMiddleware(rl)
@@ -76,7 +76,7 @@ func TestIPRateLimitMiddleware(t *testing.T) {
 
 func TestUserRateLimitMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	// 1 req/s, burst 1
 	rl := middleware.NewRateLimiter(rate.Limit(1), 1)
 	mw := middleware.UserRateLimitMiddleware(rl)
@@ -85,7 +85,7 @@ func TestUserRateLimitMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("POST", "/", nil)
-		
+
 		// Set user in context
 		user := &models.User{ID: 100, Username: "testuser"}
 		c.Set(auth.UserContextKey, user)
@@ -101,7 +101,7 @@ func TestUserRateLimitMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("POST", "/", nil)
-		
+
 		// Same user ID as above
 		user := &models.User{ID: 100, Username: "testuser"}
 		c.Set(auth.UserContextKey, user)
@@ -118,7 +118,7 @@ func TestUserRateLimitMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("POST", "/", nil)
-		
+
 		// No user in context
 		mw(c)
 

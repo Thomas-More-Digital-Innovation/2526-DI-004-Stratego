@@ -7,10 +7,11 @@ import (
 	"digital-innovation/gostrategy/utils"
 	"strings"
 
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
-	"time"
 
 	_ "digital-innovation/gostrategy/docs" // Required for Swagger UI
 
@@ -51,7 +52,7 @@ func (s *GameServer) SetupRoutes() {
 
 	// Rate limiters
 	globalLimiter := middleware.NewRateLimiter(rate.Limit(10), 20)
-	authLimiter := middleware.NewRateLimiter(rate.Every(time.Hour/5), 5)        // 5 per hour
+	authLimiter := middleware.NewRateLimiter(rate.Every(time.Hour/5), 5)       // 5 per hour
 	actionLimiter := middleware.NewRateLimiter(rate.Every(time.Minute/10), 10) // 10 per minute
 
 	s.Router.Use(middleware.IPRateLimitMiddleware(globalLimiter))
