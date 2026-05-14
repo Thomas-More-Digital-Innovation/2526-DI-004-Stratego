@@ -10,9 +10,9 @@ This document outlines the planned improvements and future directions for the Go
 #### Backend & Infrastructure
 - [x] **Refactoring**: refactoring of backend code, especially the api package.
 - [ ] **Rate Limiting**: Add secondary user-level rate limits for sensitive actions (creation, password changes).
-- [ ] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
+- [x] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
 - [ ] **Reliability**: Implement exponential backoff for WebSocket reconnections with UI feedback.
-- [ ] **Game Limiting**: Allow only one active game per user at a time.
+- [x] **Game Limiting**: Allow only one active game per user at a time.
 
 #### Frontend & UI/UX
 - [ ] **Authentication**: Redesign and improve the login and registration screens for a more premium feel.
