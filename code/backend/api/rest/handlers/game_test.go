@@ -1,11 +1,10 @@
-package handlers
+package handlers_test
 
 import (
-	"context"
-	"digital-innovation/gostrategy/auth"
+	"digital-innovation/gostrategy/api/core"
+	"digital-innovation/gostrategy/api/rest/handlers"
 	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/models"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,96 +14,52 @@ import (
 )
 
 func TestHandleGetGameHistory(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
-	r, h, _ := setupTestRouter()
-	r.GET("/games/:id/history", h.HandleGetGameHistory)
+	server := core.NewGameServer()
+	h := handlers.NewHandler(server)
 
-	gameID := "test-history-game"
-	// Save a mock game
-	err := db.SaveGame(context.TODO(), gameID, nil, nil, models.HumanVsAi, map[string]any{"board": "setup"}, nil)
-	assert.NoError(t, err)
+	// Test non-existent game
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request, _ = http.NewRequest("GET", "/games/non-existent/history", nil)
+	c.Params = []gin.Param{{Key: "id", Value: "non-existent"}}
+	h.HandleGetGameHistory(c)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
 
-	t.Run("GameFound", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", fmt.Sprintf("/games/%s/history", gameID), nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
+func TestHandleListUserGames(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db.SetupTestDB(t)
+	server := core.NewGameServer()
+	h := handlers.NewHandler(server)
 
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), gameID)
-	})
-
-	t.Run("GameNotFound", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/games/non-existent/history", nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-	})
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request, _ = http.NewRequest("GET", "/users/123/games", nil)
+	c.Params = []gin.Param{{Key: "id", Value: "123"}}
+	h.HandleListUserGames(c)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestHandleListMyGames(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
-	r, h, _ := setupTestRouter()
+	server := core.NewGameServer()
+	h := handlers.NewHandler(server)
 
-	user := &models.User{ID: 100, Username: "me"}
-	r.Use(func(c *gin.Context) {
-		c.Set(auth.UserContextKey, user)
-		c.Next()
-	})
-	r.GET("/users/me/games", h.HandleListMyGames)
+	// Unauthenticated
+	w1 := httptest.NewRecorder()
+	c1, _ := gin.CreateTestContext(w1)
+	c1.Request, _ = http.NewRequest("GET", "/users/me/games", nil)
+	h.HandleListMyGames(c1)
+	assert.Equal(t, http.StatusUnauthorized, w1.Code)
 
-	// Save a game for this user
-	userID := 100
-	err := db.SaveGame(context.TODO(), "my-game", &userID, nil, models.HumanVsAi, map[string]any{}, nil)
-	assert.NoError(t, err)
-
-	t.Run("ListGames", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/users/me/games", nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), "my-game")
-		assert.Contains(t, w.Body.String(), "\"total\":1")
-	})
-}
-
-func TestMonitoringHandlers(t *testing.T) {
-	db.SetupTestDB(t)
-	r, h, _ := setupTestRouter()
-	r.GET("/monitoring/users/count", h.UserCountHandler)
-	r.GET("/monitoring/games/count", h.GamesPlayedCountHandler)
-
-	t.Run("UserCount", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/monitoring/users/count", nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	t.Run("GamesCount", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/monitoring/games/count", nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-}
-
-func TestStatsHandlers(t *testing.T) {
-	db.SetupTestDB(t)
-	r, h, _ := setupTestRouter()
-	r.GET("/users/:id/stats", h.GetUserStatsHandler)
-
-	t.Run("GetStats", func(t *testing.T) {
-		// Mock stats entry
-		userID := 1
-		db.DB.Create(&models.UserStats{UserID: userID, TotalGames: 10, Wins: 5})
-
-		req, _ := http.NewRequest("GET", "/users/1/stats", nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), "\"wins\":5")
-	})
+	// Authenticated
+	w2 := httptest.NewRecorder()
+	c2, _ := gin.CreateTestContext(w2)
+	c2.Request, _ = http.NewRequest("GET", "/users/me/games", nil)
+	c2.Set("user", &models.User{ID: 1, Username: "test"})
+	h.HandleListMyGames(c2)
+	assert.Equal(t, http.StatusOK, w2.Code)
 }

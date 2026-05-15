@@ -259,3 +259,58 @@ func TestMakeMoveCapturingFlag(t *testing.T) {
 		t.Errorf("Expected player1 to be the winner after capturing the flag")
 	}
 }
+func TestGameClone(t *testing.T) {
+	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	player2 := engine.NewPlayer(2, "Bob", "blue")
+	controller2 := engine.NewHumanPlayerController(&player2)
+	g := game.NewGame(controller1, controller2)
+
+	attacker := engine.NewPiece(models.Major, &player1)
+	g.Board.SetPieceAt(engine.NewPosition(0, 0), attacker)
+
+	cloned := g.Clone()
+	if cloned.CurrentPlayer.GetID() != g.CurrentPlayer.GetID() {
+		t.Error("Cloned game should have same current player ID")
+	}
+	if cloned.Board.GetPieceAt(engine.NewPosition(0, 0)) == nil {
+		t.Error("Cloned game board should have the piece")
+	}
+}
+
+func TestGameInitializePieces(t *testing.T) {
+	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	player2 := engine.NewPlayer(2, "Bob", "blue")
+	controller2 := engine.NewHumanPlayerController(&player2)
+	g := game.NewGame(controller1, controller2)
+
+	p1 := engine.NewPiece(models.Flag, &player1)
+	g.Board.SetPieceAt(engine.NewPosition(0, 0), p1)
+
+	g.InitializePieces()
+
+	_, exists := player1.GetPiecePosition(p1)
+	if !exists {
+		t.Error("InitializePieces should update player piece tracking")
+	}
+}
+
+func TestGameEnd(t *testing.T) {
+	player1 := engine.NewPlayer(1, "Alice", "red")
+	controller1 := engine.NewHumanPlayerController(&player1)
+	player2 := engine.NewPlayer(2, "Bob", "blue")
+	controller2 := engine.NewHumanPlayerController(&player2)
+	g := game.NewGame(controller1, controller2)
+
+	g.SetWinner(&player1, game.WinCauseFlagCaptured)
+	if g.GetWinner() != &player1 {
+		t.Error("Winner mismatch")
+	}
+	if !g.IsGameOver() {
+		t.Error("Game should be over")
+	}
+	if g.GetWinCause() != game.WinCauseFlagCaptured {
+		t.Error("Win cause mismatch")
+	}
+}

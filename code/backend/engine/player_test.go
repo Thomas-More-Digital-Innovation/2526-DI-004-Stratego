@@ -75,6 +75,50 @@ func TestUpdatePieceScore(t *testing.T) {
 	player.UpdatePieceScore(piece)
 
 	if player.GetPieceScore() != initPieceValue-models.Sergeant.GetStrategicValue() {
-		t.Errorf("Expected player piece score to be 60 after update, got %d", player.GetPieceScore())
+		t.Errorf("Expected player piece score to be %d after update, got %d", initPieceValue-models.Sergeant.GetStrategicValue(), player.GetPieceScore())
+	}
+}
+
+func TestPlayerWinning(t *testing.T) {
+	player := engine.NewPlayer(1, "player1", "avatar1")
+	if player.HasWon() {
+		t.Error("New player should not have won")
+	}
+	player.SetWinner()
+	if !player.HasWon() {
+		t.Error("Player should have won after SetWinner")
+	}
+}
+
+func TestPlayerPieceTracking(t *testing.T) {
+	player := engine.NewPlayer(1, "player1", "avatar1")
+	piece := engine.NewPiece(models.Marshal, &player)
+	pos := engine.NewPosition(1, 2)
+
+	player.AddPiece(piece, pos)
+
+	if len(player.GetAlivePieces()) != 1 {
+		t.Errorf("Expected 1 alive piece, got %d", len(player.GetAlivePieces()))
+	}
+
+	gotPos, exists := player.GetPiecePosition(piece)
+	if !exists || !gotPos.Equals(pos) {
+		t.Error("GetPiecePosition returned wrong position or doesn't exist")
+	}
+
+	newPos := engine.NewPosition(3, 4)
+	player.UpdatePiecePosition(piece, newPos)
+	gotPos, _ = player.GetPiecePosition(piece)
+	if !gotPos.Equals(newPos) {
+		t.Error("UpdatePiecePosition failed")
+	}
+
+	player.RemovePiece(piece)
+	if len(player.GetAlivePieces()) != 0 {
+		t.Error("Alive pieces should be empty after removal")
+	}
+	_, exists = player.GetPiecePosition(piece)
+	if exists {
+		t.Error("Piece position should not exist after removal")
 	}
 }

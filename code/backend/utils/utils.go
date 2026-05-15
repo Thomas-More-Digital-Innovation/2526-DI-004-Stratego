@@ -13,17 +13,9 @@ func GetIntSafe(ptr *int) int {
 	return *ptr
 }
 
-var isProd bool
-
-func init() {
-	// Default to development if not set to avoid panics during tests
-	appEnv := GetEnv("APP_ENV", "development")
-	isProd = appEnv == "production"
-}
-
 // IsProduction checks if the application is running in production mode
 func IsProduction() bool {
-	return isProd
+	return GetEnv("APP_ENV", "development") == "production"
 }
 
 // TryGetUser returns username and ID of the user if not nil, otherwise "Unknown" and 0

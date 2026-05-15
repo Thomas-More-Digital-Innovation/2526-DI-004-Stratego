@@ -17,6 +17,7 @@ type Runner struct {
 	waitingForHumanInput bool
 	paused               bool // flag to indicate if game is paused
 	onMoveExecuted       func()
+	stopped              bool
 	stopChan             chan bool
 	locker               sync.Locker // Mutex from GameSession to prevent race conditions
 }
@@ -31,6 +32,7 @@ func NewRunner(game *Game, turnDelay time.Duration, maxTurns int) *Runner {
 		turnDelay: turnDelay,
 		maxTurns:  maxTurns,
 		paused:    false,
+		stopChan:  make(chan bool, 1),
 	}
 }
 
@@ -55,7 +57,7 @@ func (gr *Runner) RunToCompletion() *engine.Player {
 			isGameOver = gr.game.IsGameOver()
 		}
 
-		if isGameOver || turnCount >= gr.maxTurns {
+		if isGameOver || turnCount >= gr.maxTurns || gr.IsStopped() {
 			break
 		}
 		// Check for stop signal
@@ -318,6 +320,20 @@ func (gr *Runner) GetGame() *Game {
 	return gr.game
 }
 
+// Stop stops the game runner
+func (gr *Runner) Stop() {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	gr.stopped = true
+	select {
+	case gr.stopChan <- true:
+	default:
+		// Channel already has a stop signal
+	}
+}
+
 // SubmitHumanMove allows external code to submit a human player's move
 func (gr *Runner) SubmitHumanMove(move engine.Move) error {
 	if gr.locker != nil {
@@ -416,4 +432,13 @@ func (gr *Runner) IsPaused() bool {
 
 func (gr *Runner) isPaused() bool {
 	return gr.paused
+}
+
+// IsStopped returns whether the game runner has been stopped
+func (gr *Runner) IsStopped() bool {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	return gr.stopped
 }

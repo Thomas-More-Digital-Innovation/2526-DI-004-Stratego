@@ -61,6 +61,30 @@ func NewGame(controller1, controller2 engine.PlayerController) *Game {
 	}
 }
 
+// Clone creates a deep copy of the game state (excluding controllers which are shared or recreated)
+func (g *Game) Clone() *Game {
+	clonedBoard := g.Board.Clone()
+
+	// Create new game with same controllers
+	cloned := NewGame(g.PlayerControllers[0], g.PlayerControllers[1])
+	cloned.Board = clonedBoard
+	cloned.round = g.round
+	cloned.gameOver = g.gameOver
+	cloned.winCause = g.winCause
+	cloned.winner = g.winner
+
+	// Set current player and controller correctly
+	if g.CurrentPlayer == g.Players[0] {
+		cloned.CurrentPlayer = cloned.Players[0]
+		cloned.CurrentController = cloned.PlayerControllers[0]
+	} else {
+		cloned.CurrentPlayer = cloned.Players[1]
+		cloned.CurrentController = cloned.PlayerControllers[1]
+	}
+
+	return cloned
+}
+
 // NextTurn advances the game state to the next player's turn
 func (g *Game) NextTurn() {
 	switch {

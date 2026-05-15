@@ -185,14 +185,12 @@ func (gs *Session) Stop() {
 		return
 	}
 	gs.aborted = true
-	wasRunning := gs.running
 	gs.mutex.Unlock()
 
-	if wasRunning {
-		close(gs.stopChan)
-		// We don't necessarily know WHO stopped it here easily, but we'll log the session ID
-		logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
-	}
+	// Always close stopChan to signal abortion to any listeners (like monitorGame)
+	close(gs.stopChan)
+
+	logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
 
 	if gs.setupTimer != nil {
 		gs.setupTimer.Stop()

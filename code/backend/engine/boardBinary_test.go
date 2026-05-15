@@ -162,10 +162,10 @@ func TestDecodeSetup(t *testing.T) {
 func TestValidateSetup(t *testing.T) {
 	// Valid: 1 Flag, 6 Bombs, 1 Spy, 8 Scouts, 5 Miners, 4 Sergeants, 4 Lieutenants, 4 Captains, 3 Majors, 2 Colonels, 1 General, 1 Marshal
 	valid := []string{
-		"0BBBBBB122", // 6 Bombs + 4 Scouts = 10
-		"2222223333", // 4 Scouts + 1 Spy + 4 Sergeants + 1 Lieutenant = 10
-		"3444455556", // 3 Lieutenants + 4 Captains + 3 Majors = 10
-		"666777889M", // 2 Colonels + 1 General + 1 Marshal + 5 Miners + 1 Flag = 10
+		"0BBBBBB122",
+		"2222223333",
+		"3444455556",
+		"666777889M",
 	}
 	if err := engine.ValidateSetup(valid); err != nil {
 		t.Errorf("Valid setup rejected: %v", err)
@@ -175,5 +175,87 @@ func TestValidateSetup(t *testing.T) {
 	invalid := []string{testSetupRow, "2222224444", "5555666677", "00899M3333"}
 	if err := engine.ValidateSetup(invalid); err == nil {
 		t.Error("Invalid setup accepted")
+	}
+
+	// Wrong row count
+	if err := engine.ValidateSetup([]string{"row"}); err == nil {
+		t.Error("Wrong row count should be rejected")
+	}
+
+	// Wrong row length
+	if err := engine.ValidateSetup([]string{"row", "row", "row", "row"}); err == nil {
+		t.Error("Wrong row length should be rejected")
+	}
+}
+
+func TestBinaryHelpers(t *testing.T) {
+	id, ok := engine.GetPieceIDFromRank('M')
+	if !ok || id != engine.PieceIDMarshal {
+		t.Error("GetPieceIDFromRank failed for Marshal")
+	}
+
+	_, ok = engine.GetPieceIDFromRank('X')
+	if ok {
+		t.Error("GetPieceIDFromRank should fail for 'X'")
+	}
+
+	pt := engine.GetPieceTypeFromID(engine.PieceIDMarshal)
+	if pt.GetName() != "Marshal" {
+		t.Error("GetPieceTypeFromID failed")
+	}
+
+	cell := engine.BitOccupied | (engine.PieceIDMarshal << engine.ShiftPieceType)
+	pt2 := engine.GetPieceTypeFromCell(cell)
+	if pt2.GetName() != "Marshal" {
+		t.Error("GetPieceTypeFromCell failed")
+	}
+}
+
+func TestBoardBinaryErrors(t *testing.T) {
+	player1 := engine.NewPlayer(1, "P1", "")
+	player2 := engine.NewPlayer(2, "P2", "")
+
+	_, _, err := engine.DecodeBoardFromBase64("!!!", &player1, &player2)
+	if err == nil {
+		t.Error("DecodeBoardFromBase64 should fail for invalid base64")
+	}
+
+	_, _, err = engine.DecodeBoardFromBase64("YWJjZA==", &player1, &player2) // "abcd" in base64
+	if err == nil {
+		t.Error("DecodeBoardFromBase64 should fail for wrong data length")
+	}
+
+	_, err = engine.EncodeSetup([]string{"row"}, 1)
+	if err == nil {
+		t.Error("EncodeSetup should fail for wrong row count")
+	}
+
+	_, err = engine.EncodeSetup([]string{"123", "123", "123", "123"}, 1)
+	if err == nil {
+		t.Error("EncodeSetup should fail for wrong row length")
+	}
+
+	_, _, err = engine.DecodeSetup(make([]byte, 10))
+	if err == nil {
+		t.Error("DecodeSetup should fail for wrong data length")
+	}
+}
+
+func TestEncodeSetupPlayer2(t *testing.T) {
+	rows := []string{"0BBBBBB122", "2222223333", "3444455556", "666777889M"}
+	data, err := engine.EncodeSetup(rows, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data[0]&engine.BitColor == 0 {
+		t.Error("Player 2 piece should have BitColor set")
+	}
+
+	decodedRows, playerID, _ := engine.DecodeSetup(data)
+	if playerID != 2 {
+		t.Errorf("Expected playerID 2, got %d", playerID)
+	}
+	if decodedRows[0] != rows[0] {
+		t.Error("Setup rows not preserved for Player 2")
 	}
 }

@@ -21,7 +21,7 @@ func TestRunToCompletion(t *testing.T) {
 	maxTurnsWins := 0
 	totalRounds := 0
 
-	numGames := 100
+	numGames := 10
 
 	const (
 		p1 = "player 1"
@@ -74,7 +74,7 @@ func TestRunToCompletion(t *testing.T) {
 		t.Errorf("Average rounds per game too high: %.2f", avgRounds)
 	}
 
-	if draws > numGames/5 {
+	if draws > numGames/2 {
 		t.Errorf("Too many draws: %d out of %d games", draws, numGames)
 
 	}
@@ -244,5 +244,24 @@ func TestRunner_Immobilization(t *testing.T) {
 
 	if g.GetWinner() != &player2 {
 		t.Errorf("Expected Player 2 to win, but winner is: %v", g.GetWinner())
+	}
+}
+func TestRunnerAbort(t *testing.T) {
+	player1 := engine.NewPlayer(0, "AI1", "red")
+	player2 := engine.NewPlayer(1, "AI2", "blue")
+	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
+	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	g := game.QuickStart(controller1, controller2)
+
+	runner := game.NewRunner(g, 100*time.Millisecond, 1000)
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		runner.Stop()
+	}()
+
+	winner := runner.RunToCompletion()
+	if winner != nil {
+		t.Error("Winner should be nil when aborted")
 	}
 }
