@@ -13,7 +13,8 @@ This document outlines the planned improvements and future directions for the Go
 - [x] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
 - [ ] **Reliability**: Implement exponential backoff for WebSocket reconnections with UI feedback.
 - [x] **Game Limiting**: Allow only one active game per user at a time.
-- [ ] **AI vs AI cleanup**: Add a 30 second wait for cleanup of an AI vs AI game.
+- [x] **AI vs AI cleanup**: Add a 30 second wait for cleanup of an AI vs AI game.
+- [x] **AI vs AI Auto-Pause**: Automatically pause AI vs AI games when no observers are connected.
 - [ ] **Testing**: Increase test coverage to >60%, especially for API and WebSockets.
 
 #### Frontend & UI/UX
