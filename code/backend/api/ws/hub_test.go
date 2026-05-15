@@ -54,6 +54,7 @@ func TestWSHub_AICleanup(t *testing.T) {
 
 	cleanupSignal := make(chan bool, 1)
 	hub := ws.NewHub(session, models.AiVsAi)
+	hub.SetCleanupPeriod(50 * time.Millisecond)
 	hub.OnCleanup = func() {
 		cleanupSignal <- true
 	}
@@ -67,7 +68,6 @@ func TestWSHub_AICleanup(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	hub.Unregister() <- client
 
-	// Wait for cleanup with timeout
 	select {
 	case <-cleanupSignal:
 		// Success

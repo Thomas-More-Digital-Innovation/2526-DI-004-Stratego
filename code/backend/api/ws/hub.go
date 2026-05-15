@@ -2,7 +2,6 @@
 package ws
 
 import (
-	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/game"
 	"digital-innovation/gostrategy/logging"
 	"digital-innovation/gostrategy/models"
@@ -92,13 +91,12 @@ func (h *Hub) Run() {
 
 				switch h.GameType {
 				case models.AiVsAi:
-					// Stop AI vs AI games immediately - no point running without observers
-					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, stopping game immediately: %s", h.Session.ID)
-					h.Session.Stop()
-					h.Stop()
-					if h.OnCleanup != nil {
-						h.OnCleanup()
+					// AI vs AI game always gets a 30 second cleanup period unless shortened for tests
+					if h.cleanupPeriod > 30*time.Second {
+						h.cleanupPeriod = 30 * time.Second
 					}
+					logging.Debug(logging.TagWeb, "All clients disconnected from AI vs AI game, starting cleanup timer (%v): %s", h.cleanupPeriod, h.Session.ID)
+					h.startCleanupTimer()
 
 				case models.HumanVsAi, models.HumanVsHuman:
 					// Start cleanup timer with appropriate grace period
@@ -250,57 +248,5 @@ func (h *Hub) cancelCleanupTimer() {
 			logging.Debug(logging.TagWeb, "Cleanup timer cancelled for %s game (client reconnected): %s", h.GameType, h.Session.ID)
 		}
 		h.cleanupTimer = nil
-	}
-}
-
-func (h *Hub) setupBoard() dto.BoardStateMessage {
-	session := h.Session
-
-	boardDTO := make([][]dto.PieceDTO, 10)
-	for y := range 10 {
-		boardDTO[y] = make([]dto.PieceDTO, 10)
-	}
-
-	// Place player 1 pieces in setup area (rows 6-9)
-	player1Pieces := session.GetSetupPieces(0)
-	idx := 0
-	for y := 6; y <= 9; y++ {
-		for x := range 10 {
-			if idx < len(player1Pieces) {
-				piece := player1Pieces[idx]
-				forceReveal := h.GameType == models.AiVsAi
-				dtoPiece := dto.PieceToDTO(piece, 0, forceReveal)
-				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dtoPiece
-				idx++
-			}
-		}
-	}
-
-	// Place player 2 pieces in setup area (rows 0-3)
-	// Hide opponent pieces during setup
-	player2Pieces := session.GetSetupPieces(1)
-	idx = 0
-	for y := 0; y <= 3; y++ {
-		for x := range 10 {
-			if idx < len(player2Pieces) {
-				piece := player2Pieces[idx]
-				viewerID := -1
-				forceReveal := h.GameType == models.AiVsAi
-				if forceReveal {
-					viewerID = 1 // Show all pieces in AI vs AI
-				}
-				dtoPiece := dto.PieceToDTO(piece, viewerID, forceReveal)
-				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dtoPiece
-				idx++
-			}
-		}
-	}
-
-	return dto.BoardStateMessage{
-		Board:  boardDTO,
-		Width:  10,
-		Height: 10,
 	}
 }

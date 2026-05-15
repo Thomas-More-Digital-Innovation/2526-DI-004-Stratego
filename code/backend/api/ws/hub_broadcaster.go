@@ -248,3 +248,54 @@ func (h *Hub) BroadcastMoveHistory() {
 		h.sendMoveHistory(client)
 	}
 }
+func (h *Hub) setupBoard() dto.BoardStateMessage {
+	session := h.Session
+
+	boardDTO := make([][]dto.PieceDTO, 10)
+	for y := range 10 {
+		boardDTO[y] = make([]dto.PieceDTO, 10)
+	}
+
+	// Place player 1 pieces in setup area (rows 6-9)
+	player1Pieces := session.GetSetupPieces(0)
+	idx := 0
+	for y := 6; y <= 9; y++ {
+		for x := range 10 {
+			if idx < len(player1Pieces) {
+				piece := player1Pieces[idx]
+				forceReveal := h.GameType == models.AiVsAi
+				dtoPiece := dto.PieceToDTO(piece, 0, forceReveal)
+				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
+				idx++
+			}
+		}
+	}
+
+	// Place player 2 pieces in setup area (rows 0-3)
+	// Hide opponent pieces during setup
+	player2Pieces := session.GetSetupPieces(1)
+	idx = 0
+	for y := 0; y <= 3; y++ {
+		for x := range 10 {
+			if idx < len(player2Pieces) {
+				piece := player2Pieces[idx]
+				viewerID := -1
+				forceReveal := h.GameType == models.AiVsAi
+				if forceReveal {
+					viewerID = 1 // Show all pieces in AI vs AI
+				}
+				dtoPiece := dto.PieceToDTO(piece, viewerID, forceReveal)
+				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
+				idx++
+			}
+		}
+	}
+
+	return dto.BoardStateMessage{
+		Board:  boardDTO,
+		Width:  10,
+		Height: 10,
+	}
+}
