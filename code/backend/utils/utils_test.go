@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testUserStr = "testuser"
+
 func TestGetIntSafe(t *testing.T) {
 	val := 42
 	tests := []struct {
@@ -41,7 +43,7 @@ func TestIsProduction(t *testing.T) {
 }
 
 func TestTryGetUser(t *testing.T) {
-	user := &models.User{ID: 1, Username: "testuser"}
+	user := &models.User{ID: 1, Username: testUserStr}
 	tests := []struct {
 		name     string
 		user     *models.User
@@ -49,7 +51,7 @@ func TestTryGetUser(t *testing.T) {
 		wantID   int
 	}{
 		{"nil user", nil, "Unknown", 0},
-		{"valid user", user, "testuser", 1},
+		{"valid user", user, testUserStr, 1},
 	}
 
 	for _, tt := range tests {

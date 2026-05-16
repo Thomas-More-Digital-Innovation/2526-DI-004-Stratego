@@ -434,7 +434,7 @@ func TestScoutMovesOutOfBounds(t *testing.T) {
 func TestEncodeSetupEmptyCells(t *testing.T) {
 	// Test EncodeSetup with '.' and ' '
 	rows := []string{
-		"0BBBBBB122",
+		validSetupPrefix,
 		"2222223333",
 		"3444455556",
 		"66677788. ",

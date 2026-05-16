@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const strongPassword = "StrongPassword1"
+
 func TestIsStrongPassword(t *testing.T) {
 	assert.True(t, handlers.IsStrongPassword("Strong123"))
 	assert.False(t, handlers.IsStrongPassword("weak"))
@@ -38,7 +40,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 	reqBody := models.CreateUserRequest{
 		Username: "alice",
-		Password: "StrongPassword1",
+		Password: strongPassword,
 	}
 	jsonBody, _ := json.Marshal(reqBody) // nolint:gosec // G117: marshaling password in test
 	c.Request, _ = http.NewRequest("POST", "/register", bytes.NewBuffer(jsonBody))
@@ -66,7 +68,7 @@ func TestLoginHandler(t *testing.T) {
 	// Register a user first
 	reqBody := models.CreateUserRequest{
 		Username: "bob",
-		Password: "StrongPassword1",
+		Password: strongPassword,
 	}
 	jsonBody, _ := json.Marshal(reqBody) // nolint:gosec // G117: marshaling password in test
 	wReg := httptest.NewRecorder()
@@ -80,7 +82,7 @@ func TestLoginHandler(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	loginBody := models.LoginRequest{
 		Username: "bob",
-		Password: "StrongPassword1",
+		Password: strongPassword,
 	}
 	jsonLogin, _ := json.Marshal(loginBody) // nolint:gosec // G117: marshaling password in test
 	c.Request, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(jsonLogin))
@@ -121,7 +123,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 	h := handlers.NewHandler(server)
 
 	// Create a user and a refresh token
-	user, _ := db.CreateUser(context.Background(), "alice", "StrongPassword1", "")
+	user, _ := db.CreateUser(context.Background(), "alice", strongPassword, "")
 	refreshToken := "some-refresh-token"
 	expiresAt := time.Now().Add(24 * time.Hour)
 	err := db.SaveRefreshToken(context.Background(), user.ID, refreshToken, expiresAt)
@@ -130,7 +132,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request, _ = http.NewRequest("POST", "/refresh", nil)
-	c.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: refreshToken})
+	c.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: refreshToken, HttpOnly: true, Secure: true})
 
 	h.RefreshTokenHandler(c)
 	assert.Equal(t, http.StatusOK, w.Code)

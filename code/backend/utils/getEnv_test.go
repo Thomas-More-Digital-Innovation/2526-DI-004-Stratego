@@ -5,17 +5,21 @@ import (
 	"testing"
 )
 
+const fallbackStr = "fallback"
+const testValueStr = "test_value"
+const testKeyStr = "TEST_KEY"
+
 func TestGetEnv(t *testing.T) {
-	_ = os.Setenv("TEST_KEY", "test_value")
-	defer func() { _ = os.Unsetenv("TEST_KEY") }()
+	_ = os.Setenv(testKeyStr, testValueStr)
+	defer func() { _ = os.Unsetenv(testKeyStr) }()
 
 	tests := []struct {
 		key      string
 		fallback string
 		want     string
 	}{
-		{"TEST_KEY", "fallback", "test_value"},
-		{"NON_EXISTENT", "fallback", "fallback"},
+		{testKeyStr, fallbackStr, testValueStr},
+		{"NON_EXISTENT", fallbackStr, fallbackStr},
 	}
 
 	for _, tt := range tests {
@@ -26,15 +30,15 @@ func TestGetEnv(t *testing.T) {
 }
 
 func TestGetEnvOrError(t *testing.T) {
-	_ = os.Setenv("TEST_KEY", "test_value")
-	defer func() { _ = os.Unsetenv("TEST_KEY") }()
+	_ = os.Setenv(testKeyStr, testValueStr)
+	defer func() { _ = os.Unsetenv(testKeyStr) }()
 
 	tests := []struct {
 		key     string
 		want    string
 		wantErr bool
 	}{
-		{"TEST_KEY", "test_value", false},
+		{testKeyStr, testValueStr, false},
 		{"NON_EXISTENT", "", true},
 	}
 

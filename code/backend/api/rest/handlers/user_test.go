@@ -23,7 +23,7 @@ func TestUserHandlers(t *testing.T) {
 	server := core.NewGameServer()
 	h := handlers.NewHandler(server)
 
-	user, _ := db.CreateUser(context.Background(), "alice", "StrongPassword1", "")
+	user, _ := db.CreateUser(context.Background(), "alice", strongPassword, "")
 
 	t.Run("GetCurrentUser", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -47,7 +47,7 @@ func TestUserHandlers(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		changeReq := models.ChangePasswordRequest{
-			OldPassword:     "StrongPassword1",
+			OldPassword:     strongPassword,
 			NewPassword:     "NewStrong123",
 			ConfirmPassword: "NewStrong123",
 		}

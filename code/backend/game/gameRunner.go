@@ -20,6 +20,7 @@ type Runner struct {
 	stopped              bool
 	stopChan             chan bool
 	locker               sync.Locker // Mutex from GameSession to prevent race conditions
+	stateMu              sync.RWMutex
 }
 
 // NewRunner creates a new Runner instance
@@ -159,9 +160,12 @@ func (gr *Runner) executeTurn(ignorePause bool) bool {
 	if controller.GetControllerType() == engine.HumanController {
 		humanController, ok := controller.(*engine.HumanPlayerController)
 		if !ok || !humanController.HasPendingMove() {
+			gr.stateMu.Lock()
 			if !gr.waitingForHumanInput {
 				gr.waitingForHumanInput = true
 			}
+			gr.stateMu.Unlock()
+
 			if gr.locker != nil {
 				gr.locker.Unlock()
 			}
@@ -185,7 +189,9 @@ func (gr *Runner) executeTurn(ignorePause bool) bool {
 		}
 
 		gr.game.MakeMove(move, piece)
+		gr.stateMu.Lock()
 		gr.waitingForHumanInput = false
+		gr.stateMu.Unlock()
 
 		if gr.locker != nil {
 			gr.locker.Unlock()
@@ -306,12 +312,16 @@ func (gr *Runner) IsWaitingForInput() bool {
 }
 
 func (gr *Runner) isWaitingForInput() bool {
+	gr.stateMu.RLock()
+	defer gr.stateMu.RUnlock()
 	return gr.waitingForHumanInput
 }
 
 // DebugSetWaitingForInput sets the waiting for human input flag to the given value.
 // This is for debugging (& testing) purposes only and should not be used in production code.
 func (gr *Runner) DebugSetWaitingForInput(value bool) {
+	gr.stateMu.Lock()
+	defer gr.stateMu.Unlock()
 	gr.waitingForHumanInput = value
 }
 
@@ -322,11 +332,10 @@ func (gr *Runner) GetGame() *Game {
 
 // Stop stops the game runner
 func (gr *Runner) Stop() {
-	if gr.locker != nil {
-		gr.locker.Lock()
-		defer gr.locker.Unlock()
-	}
+	gr.stateMu.Lock()
 	gr.stopped = true
+	gr.stateMu.Unlock()
+
 	select {
 	case gr.stopChan <- true:
 	default:
@@ -340,7 +349,7 @@ func (gr *Runner) SubmitHumanMove(move engine.Move) error {
 		gr.locker.Lock()
 	}
 
-	if !gr.waitingForHumanInput {
+	if !gr.isWaitingForInput() {
 		if gr.locker != nil {
 			gr.locker.Unlock()
 		}
@@ -399,6 +408,8 @@ func (gr *Runner) Pause() {
 }
 
 func (gr *Runner) setPaused(paused bool) {
+	gr.stateMu.Lock()
+	defer gr.stateMu.Unlock()
 	gr.paused = paused
 }
 
@@ -431,14 +442,14 @@ func (gr *Runner) IsPaused() bool {
 }
 
 func (gr *Runner) isPaused() bool {
+	gr.stateMu.RLock()
+	defer gr.stateMu.RUnlock()
 	return gr.paused
 }
 
 // IsStopped returns whether the game runner has been stopped
 func (gr *Runner) IsStopped() bool {
-	if gr.locker != nil {
-		gr.locker.Lock()
-		defer gr.locker.Unlock()
-	}
+	gr.stateMu.RLock()
+	defer gr.stateMu.RUnlock()
 	return gr.stopped
 }

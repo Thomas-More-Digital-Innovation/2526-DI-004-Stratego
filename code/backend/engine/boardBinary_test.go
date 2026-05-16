@@ -6,7 +6,11 @@ import (
 	"testing"
 )
 
-const testSetupRow = "BBBBBB2222"
+const (
+	testSetupRow     = "BBBBBB2222"
+	validSetupPrefix = "0BBBBBB122"
+	rowStr           = "row"
+)
 
 func TestEncodeBoard(t *testing.T) {
 	board := engine.NewBoard()
@@ -162,7 +166,7 @@ func TestDecodeSetup(t *testing.T) {
 func TestValidateSetup(t *testing.T) {
 	// Valid: 1 Flag, 6 Bombs, 1 Spy, 8 Scouts, 5 Miners, 4 Sergeants, 4 Lieutenants, 4 Captains, 3 Majors, 2 Colonels, 1 General, 1 Marshal
 	valid := []string{
-		"0BBBBBB122",
+		validSetupPrefix,
 		"2222223333",
 		"3444455556",
 		"666777889M",
@@ -178,12 +182,12 @@ func TestValidateSetup(t *testing.T) {
 	}
 
 	// Wrong row count
-	if err := engine.ValidateSetup([]string{"row"}); err == nil {
+	if err := engine.ValidateSetup([]string{rowStr}); err == nil {
 		t.Error("Wrong row count should be rejected")
 	}
 
 	// Wrong row length
-	if err := engine.ValidateSetup([]string{"row", "row", "row", "row"}); err == nil {
+	if err := engine.ValidateSetup([]string{rowStr, rowStr, rowStr, rowStr}); err == nil {
 		t.Error("Wrong row length should be rejected")
 	}
 }
@@ -225,7 +229,7 @@ func TestBoardBinaryErrors(t *testing.T) {
 		t.Error("DecodeBoardFromBase64 should fail for wrong data length")
 	}
 
-	_, err = engine.EncodeSetup([]string{"row"}, 1)
+	_, err = engine.EncodeSetup([]string{rowStr}, 1)
 	if err == nil {
 		t.Error("EncodeSetup should fail for wrong row count")
 	}
