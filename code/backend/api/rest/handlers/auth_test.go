@@ -132,7 +132,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request, _ = http.NewRequest("POST", "/refresh", nil)
-	c.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: refreshToken, HttpOnly: true, Secure: true})
+	c.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: refreshToken, HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode})
 
 	h.RefreshTokenHandler(c)
 	assert.Equal(t, http.StatusOK, w.Code)
