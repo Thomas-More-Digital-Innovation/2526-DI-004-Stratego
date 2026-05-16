@@ -84,9 +84,6 @@ func TestSessionComprehensive(t *testing.T) {
 
 	session.GetGameSummary("classic")
 	_, _ = session.GetAvailableMoves(0, engine.NewPosition(0, 6))
-	session.GetWinner()
-	session.GetWinCause()
-	session.SetWinner(&player1, game.WinCauseFlagCaptured)
 	session.GetLastCombat()
 	session.GetLastHistoricalMove()
 	session.ClearLastCombat()
@@ -133,6 +130,11 @@ func TestSessionComprehensive(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for illegal move")
 	}
+
+	// Smoke tests for game end state methods
+	session.GetWinner()
+	session.GetWinCause()
+	session.SetWinner(&player1, game.WinCauseFlagCaptured)
 	// Test WaitForCompletion (async)
 	go func() {
 		time.Sleep(50 * time.Millisecond)
