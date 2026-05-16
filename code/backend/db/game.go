@@ -113,11 +113,9 @@ func SaveMoves(ctx context.Context, gameID string, moves []models.HistoricalMove
 // GetGameHistory retrieves the full move history of a completed game
 func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, error) {
 	var game models.Game
-	err := WithRLS(ctx, func(tx *gorm.DB) error {
-		return tx.Preload("Moves", func(db *gorm.DB) *gorm.DB {
-			return db.Order("move_index ASC")
-		}).Where("id = ?", gameID).First(&game).Error
-	})
+	err := DB.WithContext(ctx).Preload("Moves", func(db *gorm.DB) *gorm.DB {
+		return db.Order("move_index ASC")
+	}).Where("id = ?", gameID).First(&game).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get game history: %w", err)
@@ -164,13 +162,11 @@ func GetGameHistory(ctx context.Context, gameID string) (*models.GameHistory, er
 // GetGamesForUserPaged retrieves a paged list of completed games for a specific user
 func GetGamesForUserPaged(ctx context.Context, userID int, limit, offset int) ([]models.Game, error) {
 	var games []models.Game
-	err := WithRLS(ctx, func(tx *gorm.DB) error {
-		return tx.Where("player1_user_id = ? OR player2_user_id = ?", userID, userID).
-			Order("created_at DESC").
-			Limit(limit).
-			Offset(offset).
-			Find(&games).Error
-	})
+	err := DB.WithContext(ctx).Where("player1_user_id = ? OR player2_user_id = ?", userID, userID).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&games).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get paged games: %w", err)
@@ -181,11 +177,9 @@ func GetGamesForUserPaged(ctx context.Context, userID int, limit, offset int) ([
 // GetGamesCountForUser returns the total count of games for a specific user
 func GetGamesCountForUser(ctx context.Context, userID int) (int64, error) {
 	var count int64
-	err := WithRLS(ctx, func(tx *gorm.DB) error {
-		return tx.Model(&models.Game{}).
-			Where("player1_user_id = ? OR player2_user_id = ?", userID, userID).
-			Count(&count).Error
-	})
+	err := DB.WithContext(ctx).Model(&models.Game{}).
+		Where("player1_user_id = ? OR player2_user_id = ?", userID, userID).
+		Count(&count).Error
 
 	if err != nil {
 		return 0, fmt.Errorf("failed to count games: %w", err)

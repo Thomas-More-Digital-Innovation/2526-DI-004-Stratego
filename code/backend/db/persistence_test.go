@@ -15,6 +15,7 @@ func TestGamePagination(t *testing.T) {
 
 	ctx := context.Background()
 	user, _ := CreateUser(ctx, "paginator", "Pass1234!", "")
+	ctx = WithUserID(ctx, user.ID)
 
 	// Create 15 games
 	for i := range 15 {
@@ -63,6 +64,7 @@ func TestComplexJSONSerialization(t *testing.T) {
 	defer func() { DB = oldDB }()
 
 	ctx := context.Background()
+	ctx = WithUserID(ctx, 1) // Dummy ID for RLS
 	gameID := "json-complex-test"
 
 	t.Run("Special Characters in Piece Data", func(t *testing.T) {

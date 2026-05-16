@@ -126,7 +126,8 @@ func TestRefreshTokenHandler(t *testing.T) {
 	user, _ := db.CreateUser(context.Background(), "alice", strongPassword, "")
 	refreshToken := "some-refresh-token"
 	expiresAt := time.Now().Add(24 * time.Hour)
-	err := db.SaveRefreshToken(context.Background(), user.ID, refreshToken, expiresAt)
+	ctx := db.WithUserID(context.Background(), user.ID)
+	err := db.SaveRefreshToken(ctx, user.ID, refreshToken, expiresAt)
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
