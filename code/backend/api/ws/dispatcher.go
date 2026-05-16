@@ -5,6 +5,7 @@ import (
 	"digital-innovation/gostrategy/api/dto"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 // MessageHandler is a function that handles a specific WebSocket message type
@@ -51,6 +52,6 @@ func (c *Client) sendError(err string) {
 		Data: dto.ErrorMessage{Error: err},
 	}
 	if jsonData, err := json.Marshal(msg); err == nil {
-		c.Send(jsonData, 0)
+		c.Send(jsonData, 100*time.Millisecond)
 	}
 }

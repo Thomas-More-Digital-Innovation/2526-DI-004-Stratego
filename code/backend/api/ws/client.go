@@ -91,6 +91,15 @@ func (c *Client) Send(data []byte, timeout time.Duration) bool {
 		return false
 	}
 
+	if timeout <= 0 {
+		select {
+		case c.send <- data:
+			return true
+		default:
+			return false
+		}
+	}
+
 	select {
 	case c.send <- data:
 		return true

@@ -4,15 +4,14 @@ import (
 	"digital-innovation/gostrategy/api/dto"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDispatcher_HandleMessage(t *testing.T) {
-	client := NewTestClient()
-
 	// Track if handler was called
-	called := false
+	var called bool
 	var receivedData json.RawMessage
 
 	testHandler := func(_ *Client, data json.RawMessage) error {
@@ -26,6 +25,7 @@ func TestDispatcher_HandleMessage(t *testing.T) {
 	RegisterHandler(msgType, testHandler)
 
 	t.Run("successful dispatch", func(t *testing.T) {
+		client := NewTestClient()
 		called = false
 		msg := dto.WSMessage{
 			Type: msgType,
@@ -41,15 +41,21 @@ func TestDispatcher_HandleMessage(t *testing.T) {
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
+		client := NewTestClient()
 		client.handleMessage([]byte("{invalid"))
 
 		// Should send error message
-		msg := <-client.send
-		assert.Contains(t, string(msg), "error")
-		assert.Contains(t, string(msg), "Invalid message format")
+		select {
+		case msg := <-client.send:
+			assert.Contains(t, string(msg), "error")
+			assert.Contains(t, string(msg), "Invalid message format")
+		case <-time.After(1 * time.Second):
+			t.Fatal("Timed out waiting for error message")
+		}
 	})
 
 	t.Run("unknown message type", func(t *testing.T) {
+		client := NewTestClient()
 		msg := dto.WSMessage{
 			Type: "unknown",
 			Data: "data",
@@ -59,12 +65,17 @@ func TestDispatcher_HandleMessage(t *testing.T) {
 		client.handleMessage(jsonData)
 
 		// Should send error message
-		msgBytes := <-client.send
-		assert.Contains(t, string(msgBytes), "error")
-		assert.Contains(t, string(msgBytes), "Unknown message type")
+		select {
+		case msgBytes := <-client.send:
+			assert.Contains(t, string(msgBytes), "error")
+			assert.Contains(t, string(msgBytes), "Unknown message type")
+		case <-time.After(1 * time.Second):
+			t.Fatal("Timed out waiting for error message")
+		}
 	})
 
 	t.Run("handler error", func(t *testing.T) {
+		client := NewTestClient()
 		RegisterHandler("error-msg", func(_ *Client, _ json.RawMessage) error {
 			return assert.AnError
 		})
@@ -78,8 +89,12 @@ func TestDispatcher_HandleMessage(t *testing.T) {
 		client.handleMessage(jsonData)
 
 		// Should send error message from handler
-		msgBytes := <-client.send
-		assert.Contains(t, string(msgBytes), "error")
-		assert.Contains(t, string(msgBytes), assert.AnError.Error())
+		select {
+		case msgBytes := <-client.send:
+			assert.Contains(t, string(msgBytes), "error")
+			assert.Contains(t, string(msgBytes), assert.AnError.Error())
+		case <-time.After(1 * time.Second):
+			t.Fatal("Timed out waiting for error message")
+		}
 	})
 }

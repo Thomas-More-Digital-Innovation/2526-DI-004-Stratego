@@ -783,3 +783,8 @@ func (gs *Session) GetSetupCompleteChan() <-chan bool {
 func (gs *Session) IsAbortedChan() <-chan bool {
 	return gs.stopChan
 }
+
+// GetMoveNotifyChan returns the channel that signals when a move has been executed
+func (gs *Session) GetMoveNotifyChan() <-chan bool {
+	return gs.moveNotifyChan
+}
