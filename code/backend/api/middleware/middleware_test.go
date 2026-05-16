@@ -105,7 +105,7 @@ func TestCSRFMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/test", nil)
 		req.Header.Set("X-XSRF-TOKEN", "secret")
-		req.AddCookie(&http.Cookie{Name: "XSRF-TOKEN", Value: "secret"})
+		req.AddCookie(&http.Cookie{Name: "XSRF-TOKEN", Value: "secret", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode})
 		r.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
