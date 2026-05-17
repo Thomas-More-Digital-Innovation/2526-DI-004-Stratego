@@ -788,3 +788,13 @@ func (gs *Session) IsAbortedChan() <-chan bool {
 func (gs *Session) GetMoveNotifyChan() <-chan bool {
 	return gs.moveNotifyChan
 }
+
+// RLock locks the session mutex for reading
+func (gs *Session) RLock() {
+	gs.mutex.RLock()
+}
+
+// RUnlock unlocks the session mutex for reading
+func (gs *Session) RUnlock() {
+	gs.mutex.RUnlock()
+}

@@ -145,6 +145,7 @@ func (h *Hub) sendSetupBoard(client *Client) {
 
 // sendMoveHistory sends the move history to a specific client
 func (h *Hub) sendMoveHistory(client *Client) {
+	h.Session.RLock()
 	g := h.Session.GetGame()
 	moveHistory := g.MoveHistory
 
@@ -178,6 +179,7 @@ func (h *Hub) sendMoveHistory(client *Client) {
 			fullHistory[i] = h.filterHistoricalMove(m, client.SeatIndex, true)
 		}
 	}
+	h.Session.RUnlock()
 
 	historyMsg := dto.MoveHistoryMessage{
 		Moves:        moveDTOs,

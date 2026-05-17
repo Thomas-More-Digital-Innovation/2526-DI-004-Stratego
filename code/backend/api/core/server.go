@@ -179,6 +179,9 @@ func (s *GameServer) monitorGame(handler *SessionHandler) {
 		return
 	}
 
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-s.Ctx.Done():
@@ -222,7 +225,7 @@ func (s *GameServer) monitorGame(handler *SessionHandler) {
 				s.handleGameOver(session, hub)
 				return
 			}
-		case <-time.After(5 * time.Second):
+		case <-ticker.C:
 			if !session.IsRunning() && session.GetGameState().IsGameOver {
 				s.handleGameOver(session, hub)
 				return

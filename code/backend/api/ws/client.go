@@ -85,15 +85,20 @@ func (c *Client) IsClosed() bool {
 // Send attempts to send data to the client with a timeout
 func (c *Client) Send(data []byte, timeout time.Duration) bool {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.closed {
+		c.mu.Unlock()
 		return false
 	}
+	sendChan := c.send
+	c.mu.Unlock()
+
+	defer func() {
+		_ = recover()
+	}()
 
 	if timeout <= 0 {
 		select {
-		case c.send <- data:
+		case sendChan <- data:
 			return true
 		default:
 			return false
@@ -101,7 +106,7 @@ func (c *Client) Send(data []byte, timeout time.Duration) bool {
 	}
 
 	select {
-	case c.send <- data:
+	case sendChan <- data:
 		return true
 	case <-time.After(timeout):
 		return false

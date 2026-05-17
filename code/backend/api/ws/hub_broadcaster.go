@@ -124,6 +124,7 @@ func (h *Hub) broadcastBoardStatePerClient() {
 
 // buildBoardStateJSON helper to build and marshal board state for a perspective
 func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
+	h.Session.RLock()
 	board := h.Session.GetBoard()
 	field := board.GetField()
 
@@ -148,6 +149,7 @@ func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
 		fm := h.filterHistoricalMove(*lastMove, seatIndex, false)
 		filteredLastMove = &fm
 	}
+	h.Session.RUnlock()
 
 	boardMsg := dto.BoardStateMessage{
 		Board:    boardDTO,
@@ -167,6 +169,7 @@ func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
 
 // broadcastBoardStateRevealed sends board with all pieces revealed
 func (h *Hub) broadcastBoardStateRevealed() {
+	h.Session.RLock()
 	board := h.Session.GetBoard()
 	field := board.GetField()
 
@@ -183,11 +186,14 @@ func (h *Hub) broadcastBoardStateRevealed() {
 		}
 	}
 
+	lastMove := h.Session.GetLastHistoricalMove()
+	h.Session.RUnlock()
+
 	boardMsg := dto.BoardStateMessage{
 		Board:    boardDTO,
 		Width:    10,
 		Height:   10,
-		LastMove: h.Session.GetLastHistoricalMove(),
+		LastMove: lastMove,
 	}
 
 	h.BroadcastMessage(dto.MsgTypeBoardState, boardMsg)

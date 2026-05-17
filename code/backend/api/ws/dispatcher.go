@@ -5,16 +5,22 @@ import (
 	"digital-innovation/gostrategy/api/dto"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 )
 
 // MessageHandler is a function that handles a specific WebSocket message type
 type MessageHandler func(c *Client, data json.RawMessage) error
 
-var handlers = make(map[string]MessageHandler)
+var (
+	handlers   = make(map[string]MessageHandler)
+	handlersMu sync.RWMutex
+)
 
 // RegisterHandler registers a new message handler for a given type
 func RegisterHandler(msgType string, handler MessageHandler) {
+	handlersMu.Lock()
+	defer handlersMu.Unlock()
 	handlers[msgType] = handler
 }
 
@@ -26,7 +32,9 @@ func (c *Client) handleMessage(message []byte) {
 		return
 	}
 
+	handlersMu.RLock()
 	handler, exists := handlers[baseMsg.Type]
+	handlersMu.RUnlock()
 	if !exists {
 		c.sendError(fmt.Sprintf("Unknown message type: %s", baseMsg.Type))
 		return

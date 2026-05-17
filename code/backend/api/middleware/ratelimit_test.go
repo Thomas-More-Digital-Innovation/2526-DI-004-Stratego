@@ -15,6 +15,7 @@ import (
 func TestRateLimiter(t *testing.T) {
 	// Test core logic: 5 req per second, burst of 2
 	rl := middleware.NewRateLimiter(rate.Limit(5), 2)
+	defer rl.Stop()
 	key := "test-key"
 
 	// First two should pass (burst)
@@ -41,6 +42,7 @@ func TestIPRateLimitMiddleware(t *testing.T) {
 
 	// 1 req/s, burst 1
 	rl := middleware.NewRateLimiter(rate.Limit(1), 1)
+	defer rl.Stop()
 	mw := middleware.IPRateLimitMiddleware(rl)
 
 	t.Run("Allowed", func(t *testing.T) {
@@ -79,6 +81,7 @@ func TestUserRateLimitMiddleware(t *testing.T) {
 
 	// 1 req/s, burst 1
 	rl := middleware.NewRateLimiter(rate.Limit(1), 1)
+	defer rl.Stop()
 	mw := middleware.UserRateLimitMiddleware(rl)
 
 	t.Run("Authenticated and Allowed", func(t *testing.T) {
