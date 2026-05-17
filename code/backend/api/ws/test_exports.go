@@ -25,6 +25,7 @@ func (c *Client) SendChan() chan []byte { return c.send }
 // NewTestClient creates a new test client.
 func NewTestClient() *Client {
 	return &Client{
-		send: make(chan []byte, 256),
+		send:     make(chan []byte, 256),
+		stopChan: make(chan struct{}),
 	}
 }
