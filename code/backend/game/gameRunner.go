@@ -87,7 +87,7 @@ func (gr *Runner) RunToCompletion() *engine.Player {
 		if executed {
 			turnCount++
 		} else {
-			if gr.game.IsGameOver() {
+			if gr.isGameOverSafe() {
 				logging.Debug(logging.TagGame, "Runner: Game ended during ExecuteTurn")
 				break
 			}
@@ -129,6 +129,15 @@ func (gr *Runner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
 	}
 	return gr.game.GetWinner()
 }
+
+func (gr *Runner) isGameOverSafe() bool {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	return gr.game.IsGameOver()
+}
+
 
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
 func (gr *Runner) ExecuteTurn() bool {
