@@ -138,7 +138,6 @@ func (gr *Runner) isGameOverSafe() bool {
 	return gr.game.IsGameOver()
 }
 
-
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
 func (gr *Runner) ExecuteTurn() bool {
 	return gr.executeTurn(false)
