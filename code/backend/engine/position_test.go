@@ -83,3 +83,14 @@ func TestToDown(t *testing.T) {
 		t.Errorf("Expected position below to be %v, got %v", expected, down)
 	}
 }
+
+func TestPositionString(t *testing.T) {
+	pos := engine.NewPosition(0, 0)
+	if pos.String() != "(A,0)" {
+		t.Errorf("Expected (A,0), got %s", pos.String())
+	}
+	pos2 := engine.NewPosition(9, 9)
+	if pos2.String() != "(J,9)" {
+		t.Errorf("Expected (J,9), got %s", pos2.String())
+	}
+}

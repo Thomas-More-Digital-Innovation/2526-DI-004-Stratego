@@ -185,14 +185,12 @@ func (gs *Session) Stop() {
 		return
 	}
 	gs.aborted = true
-	wasRunning := gs.running
 	gs.mutex.Unlock()
 
-	if wasRunning {
-		close(gs.stopChan)
-		// We don't necessarily know WHO stopped it here easily, but we'll log the session ID
-		logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
-	}
+	// Always close stopChan to signal abortion to any listeners (like monitorGame)
+	close(gs.stopChan)
+
+	logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
 
 	if gs.setupTimer != nil {
 		gs.setupTimer.Stop()
@@ -784,4 +782,19 @@ func (gs *Session) GetSetupCompleteChan() <-chan bool {
 // IsAbortedChan returns the channel that signals if the game was aborted
 func (gs *Session) IsAbortedChan() <-chan bool {
 	return gs.stopChan
+}
+
+// GetMoveNotifyChan returns the channel that signals when a move has been executed
+func (gs *Session) GetMoveNotifyChan() <-chan bool {
+	return gs.moveNotifyChan
+}
+
+// RLock locks the session mutex for reading
+func (gs *Session) RLock() {
+	gs.mutex.RLock()
+}
+
+// RUnlock unlocks the session mutex for reading
+func (gs *Session) RUnlock() {
+	gs.mutex.RUnlock()
 }

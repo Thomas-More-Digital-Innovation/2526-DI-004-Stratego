@@ -3,6 +3,7 @@ package game_test
 import (
 	"digital-innovation/gostrategy/engine"
 	"digital-innovation/gostrategy/game"
+	"digital-innovation/gostrategy/models"
 	"testing"
 )
 
@@ -233,5 +234,66 @@ func TestPieceListConsistency(t *testing.T) {
 		if counts[name] != expectedCount {
 			t.Errorf("Expected %d %s, got %d", expectedCount, name, counts[name])
 		}
+	}
+}
+func TestParseSetup(t *testing.T) {
+	player := engine.NewPlayer(1, "P1", "")
+
+	// Rank string format
+	rankStr := "0BBBBBB12222222233333444455556666777889M"
+	pieces, err := game.ParseSetup(&player, []byte(rankStr))
+	if err != nil {
+		t.Fatalf("ParseSetup rank string failed: %v", err)
+	}
+	if len(pieces) != 40 {
+		t.Errorf("Expected 40 pieces, got %d", len(pieces))
+	}
+
+	// Bitpacked format
+	bitpacked := make([]byte, 40)
+	for i := range bitpacked {
+		bitpacked[i] = engine.BitOccupied | (engine.PieceIDScout << engine.ShiftPieceType)
+	}
+	// This will fail validation because counts are wrong (40 scouts)
+	_, err = game.ParseSetup(&player, bitpacked)
+	if err == nil {
+		t.Error("Expected validation error for 40 scouts")
+	}
+
+	// Error: empty cell
+	rankStrEmpty := "0BBBBBB12222222233333444455556666777889."
+	_, err = game.ParseSetup(&player, []byte(rankStrEmpty))
+	if err == nil {
+		t.Error("Expected error for empty cell in rank string")
+	}
+
+	// Error: invalid rank
+	rankStrInvalid := "0BBBBBB12222222233333444455556666777889X"
+	_, err = game.ParseSetup(&player, []byte(rankStrInvalid))
+	if err == nil {
+		t.Error("Expected error for invalid rank char")
+	}
+}
+
+func TestCustomSetup(t *testing.T) {
+	player := engine.NewPlayer(1, "P1", "")
+	pieceMap := make(map[engine.Position]*engine.Piece)
+	for i := 0; i < 40; i++ {
+		pieceMap[engine.NewPosition(i%10, i/10)] = engine.NewPiece(models.Scout, &player)
+	}
+
+	pieces, err := game.CustomSetup(&player, pieceMap)
+	if err != nil {
+		t.Fatalf("CustomSetup failed: %v", err)
+	}
+	if len(pieces) != 40 {
+		t.Errorf("Expected 40 pieces, got %d", len(pieces))
+	}
+
+	// Invalid count
+	delete(pieceMap, engine.NewPosition(0, 0))
+	_, err = game.CustomSetup(&player, pieceMap)
+	if err == nil {
+		t.Error("Expected error for invalid custom setup count")
 	}
 }

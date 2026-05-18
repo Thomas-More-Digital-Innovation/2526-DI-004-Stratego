@@ -90,7 +90,13 @@ func (h *Handler) RegisterUserHandler(c *gin.Context) {
 	accessToken, _ := auth.GenerateToken(user.ID, user.Username)
 	refreshToken, _ := auth.GenerateRefreshToken()
 	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
-	_ = db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt)
+	// Inject user ID for RLS compliance during token save
+	ctx := db.WithUserID(c.Request.Context(), user.ID)
+	if err := db.SaveRefreshToken(ctx, user.ID, refreshToken, expiresAt); err != nil {
+		logging.ErrorWithIP("Failed to save refresh token for user "+user.Username, c.ClientIP(), err)
+		core.SendError(c, "Failed to complete registration", http.StatusInternalServerError)
+		return
+	}
 
 	auth.SetSessionCookie(c, accessToken)
 	auth.SetRefreshTokenCookie(c, refreshToken)
@@ -135,7 +141,13 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	accessToken, _ := auth.GenerateToken(user.ID, user.Username)
 	refreshToken, _ := auth.GenerateRefreshToken()
 	expiresAt := time.Now().Add(time.Duration(auth.MaxRefreshTokenAge) * time.Second)
-	_ = db.SaveRefreshToken(c.Request.Context(), user.ID, refreshToken, expiresAt)
+	// Inject user ID for RLS compliance during token save
+	ctx := db.WithUserID(c.Request.Context(), user.ID)
+	if err := db.SaveRefreshToken(ctx, user.ID, refreshToken, expiresAt); err != nil {
+		logging.ErrorWithIP("Failed to save refresh token for user "+user.Username, c.ClientIP(), err)
+		core.SendError(c, "Failed to complete login", http.StatusInternalServerError)
+		return
+	}
 
 	auth.SetSessionCookie(c, accessToken)
 	auth.SetRefreshTokenCookie(c, refreshToken)

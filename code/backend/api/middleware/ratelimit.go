@@ -10,9 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
-	"strconv"
 )
 
 type visitor struct {
@@ -26,6 +27,7 @@ type RateLimiter struct {
 	mu       *sync.RWMutex
 	r        rate.Limit
 	b        int
+	stopChan chan struct{}
 }
 
 // NewRateLimiter creates a new RateLimiter instance
@@ -35,6 +37,7 @@ func NewRateLimiter(r rate.Limit, b int) *RateLimiter {
 		mu:       &sync.RWMutex{},
 		r:        r,
 		b:        b,
+		stopChan: make(chan struct{}),
 	}
 
 	go rl.cleanupVisitors()
@@ -68,17 +71,28 @@ func (rl *RateLimiter) GetLimiter(key string) *rate.Limiter {
 	return v.limiter
 }
 
-func (rl *RateLimiter) cleanupVisitors() {
-	for {
-		time.Sleep(1 * time.Hour)
+// Stop stops the rate limiter background cleaner goroutine.
+func (rl *RateLimiter) Stop() {
+	close(rl.stopChan)
+}
 
-		rl.mu.Lock()
-		for key, v := range rl.visitors {
-			if time.Since(v.lastSeen) > 3*time.Hour {
-				delete(rl.visitors, key)
+func (rl *RateLimiter) cleanupVisitors() {
+	ticker := time.NewTicker(1 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			rl.mu.Lock()
+			for key, v := range rl.visitors {
+				if time.Since(v.lastSeen) > 3*time.Hour {
+					delete(rl.visitors, key)
+				}
 			}
+			rl.mu.Unlock()
+		case <-rl.stopChan:
+			return
 		}
-		rl.mu.Unlock()
 	}
 }
 

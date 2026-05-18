@@ -17,8 +17,10 @@ type Runner struct {
 	waitingForHumanInput bool
 	paused               bool // flag to indicate if game is paused
 	onMoveExecuted       func()
+	stopped              bool
 	stopChan             chan bool
 	locker               sync.Locker // Mutex from GameSession to prevent race conditions
+	stateMu              sync.RWMutex
 }
 
 // NewRunner creates a new Runner instance
@@ -31,6 +33,7 @@ func NewRunner(game *Game, turnDelay time.Duration, maxTurns int) *Runner {
 		turnDelay: turnDelay,
 		maxTurns:  maxTurns,
 		paused:    false,
+		stopChan:  make(chan bool, 1),
 	}
 }
 
@@ -55,7 +58,7 @@ func (gr *Runner) RunToCompletion() *engine.Player {
 			isGameOver = gr.game.IsGameOver()
 		}
 
-		if isGameOver || turnCount >= gr.maxTurns {
+		if isGameOver || turnCount >= gr.maxTurns || gr.IsStopped() {
 			break
 		}
 		// Check for stop signal
@@ -84,7 +87,7 @@ func (gr *Runner) RunToCompletion() *engine.Player {
 		if executed {
 			turnCount++
 		} else {
-			if gr.game.IsGameOver() {
+			if gr.isGameOverSafe() {
 				logging.Debug(logging.TagGame, "Runner: Game ended during ExecuteTurn")
 				break
 			}
@@ -127,6 +130,14 @@ func (gr *Runner) calculateWinnerOnMaxTurnsExceeded() *engine.Player {
 	return gr.game.GetWinner()
 }
 
+func (gr *Runner) isGameOverSafe() bool {
+	if gr.locker != nil {
+		gr.locker.Lock()
+		defer gr.locker.Unlock()
+	}
+	return gr.game.IsGameOver()
+}
+
 // ExecuteTurn executes a single turn. Returns false if waiting for human input.
 func (gr *Runner) ExecuteTurn() bool {
 	return gr.executeTurn(false)
@@ -157,9 +168,12 @@ func (gr *Runner) executeTurn(ignorePause bool) bool {
 	if controller.GetControllerType() == engine.HumanController {
 		humanController, ok := controller.(*engine.HumanPlayerController)
 		if !ok || !humanController.HasPendingMove() {
+			gr.stateMu.Lock()
 			if !gr.waitingForHumanInput {
 				gr.waitingForHumanInput = true
 			}
+			gr.stateMu.Unlock()
+
 			if gr.locker != nil {
 				gr.locker.Unlock()
 			}
@@ -183,7 +197,9 @@ func (gr *Runner) executeTurn(ignorePause bool) bool {
 		}
 
 		gr.game.MakeMove(move, piece)
+		gr.stateMu.Lock()
 		gr.waitingForHumanInput = false
+		gr.stateMu.Unlock()
 
 		if gr.locker != nil {
 			gr.locker.Unlock()
@@ -304,12 +320,16 @@ func (gr *Runner) IsWaitingForInput() bool {
 }
 
 func (gr *Runner) isWaitingForInput() bool {
+	gr.stateMu.RLock()
+	defer gr.stateMu.RUnlock()
 	return gr.waitingForHumanInput
 }
 
 // DebugSetWaitingForInput sets the waiting for human input flag to the given value.
 // This is for debugging (& testing) purposes only and should not be used in production code.
 func (gr *Runner) DebugSetWaitingForInput(value bool) {
+	gr.stateMu.Lock()
+	defer gr.stateMu.Unlock()
 	gr.waitingForHumanInput = value
 }
 
@@ -318,13 +338,26 @@ func (gr *Runner) GetGame() *Game {
 	return gr.game
 }
 
+// Stop stops the game runner
+func (gr *Runner) Stop() {
+	gr.stateMu.Lock()
+	gr.stopped = true
+	gr.stateMu.Unlock()
+
+	select {
+	case gr.stopChan <- true:
+	default:
+		// Channel already has a stop signal
+	}
+}
+
 // SubmitHumanMove allows external code to submit a human player's move
 func (gr *Runner) SubmitHumanMove(move engine.Move) error {
 	if gr.locker != nil {
 		gr.locker.Lock()
 	}
 
-	if !gr.waitingForHumanInput {
+	if !gr.isWaitingForInput() {
 		if gr.locker != nil {
 			gr.locker.Unlock()
 		}
@@ -383,6 +416,8 @@ func (gr *Runner) Pause() {
 }
 
 func (gr *Runner) setPaused(paused bool) {
+	gr.stateMu.Lock()
+	defer gr.stateMu.Unlock()
 	gr.paused = paused
 }
 
@@ -415,5 +450,14 @@ func (gr *Runner) IsPaused() bool {
 }
 
 func (gr *Runner) isPaused() bool {
+	gr.stateMu.RLock()
+	defer gr.stateMu.RUnlock()
 	return gr.paused
+}
+
+// IsStopped returns whether the game runner has been stopped
+func (gr *Runner) IsStopped() bool {
+	gr.stateMu.RLock()
+	defer gr.stateMu.RUnlock()
+	return gr.stopped
 }

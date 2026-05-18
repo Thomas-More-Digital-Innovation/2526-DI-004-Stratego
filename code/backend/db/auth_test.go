@@ -40,6 +40,7 @@ func TestAuthLogic(t *testing.T) {
 		token := "some-random-token"
 		expiry := time.Now().Add(time.Hour)
 
+		ctx = WithUserID(ctx, user.ID)
 		err := SaveRefreshToken(ctx, user.ID, token, expiry)
 		if err != nil {
 			t.Fatalf("SaveRefreshToken failed: %v", err)
@@ -70,6 +71,7 @@ func TestAuthLogic(t *testing.T) {
 	t.Run("Token is Hashed in DB", func(t *testing.T) {
 		user, _ := CreateUser(ctx, "hashuser", "Pass1234!", "")
 		token := "secret-token-123"
+		ctx = WithUserID(ctx, user.ID)
 		_ = SaveRefreshToken(ctx, user.ID, token, time.Now().Add(time.Hour))
 
 		// Try to find the raw token using direct GORM (bypass our helper)

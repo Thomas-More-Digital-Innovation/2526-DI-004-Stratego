@@ -4,6 +4,7 @@ package core
 import (
 	"digital-innovation/gostrategy/api/dto"
 	"digital-innovation/gostrategy/auth"
+	"digital-innovation/gostrategy/db"
 	"digital-innovation/gostrategy/models"
 	"net/http"
 	"strconv"
@@ -28,6 +29,10 @@ func EnsureAuthenticated(c *gin.Context) *models.User {
 		c.JSON(http.StatusUnauthorized, gin.H{dto.MsgTypeError: "Unauthorized: Please login"})
 		c.Abort()
 		return nil
+	}
+	// Sync Gin user to request context for DB RLS
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(db.WithUserID(c.Request.Context(), user.ID))
 	}
 	return user
 }

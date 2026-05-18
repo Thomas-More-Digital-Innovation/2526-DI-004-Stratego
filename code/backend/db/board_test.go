@@ -16,6 +16,7 @@ func TestBoardSetupLogic(t *testing.T) {
 
 	ctx := context.Background()
 	user, _ := CreateUser(ctx, "setupuser", "Pass1234!", "")
+	ctx = WithUserID(ctx, user.ID)
 
 	t.Run("CRUD BoardSetup", func(t *testing.T) {
 		setup, err := CreateBoardSetup(ctx, user.ID, "My Setup", "Desc", "DATA", true)

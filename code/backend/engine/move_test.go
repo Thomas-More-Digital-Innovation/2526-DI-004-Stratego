@@ -58,3 +58,12 @@ func TestIsEmpty(t *testing.T) {
 		t.Errorf("Expected move with player to not be empty")
 	}
 }
+
+func TestMoveString(t *testing.T) {
+	player := engine.NewPlayer(1, "player1", "avatar1")
+	move := engine.NewMove(engine.NewPosition(0, 0), engine.NewPosition(0, 1), &player)
+	expected := "(A,0) -> (A,1)"
+	if move.String() != expected {
+		t.Errorf("Expected %q, got %q", expected, move.String())
+	}
+}

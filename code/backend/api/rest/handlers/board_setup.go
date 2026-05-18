@@ -143,7 +143,7 @@ func (h *Handler) DeleteBoardSetupHandler(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.AbortWithStatus(http.StatusNoContent)
 }
 
 // GetBoardSetupHandler returns a specific board setup

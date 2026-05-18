@@ -274,3 +274,45 @@ func TestStandardAttackEqualRank(t *testing.T) {
 		t.Errorf("Expected player2 piece score to be %d, got %d", expectedScore2, player2.GetPieceScore())
 	}
 }
+
+func TestPieceHide(t *testing.T) {
+	player := engine.NewPlayer(1, "P1", "")
+	piece := engine.NewPiece(models.Marshal, &player)
+	piece.Reveal()
+	if !piece.IsRevealed() {
+		t.Error("Piece should be revealed")
+	}
+	piece.Hide()
+	if piece.IsRevealed() {
+		t.Error("Piece should be hidden")
+	}
+}
+
+func TestPieceClone(t *testing.T) {
+	player := engine.NewPlayer(1, "P1", "")
+	piece := engine.NewPiece(models.Marshal, &player)
+	cloned := piece.Clone()
+	if cloned.GetType().GetName() != piece.GetType().GetName() {
+		t.Error("Clone type mismatch")
+	}
+	if cloned.GetOwner() != piece.GetOwner() {
+		t.Error("Clone owner mismatch")
+	}
+}
+
+func TestStandardAttackLoss(t *testing.T) {
+	player1 := engine.NewPlayer(1, "P1", "")
+	captain := engine.NewPiece(models.Captain, &player1)
+	player2 := engine.NewPlayer(2, "P2", "")
+	major := engine.NewPiece(models.Major, &player2)
+
+	result := captain.Attack(major)
+	attacker, target := result[0], result[1]
+
+	if attacker.IsAlive() {
+		t.Error("Attacker should be eliminated")
+	}
+	if !target.IsAlive() {
+		t.Error("Target should be alive")
+	}
+}

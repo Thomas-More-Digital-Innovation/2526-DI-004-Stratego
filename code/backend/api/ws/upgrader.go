@@ -53,6 +53,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, session *game.Sessi
 	client := &Client{
 		conn:      conn,
 		send:      make(chan []byte, 256),
+		stopChan:  make(chan struct{}),
 		Session:   session,
 		SeatIndex: seatIndex,
 		Hub:       hub,

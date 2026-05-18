@@ -21,11 +21,19 @@ func TestRunAIvsAI(t *testing.T) {
 	}
 }
 
+// Test with 0 matches just to check edge case
 func TestRunAIvsAIDraw(t *testing.T) {
-	// Test with 0 matches just to check edge case
 	summary := runAIvsAI("fato", "fato", 0, false)
 
 	if summary.Matches != 0 {
 		t.Errorf("Expected 0 matches, got %d", summary.Matches)
 	}
+}
+
+func TestRunAIvsAIExported(_ *testing.T) {
+	// Test default format
+	RunAIvsAI("fato", "fato", 1, "default", false)
+
+	// Test markdown format
+	RunAIvsAI("fato", "fato", 1, "md", false)
 }

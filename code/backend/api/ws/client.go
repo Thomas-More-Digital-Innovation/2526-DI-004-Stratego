@@ -17,16 +17,19 @@ import (
 
 // Client represents a WebSocket client connection
 type Client struct {
-	conn      *websocket.Conn
-	send      chan []byte
-	Session   *game.Session
-	SeatIndex int // -1 for spectator, 0 or 1 for player
-	Hub       *Hub
-	Username  string
-	UserID    int
-	limiter   *rate.Limiter
-	mu        sync.Mutex
-	closed    bool
+	conn           *websocket.Conn
+	send           chan []byte
+	stopChan       chan struct{}
+	Session        *game.Session
+	SeatIndex      int // -1 for spectator, 0 or 1 for player
+	Hub            *Hub
+	Username       string
+	UserID         int
+	limiter        *rate.Limiter
+	mu             sync.Mutex
+	closed         bool
+	writers        int
+	sendChanClosed bool
 }
 
 // GetSeatIndex returns the client's seat index
@@ -69,8 +72,10 @@ func (c *Client) Close() {
 	defer c.mu.Unlock()
 	if !c.closed {
 		c.closed = true
-		if c.send != nil {
+		close(c.stopChan)
+		if c.writers == 0 && !c.sendChanClosed {
 			close(c.send)
+			c.sendChanClosed = true
 		}
 	}
 }
@@ -85,15 +90,38 @@ func (c *Client) IsClosed() bool {
 // Send attempts to send data to the client with a timeout
 func (c *Client) Send(data []byte, timeout time.Duration) bool {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.closed {
+		c.mu.Unlock()
 		return false
+	}
+	c.writers++
+	sendChan := c.send
+	c.mu.Unlock()
+
+	defer func() {
+		c.mu.Lock()
+		c.writers--
+		if c.closed && c.writers == 0 && !c.sendChanClosed {
+			close(c.send)
+			c.sendChanClosed = true
+		}
+		c.mu.Unlock()
+	}()
+
+	if timeout <= 0 {
+		select {
+		case sendChan <- data:
+			return true
+		default:
+			return false
+		}
 	}
 
 	select {
-	case c.send <- data:
+	case sendChan <- data:
 		return true
+	case <-c.stopChan:
+		return false
 	case <-time.After(timeout):
 		return false
 	}

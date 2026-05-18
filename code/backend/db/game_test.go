@@ -15,6 +15,7 @@ func TestGameLogic(t *testing.T) {
 	ctx := context.Background()
 	user1, _ := CreateUser(ctx, "p1", "Pass1234!", "")
 	user2, _ := CreateUser(ctx, "p2", "Pass1234!", "")
+	ctx = WithUserID(ctx, user1.ID)
 
 	t.Run("Save Game and Moves", func(t *testing.T) {
 		gameID := "game-123"

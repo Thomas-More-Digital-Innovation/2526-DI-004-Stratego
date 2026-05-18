@@ -40,6 +40,17 @@ func (s *GameServer) Stop() {
 	if s.Cancel != nil {
 		s.Cancel()
 	}
+
+	s.Mutex.Lock()
+	handlers := make([]*SessionHandler, 0, len(s.Sessions))
+	for _, handler := range s.Sessions {
+		handlers = append(handlers, handler)
+	}
+	s.Mutex.Unlock()
+
+	for _, handler := range handlers {
+		s.RemoveSession(handler.Session.ID)
+	}
 }
 
 // CreateGame creates a new game session
@@ -164,56 +175,61 @@ func (s *GameServer) monitorGame(handler *SessionHandler) {
 		logging.Debug(logging.TagWeb, "Game aborted during setup: %s", session.ID)
 		s.RemoveSession(session.ID)
 		return
+	case <-s.Ctx.Done():
+		return
 	}
 
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	for {
-		if !session.WaitForMoveNotification(5 * time.Second) {
-			if session.IsAborted() {
-				logging.Debug(logging.TagWeb, "Game aborted during gameplay: %s", session.ID)
-				s.RemoveSession(session.ID)
-				return
+		select {
+		case <-s.Ctx.Done():
+			return
+		case <-session.IsAbortedChan():
+			logging.Debug(logging.TagWeb, "Game aborted during gameplay: %s", session.ID)
+			s.RemoveSession(session.ID)
+			return
+		case <-session.GetMoveNotifyChan():
+			isHeadless := session.IsHeadless()
+			if !isHeadless {
+				logging.Debug(logging.TagGame, "Move executed in game %s", session.ID)
 			}
 
+			if isHeadless {
+				state := session.GetGameState()
+				if state.IsGameOver {
+					time.Sleep(100 * time.Millisecond)
+					s.handleGameOver(session, hub)
+					return
+				}
+				session.AckMoveProcessed()
+				continue
+			}
+
+			combat := session.GetLastCombat()
+			if combat != nil && combat.Occurred {
+				hub.BroadcastCombat(combat)
+				session.WaitForAnimationComplete(3 * time.Second)
+				session.ClearLastCombat()
+				hub.BroadcastFullState()
+			} else {
+				hub.BroadcastFullState()
+			}
+
+			session.AckMoveProcessed()
+
+			state := session.GetGameState()
+			if state.IsGameOver {
+				time.Sleep(500 * time.Millisecond)
+				s.handleGameOver(session, hub)
+				return
+			}
+		case <-ticker.C:
 			if !session.IsRunning() && session.GetGameState().IsGameOver {
 				s.handleGameOver(session, hub)
 				return
 			}
-			continue
-		}
-
-		isHeadless := session.IsHeadless()
-		if !isHeadless {
-			logging.Debug(logging.TagGame, "Move executed in game %s", session.ID)
-		}
-
-		if isHeadless {
-			state := session.GetGameState()
-			if state.IsGameOver {
-				time.Sleep(100 * time.Millisecond)
-				s.handleGameOver(session, hub)
-				return
-			}
-			session.AckMoveProcessed()
-			continue
-		}
-
-		combat := session.GetLastCombat()
-		if combat != nil && combat.Occurred {
-			hub.BroadcastCombat(combat)
-			session.WaitForAnimationComplete(3 * time.Second)
-			session.ClearLastCombat()
-			hub.BroadcastFullState()
-		} else {
-			hub.BroadcastFullState()
-		}
-
-		session.AckMoveProcessed()
-
-		state := session.GetGameState()
-		if state.IsGameOver {
-			time.Sleep(500 * time.Millisecond)
-			s.handleGameOver(session, hub)
-			return
 		}
 	}
 }
