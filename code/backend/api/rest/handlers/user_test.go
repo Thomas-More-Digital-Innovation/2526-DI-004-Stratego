@@ -122,4 +122,62 @@ func TestUserHandlers(t *testing.T) {
 		h.ChangePasswordHandler(c)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
+
+	t.Run("ChangePassword - Passwords Mismatch", func(t *testing.T) {
+		u, _ := db.CreateUser(context.Background(), "user_mismatch", oldPassword, "")
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		changeReq := models.ChangePasswordRequest{
+			OldPassword:     oldPassword,
+			NewPassword:     newPassword,
+			ConfirmPassword: "DifferentPassword123",
+		}
+		jsonBody, _ := json.Marshal(changeReq)
+		c.Request, _ = http.NewRequest("POST", "/users/me/password", bytes.NewBuffer(jsonBody))
+		c.Set("user", u)
+		h.ChangePasswordHandler(c)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("ChangePassword - Invalid JSON Body", func(t *testing.T) {
+		u, _ := db.CreateUser(context.Background(), "user_invalid_body", oldPassword, "")
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("POST", "/users/me/password", bytes.NewBufferString("invalid-json"))
+		c.Set("user", u)
+		h.ChangePasswordHandler(c)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("ChangePassword - Invalid Characters in Password", func(t *testing.T) {
+		u, _ := db.CreateUser(context.Background(), "user_invalid_chars", oldPassword, "")
+
+		// Case 1: Invalid char in old password
+		w1 := httptest.NewRecorder()
+		c1, _ := gin.CreateTestContext(w1)
+		changeReq1 := models.ChangePasswordRequest{
+			OldPassword:     "Invalid<Password",
+			NewPassword:     newPassword,
+			ConfirmPassword: newPassword,
+		}
+		jsonBody1, _ := json.Marshal(changeReq1)
+		c1.Request, _ = http.NewRequest("POST", "/users/me/password", bytes.NewBuffer(jsonBody1))
+		c1.Set("user", u)
+		h.ChangePasswordHandler(c1)
+		assert.Equal(t, http.StatusBadRequest, w1.Code)
+
+		// Case 2: Invalid char in new password
+		w2 := httptest.NewRecorder()
+		c2, _ := gin.CreateTestContext(w2)
+		changeReq2 := models.ChangePasswordRequest{
+			OldPassword:     oldPassword,
+			NewPassword:     "Invalid<Password",
+			ConfirmPassword: "Invalid<Password",
+		}
+		jsonBody2, _ := json.Marshal(changeReq2)
+		c2.Request, _ = http.NewRequest("POST", "/users/me/password", bytes.NewBuffer(jsonBody2))
+		c2.Set("user", u)
+		h.ChangePasswordHandler(c2)
+		assert.Equal(t, http.StatusBadRequest, w2.Code)
+	})
 }
