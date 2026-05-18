@@ -156,7 +156,7 @@ func TestRefreshTokenHandler_Errors(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(w2)
 	c2.Request, _ = http.NewRequest("POST", "/refresh", nil)
-	c2.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: "invalid-token"})
+	c2.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: "invalid-token", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode})
 	h.RefreshTokenHandler(c2)
 	assert.Equal(t, http.StatusUnauthorized, w2.Code)
 }
@@ -178,7 +178,7 @@ func TestRegisterUserHandler_Errors(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(w2)
 	req2 := models.CreateUserRequest{Username: "a", Password: strongPassword}
-	json2, _ := json.Marshal(req2)
+	json2, _ := json.Marshal(req2) // nolint:gosec // G117: marshaling password in test
 	c2.Request, _ = http.NewRequest("POST", "/register", bytes.NewBuffer(json2))
 	c2.Request.Header.Set("Content-Type", "application/json")
 	h.RegisterUserHandler(c2)
@@ -188,7 +188,7 @@ func TestRegisterUserHandler_Errors(t *testing.T) {
 	w3 := httptest.NewRecorder()
 	c3, _ := gin.CreateTestContext(w3)
 	req3 := models.CreateUserRequest{Username: "validuser", Password: "weak"}
-	json3, _ := json.Marshal(req3)
+	json3, _ := json.Marshal(req3) // nolint:gosec // G117: marshaling password in test
 	c3.Request, _ = http.NewRequest("POST", "/register", bytes.NewBuffer(json3))
 	c3.Request.Header.Set("Content-Type", "application/json")
 	h.RegisterUserHandler(c3)
@@ -212,7 +212,7 @@ func TestLoginHandler_Errors(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(w2)
 	req2 := models.LoginRequest{Username: "invalid@user", Password: strongPassword}
-	json2, _ := json.Marshal(req2)
+	json2, _ := json.Marshal(req2) // nolint:gosec // G117: marshaling password in test
 	c2.Request, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(json2))
 	c2.Request.Header.Set("Content-Type", "application/json")
 	h.LoginHandler(c2)

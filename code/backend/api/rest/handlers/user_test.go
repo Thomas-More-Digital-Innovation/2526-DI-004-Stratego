@@ -18,9 +18,10 @@ import (
 )
 
 const (
-	oldPassword  = "OldPassword123"
-	newPassword  = "NewPassword123"
-	weakPassword = "weak"
+	oldPassword     = "OldPassword123"
+	newPassword     = "NewPassword123"
+	weakPassword    = "weak"
+	invalidPassword = "Invalid<Password"
 )
 
 func TestUserHandlers(t *testing.T) {
@@ -156,7 +157,7 @@ func TestUserHandlers(t *testing.T) {
 		w1 := httptest.NewRecorder()
 		c1, _ := gin.CreateTestContext(w1)
 		changeReq1 := models.ChangePasswordRequest{
-			OldPassword:     "Invalid<Password",
+			OldPassword:     invalidPassword,
 			NewPassword:     newPassword,
 			ConfirmPassword: newPassword,
 		}
@@ -171,8 +172,8 @@ func TestUserHandlers(t *testing.T) {
 		c2, _ := gin.CreateTestContext(w2)
 		changeReq2 := models.ChangePasswordRequest{
 			OldPassword:     oldPassword,
-			NewPassword:     "Invalid<Password",
-			ConfirmPassword: "Invalid<Password",
+			NewPassword:     invalidPassword,
+			ConfirmPassword: invalidPassword,
 		}
 		jsonBody2, _ := json.Marshal(changeReq2)
 		c2.Request, _ = http.NewRequest("POST", "/users/me/password", bytes.NewBuffer(jsonBody2))

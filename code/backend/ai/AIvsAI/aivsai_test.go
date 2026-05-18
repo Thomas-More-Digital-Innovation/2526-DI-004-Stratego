@@ -30,7 +30,7 @@ func TestRunAIvsAIDraw(t *testing.T) {
 	}
 }
 
-func TestRunAIvsAIExported(t *testing.T) {
+func TestRunAIvsAIExported(_ *testing.T) {
 	// Test default format
 	RunAIvsAI("fato", "fato", 1, "default", false)
 
