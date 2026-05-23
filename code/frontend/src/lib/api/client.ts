@@ -113,6 +113,9 @@ export const games = {
         }),
 
     list: () => request<GameInfo[]>('/games'),
+
+    getReconnectable: () =>
+        request<{ hasGame: boolean; gameId?: string; gameType?: string }>('/users/me/reconnectable'),
 };
 
 // Stats

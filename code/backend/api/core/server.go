@@ -140,6 +140,24 @@ func (s *GameServer) IsUserInActiveGame(userID int) (*SessionHandler, bool) {
 	return nil, false
 }
 
+// GetUserActiveGameSeat retrieves the session handler and the player seat index (0 or 1) if the user is in an active game session.
+func (s *GameServer) GetUserActiveGameSeat(userID int) (*SessionHandler, int, bool) {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+
+	for _, handler := range s.Sessions {
+		p1, p2 := handler.Session.GetPlayerIDs()
+		if p1 != nil && *p1 == userID {
+			return handler, 0, true
+		}
+		if p2 != nil && *p2 == userID {
+			return handler, 1, true
+		}
+	}
+
+	return nil, -1, false
+}
+
 // IsWaitingForCleanup checks if the user is waiting for cleanup in this session (game over or user disconnected)
 func (sh *SessionHandler) IsWaitingForCleanup(userID int) bool {
 	return sh.Session.GetGameState().IsGameOver || !sh.Hub.IsUserConnected(userID)

@@ -89,3 +89,36 @@ func (h *Handler) HandleListMyGames(c *gin.Context) {
 		"total": total,
 	}, http.StatusOK)
 }
+
+// HandleGetReconnectableGame handles querying for a reconnectable game session.
+// @Summary Get current user's reconnectable game
+// @Description Retrieve a game session in progress for the authenticated user
+// @Tags games
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Router /users/me/reconnectable [get]
+func (h *Handler) HandleGetReconnectableGame(c *gin.Context) {
+	user := core.EnsureAuthenticated(c)
+	if user == nil {
+		return
+	}
+
+	handler, seatIndex, found := h.GetUserActiveGameSeat(user.ID)
+	if !found {
+		core.SendJSON(c, gin.H{"hasGame": false}, http.StatusOK)
+		return
+	}
+
+	if handler.Session.GetGameState().IsGameOver {
+		core.SendJSON(c, gin.H{"hasGame": false}, http.StatusOK)
+		return
+	}
+
+	core.SendJSON(c, gin.H{
+		"hasGame":   true,
+		"gameId":    handler.Session.ID,
+		"gameType":  handler.GameType,
+		"seatIndex": seatIndex,
+	}, http.StatusOK)
+}

@@ -6,6 +6,7 @@
     import type { GameMode } from "$lib/types/game";
     import { allGamemodes, gamemodes } from "$lib/data/gamemodes.data";
     import ChangelogButton from "$lib/components/changelog/ChangelogButton.svelte";
+    import ReconnectBanner from "$lib/components/ReconnectBanner.svelte";
 
     let selectedMode = $state<GameMode>(gamemodes.human_vs_ai);
     let error = $state("");
@@ -43,6 +44,8 @@
             {/if}
         </p>
     </header>
+
+    <ReconnectBanner />
 
     {#if error}
         <div

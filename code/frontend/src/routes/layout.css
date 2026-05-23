@@ -42,6 +42,14 @@
     box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-primary), transparent 70%);
   }
 
+  .glow-secondary {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-secondary), transparent 70%);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand-accent), transparent 70%);
+  }
+
   .unselectable {
     user-select: none;
     -webkit-user-select: none;
