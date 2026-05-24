@@ -98,6 +98,8 @@ func (h *Handler) HandleListMyGames(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Router /users/me/reconnectable [get]
+//
+//nolint:dupl
 func (h *Handler) HandleGetReconnectableGame(c *gin.Context) {
 	user := core.EnsureAuthenticated(c)
 	if user == nil {

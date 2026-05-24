@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testUserName = "test"
+
 func TestHandleGetGameHistory(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
@@ -60,7 +62,7 @@ func TestHandleListMyGames(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(w2)
 	c2.Request, _ = http.NewRequest("GET", "/users/me/games", nil)
-	c2.Set("user", &models.User{ID: 1, Username: "test"})
+	c2.Set("user", &models.User{ID: 1, Username: testUserName})
 	h.HandleListMyGames(c2)
 	assert.Equal(t, http.StatusOK, w2.Code)
 }
@@ -83,7 +85,7 @@ func TestHandleGetReconnectableGame(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/users/me/reconnectable", nil)
-		c.Set("user", &models.User{ID: 1, Username: "test"})
+		c.Set("user", &models.User{ID: 1, Username: testUserName})
 		h.HandleGetReconnectableGame(c)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -97,12 +99,12 @@ func TestHandleGetReconnectableGame(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request, _ = http.NewRequest("GET", "/users/me/reconnectable", nil)
-		user := &models.User{ID: 1, Username: "test"}
+		user := &models.User{ID: 1, Username: testUserName}
 		c.Set("user", user)
 
-		handler, err := h.CreateGame("reconnect-game", models.HumanVsAi, "test", models.Fafo)
+		handler, err := h.CreateGame("reconnect-game", models.HumanVsAi, testUserName, models.Fafo)
 		assert.NoError(t, err)
-		handler.Session.SetPlayer1Associate(user.ID, "test")
+		handler.Session.SetPlayer1Associate(user.ID, testUserName)
 
 		h.HandleGetReconnectableGame(c)
 		assert.Equal(t, http.StatusOK, w.Code)
