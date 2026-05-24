@@ -14,6 +14,7 @@
     import type { Position } from "$lib/types/game";
     import { gamemodes } from "$lib/data/gamemodes.data";
     import ConnectionOverlay from "$lib/components/game/ConnectionOverlay.svelte";
+    import { games as gamesApi } from "$lib/api/client";
 
     let socket = new GameSocket();
     let gameId = $state("");
@@ -90,6 +91,16 @@
 
         isReconnecting = false;
         toastStore.error("Failed to restore server connection after multiple attempts.");
+    }
+
+    async function abandonAndQuit() {
+        try {
+            await gamesApi.abandon(gameId);
+        } catch (e) {
+            console.error("Failed to abandon session:", e);
+        } finally {
+            window.location.href = "/";
+        }
     }
 
     function setupHandlers() {
@@ -280,6 +291,7 @@
         {reconnectAttempts}
         {maxReconnectAttempts}
         onRetry={attemptReconnect}
+        onReturnToMenu={abandonAndQuit}
     />
 {:else if gameStore.gameState?.headless && !gameStore.gameState?.isGameOver}
     <Loading
@@ -301,7 +313,7 @@
                 variant="ghost"
                 onclick={() => {
                     if (confirm("Are you sure you want to quit?")) {
-                        window.location.href = "/";
+                        abandonAndQuit();
                     }
                 }}
             >

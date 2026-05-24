@@ -124,3 +124,42 @@ func (h *Handler) HandleGetReconnectableGame(c *gin.Context) {
 		"seatIndex": seatIndex,
 	}, http.StatusOK)
 }
+
+// HandleDeleteGame terminates and removes an active game session for the authenticated user.
+// @Summary Delete active game session
+// @Description Terminate the active game session immediately and prevent further reconnection
+// @Tags games
+// @Param id path string true "Game ID"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 404 {object} map[string]string "Active game session not found or user is not a participant"
+// @Router /games/{id} [delete]
+func (h *Handler) HandleDeleteGame(c *gin.Context) {
+	user := core.EnsureAuthenticated(c)
+	if user == nil {
+		return
+	}
+
+	gameID := c.Param("id")
+	if gameID == "" {
+		core.SendError(c, "Game ID required", http.StatusBadRequest)
+		return
+	}
+
+	handler, exists := h.GetSession(gameID)
+	if !exists {
+		core.SendError(c, "Game session not found", http.StatusNotFound)
+		return
+	}
+
+	p1, p2 := handler.Session.GetPlayerIDs()
+	isParticipant := (p1 != nil && *p1 == user.ID) || (p2 != nil && *p2 == user.ID)
+	if !isParticipant {
+		core.SendError(c, "User is not a participant in this game session", http.StatusForbidden)
+		return
+	}
+
+	h.RemoveSession(gameID)
+
+	core.SendJSON(c, gin.H{"message": "Game session abandoned successfully"}, http.StatusOK)
+}

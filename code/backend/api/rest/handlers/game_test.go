@@ -146,3 +146,70 @@ func TestHandleGetReconnectableGame(t *testing.T) {
 		assert.Equal(t, false, resp["hasGame"])
 	})
 }
+
+func TestHandleDeleteGame(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db.SetupTestDB(t)
+	server := core.NewGameServer()
+	defer server.Stop()
+	h := handlers.NewHandler(server)
+
+	t.Run("Unauthenticated", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("DELETE", "/games/some-game", nil)
+		c.Params = []gin.Param{{Key: "id", Value: "some-game"}}
+		h.HandleDeleteGame(c)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("NonExistentGame", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("DELETE", "/games/non-existent", nil)
+		c.Params = []gin.Param{{Key: "id", Value: "non-existent"}}
+		c.Set("user", &models.User{ID: 1, Username: "test"})
+		h.HandleDeleteGame(c)
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		user := &models.User{ID: 1, Username: "test"}
+		handler, err := h.CreateGame("abandon-test-game", models.HumanVsAi, "test", models.Fafo)
+		assert.NoError(t, err)
+		handler.Session.SetPlayer1Associate(user.ID, "test")
+
+		_, exists := h.GetSession("abandon-test-game")
+		assert.True(t, exists)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("DELETE", "/games/abandon-test-game", nil)
+		c.Params = []gin.Param{{Key: "id", Value: "abandon-test-game"}}
+		c.Set("user", user)
+
+		h.HandleDeleteGame(c)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		_, exists = h.GetSession("abandon-test-game")
+		assert.False(t, exists)
+	})
+
+	t.Run("ForbiddenForNonParticipant", func(t *testing.T) {
+		user1 := &models.User{ID: 1, Username: "player1"}
+		user2 := &models.User{ID: 2, Username: "player2"}
+
+		handler, err := h.CreateGame("forbidden-abandon-game", models.HumanVsAi, "player1", models.Fafo)
+		assert.NoError(t, err)
+		handler.Session.SetPlayer1Associate(user1.ID, "player1")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("DELETE", "/games/forbidden-abandon-game", nil)
+		c.Params = []gin.Param{{Key: "id", Value: "forbidden-abandon-game"}}
+		c.Set("user", user2)
+
+		h.HandleDeleteGame(c)
+		assert.Equal(t, http.StatusForbidden, w.Code)
+	})
+}

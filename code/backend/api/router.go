@@ -114,6 +114,7 @@ func (s *GameServer) SetupRoutes() {
 		games.POST("", middleware.UserRateLimitMiddleware(actionLimiter), h.HandleCreateGame)
 		games.GET("", h.HandleListGames)
 		games.GET("/:id/history", h.HandleGetGameHistory)
+		games.DELETE("/:id", auth.RequireAuth(), h.HandleDeleteGame)
 		games.GET("/count", h.GamesPlayedCountHandler)
 	}
 

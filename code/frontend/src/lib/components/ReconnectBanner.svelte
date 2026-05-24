@@ -92,6 +92,21 @@
                 isReconnecting = false;
             });
     }
+
+    function abandonGame() {
+        if (!reconnectableGame) return;
+        const gameId = reconnectableGame.gameId;
+        gamesApi
+            .abandon(gameId)
+            .then(() => {
+                reconnectableGame = null;
+                toastStore.success("Game session dismissed.");
+            })
+            .catch((e) => {
+                console.error("Failed to abandon session from banner:", e);
+                toastStore.error("Failed to dismiss session.");
+            });
+    }
 </script>
 
 {#if reconnectableGame}
@@ -124,7 +139,15 @@
             </div>
         </div>
 
-        <div class="w-full md:w-auto z-10 shrink-0">
+        <div class="w-full md:w-auto z-10 shrink-0 flex items-center gap-3">
+            <Button
+                variant="ghost"
+                class="w-full md:w-auto text-white/50 hover:text-white hover:bg-white/5 font-semibold"
+                onclick={abandonGame}
+                disabled={isReconnecting}
+            >
+                Dismiss
+            </Button>
             <Button
                 variant="outline"
                 class="w-full md:w-auto border-brand-accent hover:bg-brand-accent/10 text-brand-accent font-bold"
