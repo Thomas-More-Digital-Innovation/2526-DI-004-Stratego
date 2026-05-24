@@ -13,24 +13,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testGameID = "test-game"
+const testUserID = 123
+
 func TestIsUserInActiveGame(t *testing.T) {
 	s := NewGameServer()
-	userID := 123
-	gameID := "test-game"
 
 	// Properly initialize session
 	p1 := engine.NewPlayer(0, "Red", "red")
 	p2 := engine.NewPlayer(1, "Blue", "blue")
-	session := game.NewSession(gameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
-	session.SetPlayer1Associate(userID, "Red")
+	session := game.NewSession(testGameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
+	session.SetPlayer1Associate(testUserID, "Red")
 
 	handler := &SessionHandler{
 		Session: session,
 	}
-	s.Sessions[gameID] = handler
+	s.Sessions[testGameID] = handler
 
 	// Test user in game
-	foundHandler, found := s.IsUserInActiveGame(userID)
+	foundHandler, found := s.IsUserInActiveGame(testUserID)
 	assert.True(t, found)
 	assert.Equal(t, handler, foundHandler)
 
@@ -39,13 +40,41 @@ func TestIsUserInActiveGame(t *testing.T) {
 	assert.False(t, found)
 }
 
-func TestIsWaitingForCleanup(t *testing.T) {
-	userID := 123
-	gameID := "test-game"
+func TestGetUserActiveGameSeat(t *testing.T) {
+	s := NewGameServer()
+	userID1 := testUserID
+	userID2 := testUserID + 1
 
 	p1 := engine.NewPlayer(0, "Red", "red")
 	p2 := engine.NewPlayer(1, "Blue", "blue")
-	session := game.NewSession(gameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
+	session := game.NewSession(testGameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
+	session.SetPlayer1Associate(userID1, "Red")
+	session.SetPlayer2Associate(userID2, "Blue")
+
+	handler := &SessionHandler{
+		Session: session,
+	}
+	s.Sessions[testGameID] = handler
+
+	foundHandler, seatIndex, found := s.GetUserActiveGameSeat(userID1)
+	assert.True(t, found)
+	assert.Equal(t, handler, foundHandler)
+	assert.Equal(t, 0, seatIndex)
+
+	foundHandler, seatIndex, found = s.GetUserActiveGameSeat(userID2)
+	assert.True(t, found)
+	assert.Equal(t, handler, foundHandler)
+	assert.Equal(t, 1, seatIndex)
+
+	_, seatIndex, found = s.GetUserActiveGameSeat(999)
+	assert.False(t, found)
+	assert.Equal(t, -1, seatIndex)
+}
+
+func TestIsWaitingForCleanup(t *testing.T) {
+	p1 := engine.NewPlayer(0, "Red", "red")
+	p2 := engine.NewPlayer(1, "Blue", "blue")
+	session := game.NewSession(testGameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
 	hub := ws.NewHub(session, models.HumanVsAi)
 
 	sh := &SessionHandler{
@@ -54,11 +83,11 @@ func TestIsWaitingForCleanup(t *testing.T) {
 	}
 
 	// 1. Initially, user is not connected, so it should be true (waiting for cleanup/reconnect)
-	assert.True(t, sh.IsWaitingForCleanup(userID))
+	assert.True(t, sh.IsWaitingForCleanup(testUserID))
 
 	// 2. User connects
 	client := ws.NewTestClient()
-	client.UserID = userID
+	client.UserID = testUserID
 
 	// Start hub if not already running (Hub.Run() is normally started by GameServer, but here we created it manually)
 	go hub.Run()
@@ -68,13 +97,13 @@ func TestIsWaitingForCleanup(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Now user is connected, so it should NOT be waiting for cleanup
-	assert.False(t, sh.IsWaitingForCleanup(userID))
+	assert.False(t, sh.IsWaitingForCleanup(testUserID))
 
 	// 3. Game is over
 	sh.Session.SetWinner(&p1, game.WinCauseFlagCaptured)
 
 	// Even if user is connected, if game is over, it should be waiting for cleanup
-	assert.True(t, sh.IsWaitingForCleanup(userID))
+	assert.True(t, sh.IsWaitingForCleanup(testUserID))
 }
 func TestCreateGame(t *testing.T) {
 	s := NewGameServer()
