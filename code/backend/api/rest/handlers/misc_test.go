@@ -18,6 +18,7 @@ func TestHealthHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	w := httptest.NewRecorder()
@@ -30,6 +31,7 @@ func TestHealthHandler(t *testing.T) {
 func TestGetCSRFToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	w := httptest.NewRecorder()
@@ -42,6 +44,7 @@ func TestStatsHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	user, err := db.CreateUser(context.Background(), "alice", "StrongPassword1", "")
@@ -69,6 +72,7 @@ func TestStatsHandlers(t *testing.T) {
 func TestDebugStats(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	w := httptest.NewRecorder()
@@ -81,6 +85,7 @@ func TestMonitoringHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// UserCountHandler

@@ -100,13 +100,15 @@ func (h *Hub) broadcastBoardStatePerClient() {
 	}
 	h.mutex.RUnlock()
 
+	isGameOver := h.Session.GetGameState().IsGameOver
+
 	// Optimize: Build boards for each perspective (Red, Blue, Spectator)
 	// seatIndex: 0 (Red), 1 (Blue), -1 (Spectator)
 	perspectives := []int{0, 1, -1}
 	cache := make(map[int][]byte)
 
 	for _, seat := range perspectives {
-		data := h.buildBoardStateJSON(seat)
+		data := h.buildBoardStateJSON(seat, isGameOver)
 		if data != nil {
 			cache[seat] = data
 		}
@@ -123,9 +125,11 @@ func (h *Hub) broadcastBoardStatePerClient() {
 }
 
 // buildBoardStateJSON helper to build and marshal board state for a perspective
-func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
-	h.Session.RLock()
+func (h *Hub) buildBoardStateJSON(seatIndex int, isGameOver bool) []byte {
 	board := h.Session.GetBoard()
+	lastMove := h.Session.GetLastHistoricalMove()
+
+	h.Session.RLock()
 	field := board.GetField()
 
 	boardDTO := make([][]dto.PieceDTO, 10)
@@ -135,7 +139,7 @@ func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
 			boardDTO[y][x] = dto.PieceDTO{OwnerID: -1}
 			piece := field[y][x]
 			if piece != nil {
-				forceReveal := h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver
+				forceReveal := h.GameType == models.AiVsAi || isGameOver
 				dtoPiece := dto.PieceToDTO(piece, seatIndex, forceReveal)
 				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dtoPiece
@@ -143,10 +147,9 @@ func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
 		}
 	}
 
-	lastMove := h.Session.GetLastHistoricalMove()
 	var filteredLastMove *models.HistoricalMove
 	if lastMove != nil {
-		fm := h.filterHistoricalMove(*lastMove, seatIndex, false)
+		fm := h.filterHistoricalMove(*lastMove, seatIndex, false, isGameOver)
 		filteredLastMove = &fm
 	}
 	h.Session.RUnlock()
@@ -169,8 +172,10 @@ func (h *Hub) buildBoardStateJSON(seatIndex int) []byte {
 
 // broadcastBoardStateRevealed sends board with all pieces revealed
 func (h *Hub) broadcastBoardStateRevealed() {
-	h.Session.RLock()
 	board := h.Session.GetBoard()
+	lastMove := h.Session.GetLastHistoricalMove()
+
+	h.Session.RLock()
 	field := board.GetField()
 
 	boardDTO := make([][]dto.PieceDTO, 10)
@@ -186,7 +191,6 @@ func (h *Hub) broadcastBoardStateRevealed() {
 		}
 	}
 
-	lastMove := h.Session.GetLastHistoricalMove()
 	h.Session.RUnlock()
 
 	boardMsg := dto.BoardStateMessage{

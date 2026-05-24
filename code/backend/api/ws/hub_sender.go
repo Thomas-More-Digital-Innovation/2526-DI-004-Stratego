@@ -75,6 +75,10 @@ func (h *Hub) sendBoardState(client *Client) {
 	}
 
 	board := h.Session.GetBoard()
+	lastMove := h.Session.GetLastHistoricalMove()
+	isGameOver := h.Session.GetGameState().IsGameOver
+
+	h.Session.RLock()
 	field := board.GetField()
 
 	boardDTO := make([][]dto.PieceDTO, 10)
@@ -85,7 +89,7 @@ func (h *Hub) sendBoardState(client *Client) {
 			piece := field[y][x]
 			if piece != nil {
 				// Force reveal all pieces for AI vs AI spectators or when game is over
-				forceReveal := h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver
+				forceReveal := h.GameType == models.AiVsAi || isGameOver
 				dtoPiece := dto.PieceToDTO(piece, client.SeatIndex, forceReveal)
 				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
 				boardDTO[y][x] = dtoPiece
@@ -93,13 +97,13 @@ func (h *Hub) sendBoardState(client *Client) {
 		}
 	}
 
-	lastMove := h.Session.GetLastHistoricalMove()
 	var filteredLastMove *models.HistoricalMove
 	if lastMove != nil {
 		// For the board state's LastMove, we don't force filter combat so the visualization works
-		fm := h.filterHistoricalMove(*lastMove, client.SeatIndex, false)
+		fm := h.filterHistoricalMove(*lastMove, client.SeatIndex, false, isGameOver)
 		filteredLastMove = &fm
 	}
+	h.Session.RUnlock()
 
 	boardMsg := dto.BoardStateMessage{
 		Board:    boardDTO,
@@ -145,8 +149,10 @@ func (h *Hub) sendSetupBoard(client *Client) {
 
 // sendMoveHistory sends the move history to a specific client
 func (h *Hub) sendMoveHistory(client *Client) {
-	h.Session.RLock()
 	g := h.Session.GetGame()
+	isGameOver := g.IsGameOver()
+
+	h.Session.RLock()
 	moveHistory := g.MoveHistory
 
 	moveDTOs := make([]dto.MoveDTO, len(moveHistory))
@@ -158,7 +164,7 @@ func (h *Hub) sendMoveHistory(client *Client) {
 	fullHistory := g.HistoricalHistory
 	initialState := g.InitialState
 
-	if h.GameType != models.AiVsAi && !g.IsGameOver() {
+	if h.GameType != models.AiVsAi && !isGameOver {
 		// Filter initial state
 		initialState = make([][]models.PieceData, len(g.InitialState))
 		for y, row := range g.InitialState {
@@ -176,7 +182,7 @@ func (h *Hub) sendMoveHistory(client *Client) {
 		fullHistory = make([]models.HistoricalMove, len(g.HistoricalHistory))
 		for i, m := range g.HistoricalHistory {
 			// For history, we force filter combat to prevent leaking piece ranks in a live game
-			fullHistory[i] = h.filterHistoricalMove(m, client.SeatIndex, true)
+			fullHistory[i] = h.filterHistoricalMove(m, client.SeatIndex, true, isGameOver)
 		}
 	}
 	h.Session.RUnlock()
@@ -203,8 +209,8 @@ func (h *Hub) sendMoveHistory(client *Client) {
 	}
 }
 
-func (h *Hub) filterHistoricalMove(m models.HistoricalMove, seatIndex int, forceFilterCombat bool) models.HistoricalMove {
-	if h.GameType == models.AiVsAi || h.Session.GetGameState().IsGameOver {
+func (h *Hub) filterHistoricalMove(m models.HistoricalMove, seatIndex int, forceFilterCombat bool, isGameOver bool) models.HistoricalMove {
+	if h.GameType == models.AiVsAi || isGameOver {
 		return m
 	}
 

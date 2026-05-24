@@ -18,6 +18,7 @@ const testUserID = 123
 
 func TestIsUserInActiveGame(t *testing.T) {
 	s := NewGameServer()
+	defer s.Stop()
 
 	// Properly initialize session
 	p1 := engine.NewPlayer(0, "Red", "red")
@@ -42,6 +43,7 @@ func TestIsUserInActiveGame(t *testing.T) {
 
 func TestGetUserActiveGameSeat(t *testing.T) {
 	s := NewGameServer()
+	defer s.Stop()
 	userID1 := testUserID
 	userID2 := testUserID + 1
 
@@ -76,6 +78,7 @@ func TestIsWaitingForCleanup(t *testing.T) {
 	p2 := engine.NewPlayer(1, "Blue", "blue")
 	session := game.NewSession(testGameID, engine.NewHumanPlayerController(&p1), engine.NewHumanPlayerController(&p2))
 	hub := ws.NewHub(session, models.HumanVsAi)
+	defer hub.Stop()
 
 	sh := &SessionHandler{
 		Session: session,
@@ -107,6 +110,7 @@ func TestIsWaitingForCleanup(t *testing.T) {
 }
 func TestCreateGame(t *testing.T) {
 	s := NewGameServer()
+	defer s.Stop()
 
 	// Test HumanVsAi
 	handler, err := s.CreateGame("game-hva", models.HumanVsAi, "Alice", models.Fafo)
@@ -135,6 +139,7 @@ func TestCreateGame(t *testing.T) {
 
 func TestRemoveSession(t *testing.T) {
 	s := NewGameServer()
+	defer s.Stop()
 	_, err := s.CreateGame("rem-test", models.HumanVsAi, "A", models.Fafo)
 	assert.NoError(t, err)
 
@@ -154,6 +159,7 @@ func TestStop(_ *testing.T) {
 
 func TestPrintRoutes(_ *testing.T) {
 	s := NewGameServer()
+	defer s.Stop()
 	s.PrintRoutes()
 	// Should not panic
 }
@@ -171,6 +177,7 @@ func TestGameServer_Completion(t *testing.T) {
 
 func TestGameServer_Limits(t *testing.T) {
 	s := NewGameServer()
+	defer s.Stop()
 	// Simulate many sessions
 	for i := range 500 {
 		s.Sessions[fmt.Sprintf("g%d", i)] = &SessionHandler{}

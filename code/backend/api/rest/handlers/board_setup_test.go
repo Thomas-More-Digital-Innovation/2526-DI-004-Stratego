@@ -21,6 +21,7 @@ func TestBoardSetupHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	user, _ := db.CreateUser(context.Background(), "alice", "StrongPassword1", "")

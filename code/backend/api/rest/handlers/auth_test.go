@@ -32,6 +32,7 @@ func TestRegisterUserHandler(t *testing.T) {
 	db.SetupTestDB(t)
 
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Test valid registration
@@ -63,6 +64,7 @@ func TestLoginHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Register a user first
@@ -106,6 +108,7 @@ func TestLogoutHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	w := httptest.NewRecorder()
@@ -120,6 +123,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Create a user and a refresh token
@@ -143,6 +147,7 @@ func TestRefreshTokenHandler_Errors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Case 1: Missing refresh token cookie
@@ -165,6 +170,7 @@ func TestRegisterUserHandler_Errors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Case 1: Invalid request body JSON
@@ -199,6 +205,7 @@ func TestLoginHandler_Errors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Case 1: Invalid JSON body

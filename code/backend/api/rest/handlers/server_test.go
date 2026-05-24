@@ -25,7 +25,8 @@ func setupTestRouter() (*gin.Engine, *Handler, *core.GameServer) {
 }
 
 func TestHandleCreateGame(t *testing.T) {
-	r, h, _ := setupTestRouter()
+	r, h, s := setupTestRouter()
+	defer s.Stop()
 	r.POST("/games", h.HandleCreateGame)
 
 	t.Run("GuestCreatesGame", func(t *testing.T) {
@@ -131,7 +132,8 @@ func TestHandleCreateGame(t *testing.T) {
 }
 
 func TestAssociatePlayer(t *testing.T) {
-	_, h, _ := setupTestRouter()
+	_, h, s := setupTestRouter()
+	defer s.Stop()
 
 	t.Run("AllowUnassociatedUser", func(t *testing.T) {
 		w := httptest.NewRecorder()

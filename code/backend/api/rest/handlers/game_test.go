@@ -22,6 +22,7 @@ func TestHandleGetGameHistory(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Test non-existent game
@@ -37,6 +38,7 @@ func TestHandleListUserGames(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	w := httptest.NewRecorder()
@@ -51,6 +53,7 @@ func TestHandleListMyGames(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	// Unauthenticated
@@ -73,6 +76,7 @@ func TestHandleGetReconnectableGame(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	t.Run("Unauthenticated", func(t *testing.T) {

@@ -42,14 +42,14 @@ func (s *GameServer) Stop() {
 	}
 
 	s.Mutex.Lock()
-	handlers := make([]*SessionHandler, 0, len(s.Sessions))
-	for _, handler := range s.Sessions {
-		handlers = append(handlers, handler)
+	gameIDs := make([]string, 0, len(s.Sessions))
+	for gameID := range s.Sessions {
+		gameIDs = append(gameIDs, gameID)
 	}
 	s.Mutex.Unlock()
 
-	for _, handler := range handlers {
-		s.RemoveSession(handler.Session.ID)
+	for _, gameID := range gameIDs {
+		s.RemoveSession(gameID)
 	}
 }
 
@@ -174,8 +174,12 @@ func (s *GameServer) RemoveSession(gameID string) {
 
 	if exists && handler != nil {
 		logging.Debug(logging.TagWeb, "Removed session %s from GameServer and stopping resources", gameID)
-		handler.Hub.Stop()
-		handler.Session.Stop()
+		if handler.Hub != nil {
+			handler.Hub.Stop()
+		}
+		if handler.Session != nil {
+			handler.Session.Stop()
+		}
 	}
 }
 
