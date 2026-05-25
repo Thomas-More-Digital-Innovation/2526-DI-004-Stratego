@@ -2,7 +2,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go&logoColor=white)](https://go.dev/)
 [![SvelteKit Version](https://img.shields.io/badge/SvelteKit-5-FF3E00?style=flat&logo=svelte&logoColor=white)](https://kit.svelte.dev/)
-[![Project Version](https://img.shields.io/badge/version-0.3.0-blue?style=flat)](CHANGELOG.md)
+[![Project Version](https://img.shields.io/github/v/release/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy?color=blue&style=flat)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat)](LICENSE)
 
 <img src="documents/pictures/logo.png" width=200>
