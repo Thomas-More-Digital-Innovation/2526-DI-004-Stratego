@@ -1,0 +1,86 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+  push:
+    branches: ["*"]
+    paths:
+      - "code/frontend/pnpm-lock.yaml"
+      - "code/backend/go.mod"
+      - "code/backend/go.sum"
+      - ".github/workflows/security-audit.yml"
+  pull_request:
+    branches: ["*"]
+    paths:
+      - "code/frontend/pnpm-lock.yaml"
+      - "code/backend/go.mod"
+      - "code/backend/go.sum"
+      - ".github/workflows/security-audit.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  frontend-audit:
+    name: Frontend Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "pnpm"
+          cache-dependency-path: code/frontend/pnpm-lock.yaml
+
+      - name: Run security audit
+        working-directory: code/frontend
+        run: pnpm audit --audit-level high
+
+  backend-audit:
+    name: Backend Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
+      - name: Run Go Vulnerability Check
+        uses: golang/govulncheck-action@v1
+        with:
+          work-dir: code/backend
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [frontend-audit, backend-audit]
+    if: failure() && github.event_name == 'schedule'
+    steps:
+      - name: Create GitHub Issue on Failure
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Security Audit Failure: Vulnerability Detected" \
+            --body "The scheduled security audit workflow failed. A dependency vulnerability may have been discovered in the frontend or backend.
+
+            **Please review the run details:**
+            - **Workflow Run Logs:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            
+            Please investigate and update the vulnerable dependencies immediately." \
+            --label "security,bug"

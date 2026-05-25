@@ -194,7 +194,7 @@ jobs:
             "${{ github.ref_name }}" \
             "$GITHUB_TOKEN" \
             "${{ github.event.pull_request.number }}")
-          
+
           if [ -n "$PR_ID" ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
           fi
