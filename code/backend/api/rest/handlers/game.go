@@ -117,6 +117,11 @@ func (h *Handler) HandleGetReconnectableGame(c *gin.Context) {
 		return
 	}
 
+	if handler.Hub != nil && handler.Hub.IsUserConnected(user.ID) {
+		core.SendJSON(c, gin.H{"hasGame": false}, http.StatusOK)
+		return
+	}
+
 	core.SendJSON(c, gin.H{
 		"hasGame":   true,
 		"gameId":    handler.Session.ID,
