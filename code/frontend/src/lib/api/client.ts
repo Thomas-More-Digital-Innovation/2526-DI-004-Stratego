@@ -113,6 +113,12 @@ export const games = {
         }),
 
     list: () => request<GameInfo[]>('/games'),
+
+    getReconnectable: () =>
+        request<{ hasGame: boolean; gameId?: string; gameType?: string; seatIndex?: number }>('/users/me/reconnectable'),
+
+    abandon: (gameId: string) =>
+        requestVoid(`/games/${gameId}`, { method: 'DELETE' }),
 };
 
 // Stats

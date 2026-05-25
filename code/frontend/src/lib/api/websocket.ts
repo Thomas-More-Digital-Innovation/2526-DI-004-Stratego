@@ -7,6 +7,7 @@ type MessageHandler = (data: any) => void;
 export class GameSocket {
     private ws: WebSocket | null = null;
     private handlers = new Map<string, MessageHandler>();
+    private closeHandler: (() => void) | null = null;
 
     connect(gameId: string, playerId: number = -1): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -27,8 +28,13 @@ export class GameSocket {
 
             this.ws.onclose = () => {
                 console.log('WebSocket closed');
+                this.closeHandler?.();
             };
         });
+    }
+
+    onClose(handler: () => void) {
+        this.closeHandler = handler;
     }
 
     on(type: string, handler: MessageHandler) {
@@ -88,5 +94,6 @@ export class GameSocket {
         this.ws?.close();
         this.ws = null;
         this.handlers.clear();
+        this.closeHandler = null;
     }
 }

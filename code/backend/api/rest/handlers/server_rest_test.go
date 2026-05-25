@@ -21,6 +21,7 @@ func TestHandleCreateGame(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db.SetupTestDB(t)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	t.Run("ValidCreation", func(t *testing.T) {
@@ -80,6 +81,7 @@ func TestHandleCreateGame(t *testing.T) {
 func TestHandleListGames(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 	_, err := server.CreateGame("game-1", models.HumanVsAi, "A", models.Fafo)
 	assert.NoError(t, err)
@@ -93,6 +95,7 @@ func TestHandleListGames(t *testing.T) {
 func TestHandleWebSocketConnection_Errors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	server := core.NewGameServer()
+	defer server.Stop()
 	h := handlers.NewHandler(server)
 
 	t.Run("GameNotFound", func(t *testing.T) {

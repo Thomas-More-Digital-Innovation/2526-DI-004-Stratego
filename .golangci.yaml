@@ -22,6 +22,7 @@ linters:
       - path: _test\.go
         linters:
           - dupl # Exclude duplicate check from tests
+          - goconst
 
 issues:
   max-issues-per-linter: 0

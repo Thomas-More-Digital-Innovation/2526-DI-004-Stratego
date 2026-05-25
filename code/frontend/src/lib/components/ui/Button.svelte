@@ -25,7 +25,7 @@
         disabledMessage,
     }: Props = $props();
 
-    const shared = `inline-flex items-center justify-center rounded-xl 
+    const shared = `inline-flex items-center justify-center rounded-xl whitespace-nowrap 
     transition-all duration-200 active:scale-95 cursor-pointer 
     disabled:opacity-50 disabled:pointer-events-none`;
 

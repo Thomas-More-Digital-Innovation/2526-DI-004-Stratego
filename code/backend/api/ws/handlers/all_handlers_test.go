@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTest(_ *testing.T) (*ws.Hub, *game.Session, *ws.Client) {
+func setupTest(t *testing.T) (*ws.Hub, *game.Session, *ws.Client) {
 	player1 := engine.NewPlayer(0, "P1", "red")
 	player2 := engine.NewPlayer(1, "P2", "blue")
 	c1 := engine.NewHumanPlayerController(&player1)
@@ -28,6 +28,10 @@ func setupTest(_ *testing.T) (*ws.Hub, *game.Session, *ws.Client) {
 
 	_ = session.RandomizeSetup(0)
 	_ = session.RandomizeSetup(1)
+
+	t.Cleanup(func() {
+		session.Stop()
+	})
 
 	return hub, session, client
 }

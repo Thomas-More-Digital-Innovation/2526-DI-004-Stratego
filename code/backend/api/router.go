@@ -84,6 +84,7 @@ func (s *GameServer) SetupRoutes() {
 			me.GET("", h.GetCurrentUserHandler)
 			me.GET("/stats", h.GetCurrentUserStatsHandler)
 			me.GET("/games", h.HandleListMyGames)
+			me.GET("/reconnectable", h.HandleGetReconnectableGame)
 			me.POST("/password", middleware.UserRateLimitMiddleware(authLimiter), h.ChangePasswordHandler)
 		}
 
@@ -113,6 +114,7 @@ func (s *GameServer) SetupRoutes() {
 		games.POST("", middleware.UserRateLimitMiddleware(actionLimiter), h.HandleCreateGame)
 		games.GET("", h.HandleListGames)
 		games.GET("/:id/history", h.HandleGetGameHistory)
+		games.DELETE("/:id", auth.RequireAuth(), h.HandleDeleteGame)
 		games.GET("/count", h.GamesPlayedCountHandler)
 	}
 

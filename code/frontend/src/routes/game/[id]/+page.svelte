@@ -13,6 +13,9 @@
     import Button from "$lib/components/ui/Button.svelte";
     import type { Position } from "$lib/types/game";
     import { gamemodes } from "$lib/data/gamemodes.data";
+    import ConnectionOverlay from "$lib/components/game/ConnectionOverlay.svelte";
+    import { games as gamesApi } from "$lib/api/client";
+    import { serverStore } from "$lib/state/server.svelte";
 
     let socket = new GameSocket();
     let gameId = $state("");
@@ -20,6 +23,12 @@
     let validMoves = $state<Position[]>([]);
     let setupSwapPos1 = $state<Position | null>(null);
     let setupSelectedPlayer = $state(0);
+
+    // Reconnection tracking state
+    let isReconnecting = $state(false);
+    let reconnectAttempts = $state(0);
+    const maxReconnectAttempts = 5;
+    let seatIndex = -1;
 
     const isSetupPhase = $derived(gameStore.gameState?.isSetupPhase ?? false);
 
@@ -41,14 +50,22 @@
         const params = new URLSearchParams(window.location.search);
         gameStore.gameMode = gamemodes.fromString(params.get("mode") || "");
 
+        const seatParam = params.get("seat");
+        const defaultSeat = gameStore.gameMode.mode === "human_vs_ai" ? 0 : -1;
+        seatIndex = seatParam !== null ? parseInt(seatParam) : defaultSeat;
+
         setupHandlers();
 
         try {
-            const playerId = gameStore.gameMode.mode === "human_vs_ai" ? 0 : -1;
-            await socket.connect(gameId, playerId);
+            await socket.connect(gameId, seatIndex);
             connected = true;
         } catch (e: any) {
-            toastStore.handleApiMessage(e, "Failed to connect");
+            await serverStore.check();
+            if (serverStore.isOnline) {
+                toastStore.error("Game session not found or cleaned up.");
+            } else {
+                toastStore.handleApiMessage(e, "Failed to connect to game server");
+            }
             setTimeout(() => (window.location.href = "/"), 3000);
         }
     });
@@ -57,6 +74,45 @@
         socket.disconnect();
         gameStore.reset();
     });
+
+    async function attemptReconnect() {
+        if (isReconnecting) return;
+        isReconnecting = true;
+        reconnectAttempts = 0;
+
+        while (reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            try {
+                await socket.connect(gameId, seatIndex);
+                connected = true;
+                isReconnecting = false;
+                reconnectAttempts = 0;
+                toastStore.success("Reconnected to game session successfully.");
+                return;
+            } catch (e) {
+                const delay = Math.pow(2, reconnectAttempts) * 1000;
+                await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+        }
+
+        isReconnecting = false;
+        await serverStore.check();
+        if (serverStore.isOnline) {
+            toastStore.error("Failed to restore connection: Game session not found or cleaned up.");
+        } else {
+            toastStore.error("Failed to restore server connection after multiple attempts.");
+        }
+    }
+
+    async function abandonAndQuit() {
+        try {
+            await gamesApi.abandon(gameId);
+        } catch (e) {
+            console.error("Failed to abandon session:", e);
+        } finally {
+            window.location.href = "/";
+        }
+    }
 
     function setupHandlers() {
         socket.on("gameState", (data) => gameStore.updateGameState(data));
@@ -99,6 +155,13 @@
             toastStore.handleApiMessage(data.error || data);
             gameStore.setSelectedPosition(null);
             validMoves = [];
+        });
+
+        socket.onClose(() => {
+            if (connected && !gameStore.gameState?.isGameOver) {
+                connected = false;
+                attemptReconnect();
+            }
         });
     }
 
@@ -233,12 +296,14 @@
 </svelte:head>
 
 {#if !connected}
-    <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div
-            class="w-10 h-10 border-3 border-white/20 border-t-brand-primary rounded-full animate-spin"
-        ></div>
-        <p class="text-white/40">Connecting to game...</p>
-    </div>
+    <ConnectionOverlay
+        {isReconnecting}
+        {gameId}
+        {reconnectAttempts}
+        {maxReconnectAttempts}
+        onRetry={attemptReconnect}
+        onReturnToMenu={abandonAndQuit}
+    />
 {:else if gameStore.gameState?.headless && !gameStore.gameState?.isGameOver}
     <Loading
         title="Game in progress"
@@ -259,7 +324,7 @@
                 variant="ghost"
                 onclick={() => {
                     if (confirm("Are you sure you want to quit?")) {
-                        window.location.href = "/";
+                        abandonAndQuit();
                     }
                 }}
             >
