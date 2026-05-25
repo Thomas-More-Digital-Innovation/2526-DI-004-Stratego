@@ -15,6 +15,7 @@
     import { gamemodes } from "$lib/data/gamemodes.data";
     import ConnectionOverlay from "$lib/components/game/ConnectionOverlay.svelte";
     import { games as gamesApi } from "$lib/api/client";
+    import { serverStore } from "$lib/state/server.svelte";
 
     let socket = new GameSocket();
     let gameId = $state("");
@@ -59,7 +60,12 @@
             await socket.connect(gameId, seatIndex);
             connected = true;
         } catch (e: any) {
-            toastStore.handleApiMessage(e, "Failed to connect");
+            await serverStore.check();
+            if (serverStore.isOnline) {
+                toastStore.error("Game session not found or cleaned up.");
+            } else {
+                toastStore.handleApiMessage(e, "Failed to connect to game server");
+            }
             setTimeout(() => (window.location.href = "/"), 3000);
         }
     });
@@ -90,7 +96,12 @@
         }
 
         isReconnecting = false;
-        toastStore.error("Failed to restore server connection after multiple attempts.");
+        await serverStore.check();
+        if (serverStore.isOnline) {
+            toastStore.error("Failed to restore connection: Game session not found or cleaned up.");
+        } else {
+            toastStore.error("Failed to restore server connection after multiple attempts.");
+        }
     }
 
     async function abandonAndQuit() {
