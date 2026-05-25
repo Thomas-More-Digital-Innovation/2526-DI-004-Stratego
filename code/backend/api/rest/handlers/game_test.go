@@ -136,9 +136,6 @@ func TestHandleGetReconnectableGame(t *testing.T) {
 		assert.NoError(t, err)
 		handler.Session.SetPlayer1Associate(user.ID, "player3")
 
-		go handler.Hub.Run()
-		defer handler.Hub.Stop()
-
 		client := ws.NewTestClient()
 		client.UserID = user.ID
 		handler.Hub.Register() <- client
