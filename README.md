@@ -7,14 +7,14 @@
 
 <img src="documents/pictures/logo.png" width=200>
 
-[![Production](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/cd.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/cd.yml)
-[![Backend CI](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/backend-ci.yml)
-[![Frontend CI](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/frontend-ci.yml)
-[![Codecov](https://codecov.io/gh/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/branch/main/graph/badge.svg)](https://codecov.io/gh/Thomas-More-Digital-Innovation/2526-DI-004-Stratego)
-[![CodeQL](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/codeql.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/codeql.yml)
-[![golangci-lint](https://img.shields.io/badge/linting-golangci--lint-blue?style=flat&logo=golangci-lint)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-Stratego/actions/workflows/backend-ci.yml)
+[![Production](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/cd.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/cd.yml)
+[![Backend CI](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/frontend-ci.yml)
+[![Codecov](https://codecov.io/gh/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/branch/main/graph/badge.svg)](https://codecov.io/gh/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy)
+[![CodeQL](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/codeql.yml/badge.svg)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/codeql.yml)
+[![golangci-lint](https://img.shields.io/badge/linting-golangci--lint-blue?style=flat&logo=golangci-lint)](https://github.com/Thomas-More-Digital-Innovation/2526-DI-004-GoStrategy/actions/workflows/backend-ci.yml)
 
-Open-source implementation of the classic Stratego board game. Built with a high-performance Go backend and a modern SvelteKit frontend, designed for both Human-vs-AI and AI-vs-AI experimentation.
+Open-source implementation of the classic GoStrategy board game. Built with a high-performance Go backend and a modern SvelteKit frontend, designed for both Human-vs-AI and AI-vs-AI experimentation.
 
 Play the game here: https://gostrategy.dotsem.be
 
