@@ -1,5 +1,9 @@
 name: Backend CI
 
+permissions:
+  contents: read
+  pull-requests: write
+
 concurrency:
   group: backend-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -39,11 +43,18 @@ jobs:
           path: |
             ~/.cache/go-build
             code/backend/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{
-            hashFiles('code/backend/go.sum') }}
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('code/backend/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.go-version }}-
             ${{ runner.os }}-go-
+
+      - name: Cache golangci-lint analysis results
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-cache-${{ hashFiles('code/backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golangci-cache-
 
       - name: Ensure dependencies
         working-directory: code/backend
@@ -60,7 +71,15 @@ jobs:
             exit 1
           fi
 
+      - name: Cache golangci-lint binary
+        id: cache-golangci-lint
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin/golangci-lint
+          key: ${{ runner.os }}-golangci-lint-${{ matrix.go-version }}
+
       - name: Install golangci-lint
+        if: steps.cache-golangci-lint.outputs.cache-hit != 'true'
         run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
       - name: Run golangci-lint
@@ -130,15 +149,23 @@ jobs:
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO appuser;
           "
 
+      - name: Cache gotestsum binary
+        id: cache-gotestsum
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin/gotestsum
+          key: ${{ runner.os }}-gotestsum-${{ matrix.go-version }}
+
+      - name: Install gotestsum
+        if: steps.cache-gotestsum.outputs.cache-hit != 'true'
+        run: go install gotest.tools/gotestsum@latest
+
       - name: Run tests with coverage
         working-directory: code/backend
         env:
           TEST_DB_DSN: "host=localhost user=appuser password=apppass
             dbname=gostrategy_test sslmode=disable"
         run: |
-          # Install gotestsum for better failure overview
-          go install gotest.tools/gotestsum@latest
-
           # Run tests with gotestsum for a clear overview of failures in CI logs
           $(go env GOPATH)/bin/gotestsum --format pkgname-and-test-fails --junitfile unit-tests.xml -- -race ./... -coverprofile=coverage.out -covermode=atomic
 
@@ -187,13 +214,17 @@ jobs:
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          BRANCH: ${{ github.ref_name }}
+          EXISTING_PR: ${{ github.event.pull_request.number }}
         run: |
           PR_ID=$(./code/backend/scripts/find_pr.sh \
-            "${{ github.repository }}" \
-            "${{ github.repository_owner }}" \
-            "${{ github.ref_name }}" \
+            "$REPO" \
+            "$OWNER" \
+            "$BRANCH" \
             "$GITHUB_TOKEN" \
-            "${{ github.event.pull_request.number }}")
+            "$EXISTING_PR")
 
           if [ -n "$PR_ID" ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_OUTPUT
