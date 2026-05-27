@@ -1,9 +1,9 @@
 package ai_test
 
 import (
-	"digital-innovation/gostrategy/internal/ai"
-	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/pkg/ai"
 	"digital-innovation/gostrategy/pkg/game"
+	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

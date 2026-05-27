@@ -1,4 +1,3 @@
-// Package models defines the data structures used in the game
 package models
 
 // PieceType defines the characteristics of a game piece

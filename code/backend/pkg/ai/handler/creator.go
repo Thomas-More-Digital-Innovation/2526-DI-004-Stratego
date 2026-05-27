@@ -2,11 +2,11 @@
 package AIhandler
 
 import (
-	"digital-innovation/gostrategy/internal/ai"
-	"digital-innovation/gostrategy/internal/ai/fafo"
-	"digital-innovation/gostrategy/internal/ai/fato"
-	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/pkg/ai"
+	"digital-innovation/gostrategy/pkg/ai/fafo"
+	"digital-innovation/gostrategy/pkg/ai/fato"
 	"digital-innovation/gostrategy/pkg/game"
+	"digital-innovation/gostrategy/pkg/game/models"
 )
 
 // CreateAI is a factory function that returns an AI instance based on the given type

@@ -2,7 +2,7 @@ package game
 
 import (
 	"digital-innovation/gostrategy/internal/logging"
-	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/pkg/game/models"
 	"time"
 )
 

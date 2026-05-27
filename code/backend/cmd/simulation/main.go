@@ -2,8 +2,8 @@
 package main
 
 import (
-	aivsai "digital-innovation/gostrategy/internal/ai/AIvsAI"
 	"digital-innovation/gostrategy/internal/models"
+	aivsai "digital-innovation/gostrategy/pkg/ai/AIvsAI"
 	"flag"
 	"fmt"
 	"strings"

@@ -1,4 +1,4 @@
-// Package models defines the data structures used in the game
+// Package models defines data representations and schemas used across the game engine.
 package models
 
 // AiTournamentData contains statistics for an AI player in a tournament

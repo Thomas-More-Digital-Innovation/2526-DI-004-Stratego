@@ -1,4 +1,3 @@
-// Package models defines the data structures used in the game
 package models
 
 // HistoricalMove represents a move in the game history with its outcome

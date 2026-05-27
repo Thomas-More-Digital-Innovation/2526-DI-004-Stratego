@@ -3,7 +3,7 @@
 package fafo
 
 import (
-	"digital-innovation/gostrategy/internal/ai"
+	"digital-innovation/gostrategy/pkg/ai"
 	"digital-innovation/gostrategy/pkg/game"
 	"math/rand/v2"
 )

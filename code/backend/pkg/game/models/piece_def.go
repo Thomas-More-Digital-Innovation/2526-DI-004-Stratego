@@ -1,4 +1,3 @@
-// Package models defines the data structures used in the game
 package models
 
 // Exported piece types for use in the engine and UI

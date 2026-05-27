@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	gamemodels "digital-innovation/gostrategy/pkg/game/models"
 	"gorm.io/gorm"
 )
 
@@ -22,17 +23,17 @@ type Game struct {
 
 // GameMove represents a single move in a game
 type GameMove struct {
-	ID           int            `json:"id" gorm:"primaryKey"`
-	GameID       string         `json:"game_id" gorm:"index;type:varchar(100);not null"`
-	MoveIndex    int            `json:"move_index" gorm:"not null"`
-	PlayerID     int            `json:"player_id" gorm:"not null"`
-	FromX        int            `json:"from_x" gorm:"not null"`
-	FromY        int            `json:"from_y" gorm:"not null"`
-	ToX          int            `json:"to_x" gorm:"not null"`
-	ToY          int            `json:"to_y" gorm:"not null"`
-	AttackerData *string        `json:"attacker_data,omitempty" gorm:"type:jsonb"`
-	DefenderData *string        `json:"defender_data,omitempty" gorm:"type:jsonb"`
-	Result       MoveResultType `json:"result" gorm:"not null;size:20"`
-	CreatedAt    time.Time      `json:"created_at"`
-	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+	ID           int                       `json:"id" gorm:"primaryKey"`
+	GameID       string                    `json:"game_id" gorm:"index;type:varchar(100);not null"`
+	MoveIndex    int                       `json:"move_index" gorm:"not null"`
+	PlayerID     int                       `json:"player_id" gorm:"not null"`
+	FromX        int                       `json:"from_x" gorm:"not null"`
+	FromY        int                       `json:"from_y" gorm:"not null"`
+	ToX          int                       `json:"to_x" gorm:"not null"`
+	ToY          int                       `json:"to_y" gorm:"not null"`
+	AttackerData *string                   `json:"attacker_data,omitempty" gorm:"type:jsonb"`
+	DefenderData *string                   `json:"defender_data,omitempty" gorm:"type:jsonb"`
+	Result       gamemodels.MoveResultType `json:"result" gorm:"not null;size:20"`
+	CreatedAt    time.Time                 `json:"created_at"`
+	DeletedAt    gorm.DeletedAt            `json:"-" gorm:"index"`
 }

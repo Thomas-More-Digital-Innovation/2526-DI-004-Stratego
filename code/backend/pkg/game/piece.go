@@ -1,7 +1,7 @@
 package game
 
 import (
-	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/pkg/game/models"
 )
 
 // Piece represents a single game piece on the board

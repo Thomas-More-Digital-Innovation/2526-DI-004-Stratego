@@ -1,7 +1,7 @@
 package game
 
 import (
-	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/pkg/game/models"
 )
 
 // MakeMove makes a move on the game board and resolves any combat that may occur.

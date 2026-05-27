@@ -2,9 +2,9 @@
 package aivsai
 
 import (
-	AIhandler "digital-innovation/gostrategy/internal/ai/handler"
-	"digital-innovation/gostrategy/internal/models"
+	AIhandler "digital-innovation/gostrategy/pkg/ai/handler"
 	"digital-innovation/gostrategy/pkg/game"
+	"digital-innovation/gostrategy/pkg/game/models"
 	"fmt"
 )
 
