@@ -1,11 +1,12 @@
 <script lang="ts">
     import { page } from "$app/state";
-    import logoWebp from "$lib/assets/favicon.webp";
     import { onMount } from "svelte";
     import { authStore } from "$lib/state/auth.svelte";
     import LoggedOut from "./_components/LoggedOut.svelte";
     import LoggedIn from "./_components/LoggedIn.svelte";
-    import goLogo from "$lib/assets/go.svg";
+    import Title from "../Title.svelte";
+    import favicon from "$lib/assets/favicon.webp";
+    import GridOverlay from "$lib/components/GridOverlay.svelte";
 
     const navItems = [
         { name: "Command Center", href: "/" },
@@ -19,19 +20,13 @@
 </script>
 
 <aside
-    class="w-64 border-r border-white/5 bg-surface-elevated/30 backdrop-blur-xl flex flex-col fixed inset-y-0"
+    class="w-64 border-r border-white/5 bg-surface-elevated/30 backdrop-blur-xl flex flex-col fixed inset-y-0 overflow-hidden"
 >
-    <div class="px-4 py-8">
-        <h1
-            class="text-xl font-extrabold tracking-widest text-white flex gap-1 items-center drop-shadow-md"
-        >
-            <img src={logoWebp} alt="Logo" class="w-12 h-12" />
-            <span class="flex items-center"
-                ><a href="https://go.dev/">
-                    <img src={goLogo} alt="go" class="w-10 h-10 mr-1" /></a
-                >STRATEGY</span
-            >
-        </h1>
+    <GridOverlay opacity={4} size={24} color="white" />
+
+    <div class="px-4 py-8 flex justify-center z-10">
+        <img src={favicon} alt="Logo" class="w-12 h-12" />
+        <Title />
     </div>
 
     <nav class="flex-1 px-4 space-y-1">
