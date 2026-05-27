@@ -1,11 +1,18 @@
 {
     "cSpell.words": [
         "aivsai",
+        "asyncapi",
         "fafo",
         "fato",
+        "github",
+        "gonic",
         "gorm",
-        "MCTS",
         "gostrategy",
+        "MCTS",
+        "reconnectable",
+        "stretchr",
+        "swaggo",
+        "testuser",
         "Upgrader"
     ]
 }
