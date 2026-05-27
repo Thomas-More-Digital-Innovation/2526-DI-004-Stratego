@@ -312,6 +312,38 @@ paths:
       summary: Create a new game
       tags:
       - games
+  /games/{id}:
+    delete:
+      description: Terminate the active game session immediately and prevent further
+        reconnection
+      parameters:
+      - description: Game ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Active game session not found or user is not a participant
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete active game session
+      tags:
+      - games
   /games/{id}/history:
     get:
       description: Retrieve the move history and final state of a specific game
@@ -787,6 +819,26 @@ paths:
       summary: Change password
       tags:
       - users
+  /users/me/reconnectable:
+    get:
+      description: Retrieve a game session in progress for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get current user's reconnectable game
+      tags:
+      - games
   /users/me/stats:
     get:
       description: Retrieve win/loss/draw statistics for the currently logged-in user

@@ -3,7 +3,7 @@ package main
 
 import (
 	"context"
-	"digital-innovation/gostrategy/db"
+	"digital-innovation/gostrategy/internal/db"
 	"fmt"
 	"os"
 )

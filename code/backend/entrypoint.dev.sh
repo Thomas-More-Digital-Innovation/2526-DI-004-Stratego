@@ -11,5 +11,5 @@ if [ -n "$DB_HOST" ]; then
   echo "Database is ready!"
 fi
 
-# Run with server flag for dev mode
-exec /go/bin/reflex -r '\\.go$' -s -- sh -c 'exec go run . -server'
+# Run server using cmd/server entry point
+exec /go/bin/reflex -r '\\.go$' -s -- sh -c 'exec go run ./cmd/server/main.go'

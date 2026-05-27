@@ -3,7 +3,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /gostrategy ./main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /gostrategy ./cmd/server/main.go
 
 FROM alpine:3.18
 RUN apk add --no-cache ca-certificates wget \
@@ -13,4 +13,4 @@ COPY --from=builder /gostrategy /gostrategy
 USER app
 EXPOSE 8080
 ENV PORT=8080
-ENTRYPOINT ["/gostrategy", "--server"]
+ENTRYPOINT ["/gostrategy"]

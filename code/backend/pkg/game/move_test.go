@@ -1,0 +1,68 @@
+package game
+
+import (
+	"testing"
+)
+
+func TestGetFrom(t *testing.T) {
+	player := NewPlayer(1, "player1", "avatar1")
+	move := NewMove(NewPosition(1, 2), NewPosition(3, 4), &player)
+
+	from := move.GetFrom()
+
+	if from.X != 1 || from.Y != 2 {
+		t.Errorf("Expected from coordinates to be (1,2), got (%d,%d)", from.X, from.Y)
+	}
+}
+
+func TestGetTo(t *testing.T) {
+	player := NewPlayer(1, "player1", "avatar1")
+	move := NewMove(NewPosition(1, 2), NewPosition(3, 4), &player)
+
+	to := move.GetTo()
+
+	if to.X != 3 || to.Y != 4 {
+		t.Errorf("Expected to coordinates to be (3,4), got (%d,%d)", to.X, to.Y)
+	}
+}
+
+func TestGetPlayer(t *testing.T) {
+	player := NewPlayer(1, "player1", "avatar1")
+	move := NewMove(NewPosition(1, 2), NewPosition(3, 4), &player)
+
+	movePlayer := move.GetPlayer()
+
+	if movePlayer.GetID() != player.GetID() {
+		t.Errorf("Expected move player ID to be %d, got %d", player.GetID(), movePlayer.GetID())
+	}
+}
+
+func TestIsEmpty(t *testing.T) {
+	move := NewMove(NewPosition(1, 2), NewPosition(3, 4), nil)
+
+	if !move.IsEmpty() {
+		t.Errorf("Expected move to be empty")
+	}
+
+	move2 := Move{}
+
+	if !move2.IsEmpty() {
+		t.Errorf("Expected empty move to be empty")
+	}
+
+	player := NewPlayer(1, "player1", "avatar1")
+	move3 := NewMove(NewPosition(1, 2), NewPosition(3, 4), &player)
+
+	if move3.IsEmpty() {
+		t.Errorf("Expected move with player to not be empty")
+	}
+}
+
+func TestMoveString(t *testing.T) {
+	player := NewPlayer(1, "player1", "avatar1")
+	move := NewMove(NewPosition(0, 0), NewPosition(0, 1), &player)
+	expected := "(A,0) -> (A,1)"
+	if move.String() != expected {
+		t.Errorf("Expected %q, got %q", expected, move.String())
+	}
+}
