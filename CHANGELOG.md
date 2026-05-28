@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 28-05-2026
+
+### Added
+- **Accessibility (a11y)**: Integrated comprehensive keyboard navigation and ARIA labeling on the game board.
+- **Rate Limiting**: Added secondary user-level rate limits for sensitive actions (creation, password changes).
+- **AI vs AI Auto-Pause**: Implemented automatic pausing of AI vs AI games when no observers are connected.
+- **UX Feedback**: Added "Reconnecting..." status indicators for socket drops.
+- **Reconnect Button**: Added a button on the home page to allow users to reconnect to active games waiting for cleanup.
+
+### Changed
+- **Authentication**: Redesigned and improved the login and registration screens for a premium feel.
+- **Refactoring**: Refactored the backend code, specifically targeting the API package.
+- **Security**: Hardened username input validation using stricter regex sanitization to prevent injection.
+- **Reliability**: Configured exponential backoff for WebSocket reconnections with reactive UI states.
+- **AI vs AI Lifecycle**: Added a 30-second wait interval for grace-period cleanup of AI vs AI games.
+- **Testing**: Increased test coverage to >60% across API packages and WebSocket connections.
+
+### Fixed
+- **Game Limiting**: Fixed issue allowing multiple active games per user, restricting to one active game at a time.
+
 ## [0.3.0] - 07-05-2026
 
 ### Added

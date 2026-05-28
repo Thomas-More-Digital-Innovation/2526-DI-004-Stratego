@@ -4,27 +4,6 @@ This document outlines the planned improvements and future directions for the Go
 
 ---
 
-### Current Phase: v0.3.1 - Refactoring & Polish
-*Focus: Strengthening the core experience and preparing for advanced features.*
-
-#### Backend & Infrastructure
-- [x] **Refactoring**: refactoring of backend code, especially the api package.
-- [x] **Rate Limiting**: Add secondary user-level rate limits for sensitive actions (creation, password changes).
-- [x] **Security**: Implement stricter regex-based input sanitization for usernames to prevent injection.
-- [x] **Reliability**: Implement exponential backoff for WebSocket reconnections with UI feedback.
-- [x] **Game Limiting**: Allow only one active game per user at a time.
-- [x] **AI vs AI cleanup**: Add a 30 second wait for cleanup of an AI vs AI game.
-- [x] **AI vs AI Auto-Pause**: Automatically pause AI vs AI games when no observers are connected.
-- [x] **Testing**: Increase test coverage to >60%, especially for API and WebSockets.
-
-#### Frontend & UI/UX
-- [x] **Authentication**: Redesign and improve the login and registration screens for a more premium feel.
-- [x] **Accessibility (a11y)**: Complete an audit for keyboard navigation and ARIA labeling on the game board.
-- [x] **Feedback**: Add "Reconnecting..." status indicators for socket drops.
-- [x] **Reconnect Button**: As long as a game is waiting for cleanup, allow the user to reconnect to it via a button in the home page.
-
----
-
 ## v0.4.0 - AI & Intelligence
 *Focus: Moving beyond random moves and providing tools for AI experimentation.*
 
