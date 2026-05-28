@@ -37,6 +37,11 @@ func TestValidatePassword(t *testing.T) {
 	tests := []validatorTest{
 		{"Pass123!", false},
 		{"Pass 123", false},
+		{" Pass123!", true},    // leading space
+		{"Pass123! ", true},    // trailing space
+		{"  Pass123!", true},   // multiple leading spaces
+		{"Pass123!  ", true},   // multiple trailing spaces
+		{"   ", true},          // only spaces
 		{"<script>alert(1)</script>", true},
 	}
 
