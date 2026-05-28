@@ -25,9 +25,9 @@
             const found = await boardSetups.getOne(id);
             if (found) {
                 setup = found;
-                name = found.name;
-                description = found.description;
-                isDefault = found.is_default;
+                name = found.name || "";
+                description = found.description || "";
+                isDefault = found.is_default || false;
             } else {
                 loadError = "Setup not found";
                 toastStore.error("Setup not found");
