@@ -8,6 +8,14 @@
     } from "$lib/types/game";
     import MoveVisualization from "./move-visualization/MoveVisualization.svelte";
     import { BOARD_CONFIG } from "$lib/data/board.data";
+    import {
+        a11yStore,
+        getCellAriaLabel,
+        handleBoardKeyDown,
+        isLake,
+        announceMove,
+    } from "$lib/utils/a11y.svelte";
+    import { gameStore } from "$lib/state/game.svelte";
 
     interface Props {
         boardState?: BoardState | null;
@@ -31,6 +39,7 @@
         lastMove?: HistoricalMove | null;
         highlightedRows?: number[];
         highlightColor?: "red" | "blue" | "";
+        isSetupPhase?: boolean;
     }
 
     let {
@@ -55,31 +64,22 @@
         lastMove = null,
         highlightedRows = [],
         highlightColor = "",
+        isSetupPhase = false,
     }: Props = $props();
 
     const displayBoard = $derived(board || boardState?.board || []);
 
-    const lakePositions = [
-        { x: 2, y: 4 },
-        { x: 3, y: 4 },
-        { x: 2, y: 5 },
-        { x: 3, y: 5 },
-        { x: 6, y: 4 },
-        { x: 7, y: 4 },
-        { x: 6, y: 5 },
-        { x: 7, y: 5 },
-    ];
-
-    const isLake = (x: number, y: number) =>
-        isLakeCell?.(x, y) ??
-        (rows === 10 &&
-            lakePositions.some((pos) => pos.x === x && pos.y === y));
-
     const isSelected = (x: number, y: number) =>
         selectedPosition?.x === x && selectedPosition?.y === y;
-
     const isValidMove = (x: number, y: number) =>
         validMoves.some((m) => m.x === x && m.y === y);
+    const isCellFocused = (x: number, y: number) =>
+        (a11yStore.focusedCell?.x === x && a11yStore.focusedCell?.y === y) ||
+        (a11yStore.focusedCell === null && x === 0 && y === 0);
+    const isCellDisabled = (x: number, y: number) =>
+        !isInteractive ||
+        isLake(x, y, rows, isLakeCell) ||
+        disabledRows.includes(y);
 
     const cellSize = $derived(BOARD_CONFIG.baseCellSize * scale);
 
@@ -96,6 +96,43 @@
 
         return `top: ${top}px; height: ${height}px;`;
     });
+
+    $effect(() => {
+        const turnId = gameStore.gameState?.currentPlayerId;
+        const isSetup = gameStore.gameState?.isSetupPhase ?? false;
+        if (
+            turnId !== undefined &&
+            !gameStore.gameState?.isGameOver &&
+            !isSetup
+        ) {
+            const turnName =
+                turnId === 0 ? "Your turn (Blue)" : "Opponent's turn (Red)";
+            a11yStore.announce(turnName);
+        }
+    });
+
+    $effect(() => {
+        const move = gameStore.lastMove;
+        if (move) {
+            const msg = announceMove(move, viewerId);
+            if (msg) {
+                a11yStore.announce(msg);
+            }
+        }
+    });
+
+    $effect(() => {
+        if (gameStore.gameState?.isGameOver) {
+            const winnerId = gameStore.gameState?.winnerId;
+            const msg =
+                winnerId === 0
+                    ? "Game over! You won!"
+                    : winnerId === 1
+                      ? "Game over! Red won!"
+                      : "Game over!";
+            a11yStore.announce(msg);
+        }
+    });
 </script>
 
 <div
@@ -103,42 +140,90 @@
     style="--cell-size: {cellSize}px; --cols: {cols}; --rows: {rows}; --scale: {scale}; --gap: {BOARD_CONFIG.gap}px;"
     class:non-interactive={!isInteractive}
 >
+    <div class="sr-only" aria-live="polite" aria-atomic="true">
+        {a11yStore.announcement}
+    </div>
+
     {#if displayBoard.length > 0}
-        <div class="board glass rounded-2xl p-3" class:responsive>
+        <div
+            class="board glass rounded-2xl p-3"
+            class:responsive
+            role="grid"
+            aria-label="Stratego Game Board"
+        >
             {#each Array(rows) as _, y}
-                {#each Array(cols) as _, x}
-                    {@const piece = displayBoard[y]?.[x]}
-                    <button
-                        class="cell"
-                        class:lake={isLake(x, y)}
-                        class:interactive={isInteractive && !isLake(x, y)}
-                        class:valid-move={isValidMove(x, y)}
-                        class:visual-disabled={visualDisabledRows.includes(y)}
-                        onclick={() => onCellClick?.(x, y)}
-                        disabled={!isInteractive ||
-                            isLake(x, y) ||
-                            disabledRows.includes(y)}
-                        draggable={isInteractive && !!piece && !isLake(x, y)}
-                        ondragstart={(e) => onCellDragStart?.(e, x, y)}
-                        ondragover={(e) => {
-                            if (onCellDrop) {
-                                e.preventDefault();
-                                onCellDragOver?.(e, x, y);
-                            }
-                        }}
-                        ondragleave={(e) => onCellDragLeave?.(e, x, y)}
-                        ondrop={(e) => onCellDrop?.(e, x, y)}
-                    >
-                        <Piece
-                            {piece}
-                            isSelected={isSelected(x, y)}
-                            isHighlighted={isValidMove(x, y)}
-                            isLake={isLake(x, y)}
-                            {viewerId}
-                            {scale}
-                        />
-                    </button>
-                {/each}
+                <div role="row" style="display: contents;">
+                    {#each Array(cols) as _, x}
+                        {@const piece = displayBoard[y]?.[x]}
+                        <button
+                            id="cell-{x}-{y}"
+                            class="cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black/50"
+                            class:lake={isLake(x, y, rows, isLakeCell)}
+                            class:interactive={isInteractive &&
+                                !isLake(x, y, rows, isLakeCell)}
+                            class:valid-move={isValidMove(x, y)}
+                            class:visual-disabled={visualDisabledRows.includes(
+                                y,
+                            )}
+                            role="gridcell"
+                            tabindex={isCellFocused(x, y) ? 0 : -1}
+                            aria-disabled={isCellDisabled(x, y)
+                                ? "true"
+                                : undefined}
+                            aria-label={getCellAriaLabel({
+                                x,
+                                y,
+                                piece,
+                                isSelected: isSelected(x, y),
+                                isValidMove: isValidMove(x, y),
+                                isLake: isLake(x, y, rows, isLakeCell),
+                                viewerId,
+                                isSetupPhase,
+                            })}
+                            onclick={() => {
+                                if (isCellDisabled(x, y)) return;
+                                onCellClick?.(x, y);
+                            }}
+                            onkeydown={(e) =>
+                                handleBoardKeyDown(e, { x, y, cols, rows })}
+                            onfocus={() => {
+                                a11yStore.focusedCell = { x, y };
+                            }}
+                            draggable={isInteractive &&
+                                !!piece &&
+                                !isLake(x, y, rows, isLakeCell) &&
+                                !disabledRows.includes(y)}
+                            ondragstart={(e) => {
+                                if (isCellDisabled(x, y)) return;
+                                onCellDragStart?.(e, x, y);
+                            }}
+                            ondragover={(e) => {
+                                if (isCellDisabled(x, y)) return;
+                                if (onCellDrop) {
+                                    e.preventDefault();
+                                    onCellDragOver?.(e, x, y);
+                                }
+                            }}
+                            ondragleave={(e) => {
+                                if (isCellDisabled(x, y)) return;
+                                onCellDragLeave?.(e, x, y);
+                            }}
+                            ondrop={(e) => {
+                                if (isCellDisabled(x, y)) return;
+                                onCellDrop?.(e, x, y);
+                            }}
+                        >
+                            <Piece
+                                {piece}
+                                isSelected={isSelected(x, y)}
+                                isHighlighted={isValidMove(x, y)}
+                                isLake={isLake(x, y, rows, isLakeCell)}
+                                {viewerId}
+                                {scale}
+                            />
+                        </button>
+                    {/each}
+                </div>
             {/each}
 
             {#if lastMove && !selectedPosition}
@@ -167,11 +252,9 @@
         justify-content: center;
         align-items: center;
     }
-
     .board-wrapper.non-interactive {
         pointer-events: none;
     }
-
     .board {
         position: relative;
         display: grid;
@@ -179,20 +262,17 @@
         grid-template-rows: repeat(var(--rows), var(--cell-size));
         gap: calc(var(--gap) * var(--scale, 1));
     }
-
     .board.responsive {
         grid-template-columns: repeat(var(--cols), 1fr);
         grid-template-rows: auto;
         width: 100%;
         gap: 2px;
     }
-
     .board.responsive .cell {
         width: 100%;
         height: auto;
         aspect-ratio: 1;
     }
-
     .cell {
         width: var(--cell-size);
         height: var(--cell-size);
@@ -203,15 +283,12 @@
         background: none;
         cursor: default;
     }
-
     .cell.interactive {
         cursor: pointer;
     }
-
     .cell.visual-disabled {
         background-color: rgba(255, 0, 0, 0.1);
     }
-
     .cell.visual-disabled:not(.lake)::before {
         content: "";
         position: absolute;
@@ -226,7 +303,6 @@
         pointer-events: none;
         z-index: 1;
     }
-
     .cell.valid-move::after {
         content: "";
         position: absolute;
@@ -236,7 +312,6 @@
         pointer-events: none;
         animation: pulse 1.5s ease-in-out infinite;
     }
-
     .row-highlight {
         position: absolute;
         left: 6px;
@@ -250,7 +325,6 @@
         opacity: 0;
         animation: fade-in 0.3s forwards;
     }
-
     @keyframes fade-in {
         from {
             opacity: 0;
@@ -261,7 +335,6 @@
             transform: scale(1);
         }
     }
-
     .row-highlight.red {
         border-color: oklch(0.6688 0.1971 39.15 / 0.5);
         background: oklch(0.6688 0.1971 39.15 / 0.05);
@@ -269,7 +342,6 @@
             0 0 30px oklch(0.6688 0.1971 39.15 / 0.15),
             inset 0 0 20px oklch(0.6688 0.1971 39.15 / 0.05);
     }
-
     .row-highlight.blue {
         border-color: oklch(0.7113 0.1044 226.48 / 0.5);
         background: oklch(0.7113 0.1044 226.48 / 0.05);
@@ -277,7 +349,6 @@
             0 0 30px oklch(0.7113 0.1044 226.48 / 0.15),
             inset 0 0 20px oklch(0.7113 0.1044 226.48 / 0.05);
     }
-
     @keyframes pulse {
         0%,
         100% {
