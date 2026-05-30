@@ -3,6 +3,7 @@ package ws
 
 import (
 	"digital-innovation/gostrategy/internal/api/dto"
+	"digital-innovation/gostrategy/internal/api/middleware"
 	"digital-innovation/gostrategy/internal/logging"
 	"digital-innovation/gostrategy/internal/models"
 	"digital-innovation/gostrategy/pkg/game"
@@ -129,7 +130,9 @@ func (c *Client) Send(data []byte, timeout time.Duration) bool {
 
 // readPump pumps messages from the websocket connection to the hub
 func (c *Client) readPump() {
+	middleware.WebSocketConnected()
 	defer func() {
+		middleware.WebSocketDisconnected()
 		select {
 		case c.Hub.unregister <- c:
 		default:

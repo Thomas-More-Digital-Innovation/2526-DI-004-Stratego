@@ -1,0 +1,206 @@
+{
+  "title": "Gostrategy — Operations",
+  "uid": "gostrategy-ops",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "tags": ["gostrategy", "production"],
+  "panels": [
+
+    { "type": "row", "title": "👥 Player & User Insights", "id": 100, "gridPos": {"h":1,"w":24,"x":0,"y":0}, "collapsed": false },
+
+    {
+      "id": 1, "title": "Total Registered Users", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":0,"y":1},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none","textMode":"value"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"blue","mode":"fixed"},"unit":"short"}},
+      "targets": [{"rawSql":"SELECT COUNT(*) AS value FROM users WHERE deleted_at IS NULL;","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 2, "title": "New Users (Last 7 Days)", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":4,"y":1},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"green","mode":"fixed"},"unit":"short"}},
+      "targets": [{"rawSql":"SELECT COUNT(*) AS value FROM users WHERE deleted_at IS NULL AND created_at >= NOW() - INTERVAL '7 days';","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 3, "title": "User Growth (Daily Registrations)", "type": "timeseries",
+      "gridPos": {"h":8,"w":16,"x":8,"y":1},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "fieldConfig": {"defaults":{"color":{"mode":"palette-classic"},"custom":{"fillOpacity":15,"lineWidth":2}}},
+      "targets": [{"rawSql":"SELECT date_trunc('day', created_at) AS time, COUNT(*) AS value FROM users WHERE deleted_at IS NULL AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1;","format":"time_series","refId":"A"}]
+    },
+
+    {
+      "id": 4, "title": "Top 10 Players by Wins", "type": "table",
+      "gridPos": {"h":8,"w":8,"x":0,"y":5},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"sortBy":[{"displayName":"Wins","desc":true}]},
+      "targets": [{"rawSql":"SELECT u.username AS \"Player\", s.wins AS \"Wins\", s.losses AS \"Losses\", s.draws AS \"Draws\", s.total_games AS \"Games\", ROUND(s.avg_game_duration_seconds/60,1) AS \"Avg Min/Game\" FROM user_stats s JOIN users u ON u.id = s.user_id WHERE u.deleted_at IS NULL ORDER BY s.wins DESC LIMIT 10;","format":"table","refId":"A"}]
+    },
+
+    { "type": "row", "title": "♟️ Gameplay Analytics", "id": 200, "gridPos": {"h":1,"w":24,"x":0,"y":9}, "collapsed": false },
+
+    {
+      "id": 11, "title": "Total Games Played", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":0,"y":10},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"purple","mode":"fixed"},"unit":"short"}},
+      "targets": [{"rawSql":"SELECT COUNT(*) AS value FROM games WHERE deleted_at IS NULL;","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 12, "title": "Active Games Right Now", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":4,"y":10},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"none"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"orange","mode":"fixed"},"unit":"short"}},
+      "targets": [{"rawSql":"SELECT COUNT(*) AS value FROM games WHERE finished_at IS NULL AND deleted_at IS NULL;","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 13, "title": "Avg Game Duration (minutes)", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":8,"y":10},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"value","graphMode":"none"},
+      "fieldConfig": {"defaults":{"decimals":1,"unit":"m","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":15},{"color":"red","value":40}]}}},
+      "targets": [{"rawSql":"SELECT ROUND(AVG(EXTRACT(EPOCH FROM (finished_at - created_at))/60)::numeric, 1) AS value FROM games WHERE finished_at IS NOT NULL AND deleted_at IS NULL;","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 14, "title": "Game Type Split (PvP vs AI)", "type": "piechart",
+      "gridPos": {"h":8,"w":6,"x":12,"y":10},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"pieType":"donut","displayLabels":["name","percent"]},
+      "targets": [{"rawSql":"SELECT game_type AS metric, COUNT(*) AS value FROM games WHERE deleted_at IS NULL GROUP BY game_type;","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 15, "title": "Completion vs Abort Rate", "type": "gauge",
+      "gridPos": {"h":4,"w":6,"x":18,"y":10},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"showThresholdLabels":true},
+      "fieldConfig": {"defaults":{"unit":"percent","min":0,"max":100,"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"yellow","value":50},{"color":"green","value":75}]}}},
+      "targets": [{"rawSql":"SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE finished_at IS NOT NULL) / NULLIF(COUNT(*),0), 1) AS value FROM games WHERE deleted_at IS NULL;","format":"table","refId":"A"}]
+    },
+
+    {
+      "id": 16, "title": "Games Started Per Day", "type": "timeseries",
+      "gridPos": {"h":8,"w":12,"x":0,"y":14},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "fieldConfig": {"defaults":{"color":{"mode":"palette-classic"},"custom":{"fillOpacity":20,"lineWidth":2}}},
+      "targets": [{"rawSql":"SELECT date_trunc('day', created_at) AS time, COUNT(*) AS \"Games Started\" FROM games WHERE deleted_at IS NULL AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1;","format":"time_series","refId":"A"}]
+    },
+
+    {
+      "id": 17, "title": "Total Moves Played", "type": "stat",
+      "gridPos": {"h":4,"w":6,"x":18,"y":14},
+      "datasource": {"type":"postgres","uid":"gostrategy-postgres"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"value","graphMode":"none"},
+      "fieldConfig": {"defaults":{"unit":"short"}},
+      "targets": [{"rawSql":"SELECT COUNT(*) AS value FROM game_moves WHERE deleted_at IS NULL;","format":"table","refId":"A"}]
+    },
+
+    { "type": "row", "title": "🚀 API Performance", "id": 300, "gridPos": {"h":1,"w":24,"x":0,"y":22}, "collapsed": false },
+
+    {
+      "id": 21, "title": "HTTP Request Rate (req/s)", "type": "timeseries",
+      "gridPos": {"h":8,"w":12,"x":0,"y":23},
+      "datasource": {"type":"prometheus","uid":"gostrategy-prometheus"},
+      "fieldConfig": {"defaults":{"color":{"mode":"palette-classic"},"custom":{"lineWidth":2,"fillOpacity":10},"unit":"reqps"}},
+      "targets": [{"expr":"sum by (status_code) (rate(http_requests_total{job=\"gostrategy-backend\"}[2m]))","legendFormat":"{{status_code}}","refId":"A"}]
+    },
+
+    {
+      "id": 22, "title": "Request Latency Percentiles", "type": "timeseries",
+      "gridPos": {"h":8,"w":12,"x":12,"y":23},
+      "datasource": {"type":"prometheus","uid":"gostrategy-prometheus"},
+      "fieldConfig": {"defaults":{"unit":"s","custom":{"lineWidth":2}}},
+      "targets": [
+        {"expr":"histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"gostrategy-backend\"}[5m])))","legendFormat":"p50","refId":"A"},
+        {"expr":"histogram_quantile(0.90, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"gostrategy-backend\"}[5m])))","legendFormat":"p90","refId":"B"},
+        {"expr":"histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"gostrategy-backend\"}[5m])))","legendFormat":"p99","refId":"C"}
+      ]
+    },
+
+    {
+      "id": 23, "title": "Error Rate (4xx+5xx)", "type": "timeseries",
+      "gridPos": {"h":6,"w":12,"x":0,"y":31},
+      "datasource": {"type":"prometheus","uid":"gostrategy-prometheus"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"red","mode":"fixed"},"unit":"reqps","custom":{"lineWidth":2,"fillOpacity":15}}},
+      "targets": [{"expr":"sum(rate(http_requests_total{job=\"gostrategy-backend\",status_code=~\"[45]..\"}[2m]))","legendFormat":"Error rate","refId":"A"}]
+    },
+
+    {
+      "id": 24, "title": "Active WebSocket Connections", "type": "stat",
+      "gridPos": {"h":6,"w":6,"x":12,"y":31},
+      "datasource": {"type":"prometheus","uid":"gostrategy-prometheus"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"blue","mode":"fixed"},"unit":"short"}},
+      "targets": [{"expr":"websocket_connections_active{job=\"gostrategy-backend\"}","legendFormat":"Active","refId":"A"}]
+    },
+
+    { "type": "row", "title": "🔒 Security & Errors", "id": 400, "gridPos": {"h":1,"w":24,"x":0,"y":37}, "collapsed": false },
+
+    {
+      "id": 31, "title": "Security Events / 5m", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":0,"y":38},
+      "datasource": {"type":"loki","uid":"gostrategy-loki"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"area"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"orange","mode":"fixed"},"unit":"short"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"orange","value":1},{"color":"red","value":10}]}},
+      "targets": [{"expr":"sum(count_over_time({container=\"gostrategy-backend\"} |= \"[SECURITY]\" [5m]))","legendFormat":"Security events","refId":"A"}]
+    },
+
+    {
+      "id": 32, "title": "Error Events / 5m", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":4,"y":38},
+      "datasource": {"type":"loki","uid":"gostrategy-loki"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background","graphMode":"area"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"red","mode":"fixed"},"unit":"short"}},
+      "targets": [{"expr":"sum(count_over_time({container=\"gostrategy-backend\"} |~ \"\\\\[ ERROR  \\\\]|\\\\[ FATAL  \\\\]\" [5m]))","legendFormat":"Errors","refId":"A"}]
+    },
+
+    {
+      "id": 33, "title": "Security Event Rate Over Time", "type": "timeseries",
+      "gridPos": {"h":8,"w":16,"x":8,"y":38},
+      "datasource": {"type":"loki","uid":"gostrategy-loki"},
+      "fieldConfig": {"defaults":{"color":{"mode":"palette-classic"},"custom":{"lineWidth":2,"fillOpacity":15}}},
+      "targets": [
+        {"expr":"sum(count_over_time({container=\"gostrategy-backend\"} |= \"[SECURITY]\" [$__interval]))","legendFormat":"Security Warnings","refId":"A"},
+        {"expr":"sum(count_over_time({container=\"gostrategy-backend\"} |~ \"\\\\[ ERROR  \\\\]|\\\\[ FATAL  \\\\]\" [$__interval]))","legendFormat":"Errors & Fatals","refId":"B"}
+      ]
+    },
+
+    {
+      "id": 34, "title": "Live Security Log Stream", "type": "logs",
+      "gridPos": {"h":10,"w":24,"x":0,"y":46},
+      "datasource": {"type":"loki","uid":"gostrategy-loki"},
+      "options": {"showTime":true,"showLabels":false,"showCommonLabels":false,"wrapLogMessage":true,"prettifyLogMessage":false,"enableLogDetails":true,"dedupStrategy":"none","sortOrder":"Descending"},
+      "targets": [{"expr":"{container=\"gostrategy-backend\"} |~ \"\\\\[SECURITY\\\\]|\\\\[ ERROR  \\\\]|\\\\[ FATAL  \\\\]\"","refId":"A"}]
+    },
+
+    {
+      "id": 35, "title": "CSRF Failures / 5m", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":0,"y":42},
+      "datasource": {"type":"loki","uid":"gostrategy-loki"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"red","mode":"fixed"},"unit":"short"}},
+      "targets": [{"expr":"sum(count_over_time({container=\"gostrategy-backend\"} |= \"CSRF\" [5m]))","refId":"A"}]
+    },
+
+    {
+      "id": 36, "title": "Rate Limit Triggers / 5m", "type": "stat",
+      "gridPos": {"h":4,"w":4,"x":4,"y":42},
+      "datasource": {"type":"loki","uid":"gostrategy-loki"},
+      "options": {"reduceOptions":{"calcs":["lastNotNull"]},"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"orange","mode":"fixed"},"unit":"short"}},
+      "targets": [{"expr":"sum(count_over_time({container=\"gostrategy-backend\"} |= \"rate limit\" [5m]))","refId":"A"}]
+    }
+  ]
+}

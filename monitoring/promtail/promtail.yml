@@ -1,0 +1,38 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: "docker-containers"
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["gostrategy-backend", "gostrategy-frontend", "gostrategy-postgres"]
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: container
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: service
+    pipeline_stages:
+      # Annotate log level from our custom tags
+      - regex:
+          expression: '.*\[(?P<level>[A-Z ]+)\].*'
+      - labels:
+          level:
+      # Promote [SECURITY] logs to a dedicated label for alerting
+      - match:
+          selector: '{container="gostrategy-backend"}'
+          stages:
+            - regex:
+                expression: '.*\[SECURITY\].*'
+            - labels:
+                security_event: "true"
