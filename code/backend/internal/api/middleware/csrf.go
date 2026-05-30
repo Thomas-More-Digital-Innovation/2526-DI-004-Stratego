@@ -14,9 +14,9 @@ import (
 // CSRFMiddleware requires a custom header for non-safe methods
 func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Exempt login and register from CSRF validation to support "cold start"
+		// exempt login, register, and refresh from csrf validation
 		path := c.Request.URL.Path
-		if path == "/users/login" || path == "/users/register" {
+		if path == "/users/login" || path == "/users/register" || path == "/users/refresh" {
 			c.Next()
 			return
 		}

@@ -31,8 +31,15 @@ func TestRunToCompletion(t *testing.T) {
 		player1 := game.NewPlayer(0, p1, "red")
 		player2 := game.NewPlayer(1, p2, "blue")
 
-		controller1 := AIhandler.CreateAI(models.Fafo, &player1)
-		controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+		// TODO: decouple this
+		controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		var g *game.Game
 		if i%2 == 0 {
@@ -93,7 +100,10 @@ func TestSubmitHumanMove(t *testing.T) {
 	player2 := game.NewPlayer(2, "realAI", "blue")
 
 	controller1 := game.NewHumanPlayerController(&player1)
-	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	gameInstance := game.QuickStart(controller1, controller2)
 	runner := game.NewRunner(gameInstance, 0, 1000)
@@ -103,7 +113,7 @@ func TestSubmitHumanMove(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	// Invalid move - bomb can't move
 	move := game.NewMove(game.NewPosition(2, 6), game.NewPosition(2, 5), &player1)
-	err := runner.SubmitHumanMove(move)
+	err = runner.SubmitHumanMove(move)
 	if err == nil {
 		t.Errorf("Expected error when submitting invalid move")
 	}
@@ -130,7 +140,10 @@ func TestRunnerIsWaitingForInput(t *testing.T) {
 	player2 := game.NewPlayer(1, "AI", "blue")
 
 	controller1 := game.NewHumanPlayerController(&player1)
-	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	g := game.QuickStart(controller1, controller2)
 	runner := game.NewRunner(g, 0, 1000)
@@ -190,8 +203,14 @@ func TestRunnerWithDelay(t *testing.T) {
 	player1 := game.NewPlayer(0, "AI1", "red")
 	player2 := game.NewPlayer(1, "AI2", "blue")
 
-	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
-	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	g := game.QuickStart(controller1, controller2)
 
@@ -212,8 +231,14 @@ func TestRunner_Immobilization(t *testing.T) {
 	player1 := game.NewPlayer(0, "AI1", "red")
 	player2 := game.NewPlayer(1, "AI2", "blue")
 
-	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
-	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	g := game.QuickStart(controller1, controller2)
 	runner := game.NewRunner(g, 0, 1000)
@@ -248,8 +273,14 @@ func TestRunner_Immobilization(t *testing.T) {
 func TestRunnerAbort(t *testing.T) {
 	player1 := game.NewPlayer(0, "AI1", "red")
 	player2 := game.NewPlayer(1, "AI2", "blue")
-	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
-	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := game.QuickStart(controller1, controller2)
 
 	runner := game.NewRunner(g, 100*time.Millisecond, 1000)

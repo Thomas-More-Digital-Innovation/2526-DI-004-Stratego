@@ -28,8 +28,14 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 		playerAlice := game.NewPlayer(0, player1Name, "red")
 		playerBob := game.NewPlayer(1, player2Name, "blue")
 
-		controllerAlice := AIhandler.CreateAI(ai1, &playerAlice)
-		controllerBob := AIhandler.CreateAI(ai2, &playerBob)
+		controllerAlice, err := AIhandler.CreateAI(ai1, &playerAlice)
+		if err != nil {
+			panic(err)
+		}
+		controllerBob, err := AIhandler.CreateAI(ai2, &playerBob)
+		if err != nil {
+			panic(err)
+		}
 
 		// Alternate who goes first
 		// Without this, player 1 wins more often than the other

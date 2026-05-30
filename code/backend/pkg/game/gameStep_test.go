@@ -12,8 +12,14 @@ func TestStepWhilePaused(t *testing.T) {
 	player1 := game.NewPlayer(0, "AI1", "red")
 	player2 := game.NewPlayer(1, "AI2", "blue")
 
-	controller1 := AIhandler.CreateAI(models.Fafo, &player1)
-	controller2 := AIhandler.CreateAI(models.Fafo, &player2)
+	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	g := game.QuickStart(controller1, controller2)
 

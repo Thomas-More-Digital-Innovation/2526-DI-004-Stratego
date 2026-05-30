@@ -75,9 +75,9 @@ func (h *Handler) HandleCreateGame(c *gin.Context) {
 				core.SendError(c, fmt.Sprintf("You are already in an active game (%s). Please finish it before starting a new one.", existingHandler.Session.ID), http.StatusConflict)
 				return
 			}
-			// Stale/Waiting for cleanup: clean up directly and allow new game
+			// stale/waiting for cleanup: clean up directly and allow new game
 			logging.Debug(logging.TagWeb, "User %d starting new game, force cleaning up stale session %s", userID, existingHandler.Session.ID)
-			h.RemoveSession(existingHandler.Session.ID)
+			h.RemoveSession(existingHandler.Session.ID, "Replaced by new session")
 		}
 	}
 
@@ -193,9 +193,9 @@ func (h *Handler) associatePlayer(c *gin.Context, currentUserID *int, associated
 				core.SendError(c, fmt.Sprintf("You are already in another active game (%s).", existingHandler.Session.ID), http.StatusConflict)
 				return false
 			}
-			// Stale/Waiting for cleanup
+			// stale/waiting for cleanup
 			logging.Debug(logging.TagWeb, "User %d joining game %s, force cleaning up stale session %s", user.ID, gameID, existingHandler.Session.ID)
-			h.RemoveSession(existingHandler.Session.ID)
+			h.RemoveSession(existingHandler.Session.ID, "Replaced by new session")
 		}
 	}
 
