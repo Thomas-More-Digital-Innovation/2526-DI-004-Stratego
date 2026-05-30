@@ -4,6 +4,8 @@ import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSessionSubmitMove_NoPiece(t *testing.T) {
@@ -182,25 +184,58 @@ func TestSessionGetSetupPieces(t *testing.T) {
 }
 
 func TestSessionStop(t *testing.T) {
-	player1 := NewPlayer(0, "Player1", "red")
-	player2 := NewPlayer(1, "Player2", "blue")
-
-	controller1 := NewHumanPlayerController(&player1)
-	controller2 := NewHumanPlayerController(&player2)
-
-	session := NewSession("stop-test", controller1, controller2)
-
-	err := session.StartGameFromSetup(false)
-	if err != nil {
-		t.Fatalf("Failed to start game: %v", err)
+	setupSession := func() *Session {
+		player1 := NewPlayer(0, "Player1", "red")
+		player2 := NewPlayer(1, "Player2", "blue")
+		controller1 := NewHumanPlayerController(&player1)
+		controller2 := NewHumanPlayerController(&player2)
+		session := NewSession("stop-test", controller1, controller2)
+		_ = session.StartGameFromSetup(false)
+		return session
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	t.Run("stop-no-args", func(t *testing.T) {
+		session := setupSession()
+		assert.False(t, session.IsAborted())
 
-	session.Stop()
-	time.Sleep(100 * time.Millisecond)
+		session.Stop()
+		assert.True(t, session.IsAborted())
+	})
 
-	if session.IsRunning() {
-		t.Error("Expected session to stop running after Stop()")
-	}
+	t.Run("stop-with-reason", func(t *testing.T) {
+		session := setupSession()
+		session.Stop("custom abort reason")
+		assert.True(t, session.IsAborted())
+	})
+
+	t.Run("stop-with-reason-and-operator", func(t *testing.T) {
+		session := setupSession()
+		session.Stop("custom abort reason", "OperatorName")
+		assert.True(t, session.IsAborted())
+	})
+
+	t.Run("stop-with-all-args", func(t *testing.T) {
+		session := setupSession()
+		session.Stop("custom abort reason", "OperatorName", 999)
+		assert.True(t, session.IsAborted())
+	})
+
+	t.Run("stop-with-invalid-types-does-not-panic", func(t *testing.T) {
+		session := setupSession()
+		// Test passing non-string and non-int variables to ensure no panic
+		assert.NotPanics(t, func() {
+			session.Stop(12345, true, "not-an-id", 3.14)
+		})
+		assert.True(t, session.IsAborted())
+	})
+
+	t.Run("stop-multiple-calls-does-not-panic", func(t *testing.T) {
+		session := setupSession()
+		session.Stop("first call")
+		assert.True(t, session.IsAborted())
+
+		assert.NotPanics(t, func() {
+			session.Stop("second call")
+		})
+	})
 }

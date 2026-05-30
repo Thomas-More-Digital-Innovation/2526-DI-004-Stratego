@@ -174,8 +174,8 @@ func (gs *Session) Start() error {
 	return nil
 }
 
-// Stop forcefully stops the game session
-func (gs *Session) Stop() {
+// Stop forcefully stops the game session with optional reason and operator details
+func (gs *Session) Stop(args ...any) {
 	gs.mutex.Lock()
 	if gs.aborted {
 		gs.mutex.Unlock()
@@ -184,10 +184,41 @@ func (gs *Session) Stop() {
 	gs.aborted = true
 	gs.mutex.Unlock()
 
-	// Always close stopChan to signal abortion to any listeners (like monitorGame)
+	// always close stopChan to signal abortion to listeners
 	close(gs.stopChan)
 
-	logging.GameAborted(gs.ID, "Manual stop requested", "", 0)
+	reason := "Manual stop requested"
+	operator := ""
+	operatorID := 0
+
+	if len(args) > 0 {
+		if r, ok := args[0].(string); ok && r != "" {
+			reason = r
+		}
+	}
+	if len(args) > 1 {
+		if op, ok := args[1].(string); ok {
+			operator = op
+		}
+	}
+	if len(args) > 2 {
+		if opID, ok := args[2].(int); ok {
+			operatorID = opID
+		}
+	}
+
+	// infer operator if not explicitly provided and not a clean stop/timeout
+	if operator == "" && reason != "Game completed" && reason != "Inactivity timeout" && reason != "Server shutdown" {
+		if gs.Player1UserID != nil {
+			operator = gs.Player1Username
+			operatorID = *gs.Player1UserID
+		} else if gs.Player2UserID != nil {
+			operator = gs.Player2Username
+			operatorID = *gs.Player2UserID
+		}
+	}
+
+	logging.GameAborted(gs.ID, reason, operator, operatorID)
 
 	if gs.setupTimer != nil {
 		gs.setupTimer.Stop()

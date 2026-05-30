@@ -48,7 +48,7 @@ func (s *GameServer) Stop() {
 	s.Mutex.Unlock()
 
 	for _, gameID := range gameIDs {
-		s.RemoveSession(gameID)
+		s.RemoveSession(gameID, "Server shutdown")
 	}
 }
 
@@ -71,7 +71,11 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 		player1 := game.NewPlayer(0, name1, "red")
 		player2 := game.NewPlayer(1, name2, "blue")
 		controller1 = game.NewHumanPlayerController(&player1)
-		controller2 = AIhandler.CreateAI(name2, &player2)
+		var err error
+		controller2, err = AIhandler.CreateAI(name2, &player2)
+		if err != nil {
+			return nil, err
+		}
 
 	case models.AiVsAi:
 		aiType1 := name1
@@ -82,8 +86,15 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 		}
 		player1 := game.NewPlayer(0, name1, "red")
 		player2 := game.NewPlayer(1, name2, "blue")
-		controller1 = AIhandler.CreateAI(aiType1, &player1)
-		controller2 = AIhandler.CreateAI(aiType2, &player2)
+		var err error
+		controller1, err = AIhandler.CreateAI(aiType1, &player1)
+		if err != nil {
+			return nil, err
+		}
+		controller2, err = AIhandler.CreateAI(aiType2, &player2)
+		if err != nil {
+			return nil, err
+		}
 
 	case models.HumanVsHuman:
 		player1 := game.NewPlayer(0, name1, "red")
@@ -163,7 +174,7 @@ func (sh *SessionHandler) IsWaitingForCleanup(userID int) bool {
 }
 
 // RemoveSession removes a game session from the server and stops its resources
-func (s *GameServer) RemoveSession(gameID string) {
+func (s *GameServer) RemoveSession(gameID string, reason ...string) {
 	s.Mutex.Lock()
 	handler, exists := s.Sessions[gameID]
 	if exists {
@@ -177,7 +188,11 @@ func (s *GameServer) RemoveSession(gameID string) {
 			handler.Hub.Stop()
 		}
 		if handler.Session != nil {
-			handler.Session.Stop()
+			r := "Manual stop requested"
+			if len(reason) > 0 {
+				r = reason[0]
+			}
+			handler.Session.Stop(r)
 		}
 	}
 }

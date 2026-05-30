@@ -7,16 +7,17 @@ import (
 	"digital-innovation/gostrategy/pkg/ai/fato"
 	"digital-innovation/gostrategy/pkg/game"
 	"digital-innovation/gostrategy/pkg/game/models"
+	"fmt"
 )
 
 // CreateAI is a factory function that returns an AI instance based on the given type
-func CreateAI(ai string, player *game.Player) ai.AI {
-	switch ai {
+func CreateAI(aiType string, player *game.Player) (ai.AI, error) {
+	switch aiType {
 	case models.Fafo:
-		return fafo.NewAI(player, false)
+		return fafo.NewAI(player, false), nil
 	case models.Fato:
-		return fato.NewAI(player, true)
+		return fato.NewAI(player, true), nil
 	default:
-		panic("I don't know that AI! " + ai)
+		return nil, fmt.Errorf("i don't know that AI! %s", aiType)
 	}
 }

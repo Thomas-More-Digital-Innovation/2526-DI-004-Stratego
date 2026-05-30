@@ -206,7 +206,7 @@ func (h *Hub) startCleanupTimer() {
 
 	h.cleanupTimer = time.AfterFunc(h.cleanupPeriod, func() {
 		logging.Debug(logging.TagWeb, "Cleanup timer expired for %s game, stopping and cleaning up: %s", h.GameType, h.Session.ID)
-		h.Session.Stop()
+		h.Session.Stop("Inactivity timeout")
 		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()
@@ -229,7 +229,7 @@ func (h *Hub) StartGameOverCleanup(duration time.Duration) {
 
 	h.cleanupTimer = time.AfterFunc(duration, func() {
 		logging.Debug(logging.TagWeb, "Mandatory game-over cleanup triggered for game: %s", h.Session.ID)
-		h.Session.Stop()
+		h.Session.Stop("Game completed")
 		h.Stop()
 		if h.OnCleanup != nil {
 			h.OnCleanup()

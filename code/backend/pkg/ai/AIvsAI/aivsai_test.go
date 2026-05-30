@@ -2,38 +2,48 @@ package aivsai
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestRunAIvsAI(t *testing.T) {
-	// Use FATO (fast) for testing
-	summary := runAIvsAI("fato", "fato", 2, false)
+func TestRunAiVsAi(t *testing.T) {
+	t.Run("successful tournament", func(t *testing.T) {
+		summary := runAIvsAI("fato", "fato", 2, false)
 
-	if summary.Matches != 2 {
-		t.Errorf("Expected 2 matches, got %d", summary.Matches)
-	}
+		assert.Equal(t, 2, summary.Matches)
+		assert.NotEmpty(t, summary.Player1data.Name)
+		assert.NotEmpty(t, summary.Player2data.Name)
+		assert.Positive(t, summary.AverageRounds)
+	})
 
-	if summary.Player1data.Name == "" || summary.Player2data.Name == "" {
-		t.Error("Player names should be populated")
-	}
+	t.Run("draw edge case", func(t *testing.T) {
+		summary := runAIvsAI("fato", "fato", 0, false)
 
-	if summary.AverageRounds <= 0 {
-		t.Error("Average rounds should be greater than 0")
-	}
+		assert.Equal(t, 0, summary.Matches)
+	})
+
+	t.Run("invalid player 1 AI type panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			runAIvsAI("unknown", "fato", 1, false)
+		})
+	})
+
+	t.Run("invalid player 2 AI type panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			runAIvsAI("fato", "unknown", 1, false)
+		})
+	})
 }
 
-// Test with 0 matches just to check edge case
-func TestRunAIvsAIDraw(t *testing.T) {
-	summary := runAIvsAI("fato", "fato", 0, false)
+func TestRunAIvsAIExported(t *testing.T) {
+	// TODO: actually check if formats are correct.
 
-	if summary.Matches != 0 {
-		t.Errorf("Expected 0 matches, got %d", summary.Matches)
-	}
-}
+	t.Run("default format", func(_ *testing.T) {
+		RunAIvsAI("fato", "fato", 1, "default", false)
 
-func TestRunAIvsAIExported(_ *testing.T) {
-	// Test default format
-	RunAIvsAI("fato", "fato", 1, "default", false)
+	})
 
-	// Test markdown format
-	RunAIvsAI("fato", "fato", 1, "md", false)
+	t.Run("markdown format", func(_ *testing.T) {
+		RunAIvsAI("fato", "fato", 1, "md", false)
+	})
 }

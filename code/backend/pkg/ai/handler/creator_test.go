@@ -13,20 +13,17 @@ func TestCreateAI(t *testing.T) {
 	player := game.NewPlayer(0, "test-ai", "red")
 
 	// Test fafo creation
-	aiFafo := AIhandler.CreateAI(models.Fafo, &player)
+	aiFafo, err := AIhandler.CreateAI(models.Fafo, &player)
+	assert.NoError(t, err)
 	assert.NotNil(t, aiFafo)
 
 	// Test fato creation
-	aiFato := AIhandler.CreateAI(models.Fato, &player)
+	aiFato, err := AIhandler.CreateAI(models.Fato, &player)
+	assert.NoError(t, err)
 	assert.NotNil(t, aiFato)
 
-	// TODO: update with new AI types
-
-	// Test panic for unknown AI
-	defer func() {
-		r := recover()
-		assert.NotNil(t, r)
-		assert.Contains(t, r.(string), "I don't know that AI!")
-	}()
-	AIhandler.CreateAI("unknown-type", &player)
+	// Test error returned for unknown AI type
+	_, err = AIhandler.CreateAI("unknown-type", &player)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "i don't know that AI!")
 }
