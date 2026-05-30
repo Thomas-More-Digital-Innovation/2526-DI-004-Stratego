@@ -13,13 +13,13 @@ var (
 	httpRequestsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "http_requests_total",
 		Help: "Total HTTP requests partitioned by method, path, and status code.",
-	}, []string{"method", "path", "status_code"})
+	}, []string{methodKey, pathKey, "status_code"})
 
 	httpRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "http_request_duration_seconds",
 		Help:    "HTTP request latency in seconds.",
 		Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5},
-	}, []string{"method", "path"})
+	}, []string{methodKey, pathKey})
 
 	wsConnectionsActive = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "websocket_connections_active",
