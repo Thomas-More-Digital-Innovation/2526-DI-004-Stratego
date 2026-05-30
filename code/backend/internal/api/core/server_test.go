@@ -111,29 +111,44 @@ func TestCreateGame(t *testing.T) {
 	s := NewGameServer()
 	defer s.Stop()
 
-	// Test HumanVsAi
-	handler, err := s.CreateGame("game-hva", models.HumanVsAi, "Alice", models.Fafo)
-	assert.NoError(t, err)
-	assert.NotNil(t, handler)
-	assert.Equal(t, models.HumanVsAi, handler.GameType)
+	t.Run("valid-games", func(t *testing.T) {
+		handler, err := s.CreateGame("game-hva", models.HumanVsAi, "Alice", models.Fafo)
+		assert.NoError(t, err)
+		assert.NotNil(t, handler)
+		assert.Equal(t, models.HumanVsAi, handler.GameType)
 
-	// Test AiVsAi
-	handler, err = s.CreateGame("game-ava", models.AiVsAi, models.Fafo, models.Fafo)
-	assert.NoError(t, err)
-	assert.NotNil(t, handler)
+		handler, err = s.CreateGame("game-ava", models.AiVsAi, models.Fafo, models.Fafo)
+		assert.NoError(t, err)
+		assert.NotNil(t, handler)
 
-	// Test HumanVsHuman
-	handler, err = s.CreateGame("game-hvh", models.HumanVsHuman, "Alice", "Bob")
-	assert.NoError(t, err)
-	assert.NotNil(t, handler)
+		handler, err = s.CreateGame("game-hvh", models.HumanVsHuman, "Alice", "Bob")
+		assert.NoError(t, err)
+		assert.NotNil(t, handler)
+	})
 
-	// Test Unknown Type
-	_, err = s.CreateGame("game-err", "unknown", "A", "B")
-	assert.Error(t, err)
+	t.Run("unknown-game-type", func(t *testing.T) {
+		_, err := s.CreateGame("game-err", "unknown", "A", "B")
+		assert.Error(t, err)
+	})
 
-	// Test Duplicate ID
-	_, err = s.CreateGame("game-hva", models.HumanVsAi, "Alice", models.Fafo)
-	assert.Error(t, err)
+	t.Run("duplicate-game-id", func(t *testing.T) {
+		_, err := s.CreateGame("game-hva", models.HumanVsAi, "Alice", models.Fafo)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid-ai-selection", func(t *testing.T) {
+		_, err := s.CreateGame("game-hva-invalid-ai", models.HumanVsAi, "Alice", "unknown-ai")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "i don't know that AI!")
+
+		_, err = s.CreateGame("game-ava-invalid-ai1", models.AiVsAi, "unknown-ai", models.Fafo)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "i don't know that AI!")
+
+		_, err = s.CreateGame("game-ava-invalid-ai2", models.AiVsAi, models.Fafo, "unknown-ai")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "i don't know that AI!")
+	})
 }
 
 func TestRemoveSession(t *testing.T) {
