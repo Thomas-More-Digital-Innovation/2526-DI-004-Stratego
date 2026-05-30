@@ -25,5 +25,5 @@ func TestCreateAI(t *testing.T) {
 	// Test error returned for unknown AI type
 	_, err = AIhandler.CreateAI("unknown-type", &player)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "I don't know that AI!")
+	assert.Contains(t, err.Error(), "i don't know that AI!")
 }
