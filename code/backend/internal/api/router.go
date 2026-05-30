@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/time/rate"
 
 	_ "digital-innovation/gostrategy/docs" // Required for Swagger UI
@@ -46,6 +47,7 @@ func (s *GameServer) SetupRoutes() {
 	s.Router.Use(cors.New(corsConfig))
 
 	// Middlewares
+	s.Router.Use(middleware.PrometheusMiddleware())
 	s.Router.Use(middleware.SecurityMiddleware())
 	s.Router.Use(middleware.JSONLoggerMiddleware())
 	s.Router.Use(middleware.CSRFMiddleware())
@@ -57,9 +59,10 @@ func (s *GameServer) SetupRoutes() {
 
 	s.Router.Use(middleware.IPRateLimitMiddleware(globalLimiter))
 
-	// Health check
+	// Health & metrics
 	s.Router.GET("/health", h.HealthHandler)
 	s.Router.GET("/csrf-token", h.GetCSRFToken)
+	s.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Debug and Documentation (Dev only)
 	if !utils.IsProduction() {
