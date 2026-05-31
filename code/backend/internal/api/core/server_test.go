@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"digital-innovation/gostrategy/internal/api/ws"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
@@ -152,17 +153,67 @@ func TestCreateGame(t *testing.T) {
 }
 
 func TestRemoveSession(t *testing.T) {
-	s := NewGameServer()
-	defer s.Stop()
-	_, err := s.CreateGame("rem-test", models.HumanVsAi, "A", models.Fafo)
-	assert.NoError(t, err)
+	t.Run("remove existing", func(t *testing.T) {
+		s := NewGameServer()
+		defer s.Stop()
+		_, err := s.CreateGame("rem-test", models.HumanVsAi, "A", models.Fafo)
+		assert.NoError(t, err)
 
-	s.RemoveSession("rem-test")
-	_, exists := s.GetSession("rem-test")
-	assert.False(t, exists)
+		s.RemoveSession("rem-test")
+		_, exists := s.GetSession("rem-test")
+		assert.False(t, exists)
 
-	// Test non-existent
-	s.RemoveSession("non-existent")
+		// Test non-existent
+		s.RemoveSession("non-existent")
+	})
+
+	t.Run("remove game with forfeit", func(t *testing.T) {
+		db.SetupTestDB(t)
+		s := NewGameServer()
+		defer s.Stop()
+
+		// Create users in DB
+		u1, err := db.CreateUser(context.Background(), "P1", "password", "")
+		assert.NoError(t, err)
+		u2, err := db.CreateUser(context.Background(), "P2", "password", "")
+		assert.NoError(t, err)
+
+		p1 := game.NewPlayer(0, "P1", "red")
+		p2 := game.NewPlayer(1, "P2", "blue")
+		session := game.NewSession("forfeit-game", game.NewHumanPlayerController(&p1), game.NewHumanPlayerController(&p2))
+		session.SetPlayer1Associate(u1.ID, "P1")
+		session.SetPlayer2Associate(u2.ID, "P2")
+
+		// Set setup phase as complete so it's considered active/ongoing
+		session.SetSetupPhaseComplete()
+
+		// Ensure game is not finished yet
+		assert.False(t, session.GetGameState().IsGameOver)
+
+		hub := ws.NewHub(session, models.HumanVsHuman)
+		defer hub.Stop()
+
+		handler := &SessionHandler{
+			Session:  session,
+			Hub:      hub,
+			GameType: models.HumanVsHuman,
+		}
+		s.Sessions["forfeit-game"] = handler
+
+		// Set current player to P1 (seat 0)
+		session.GetGame().CurrentPlayer = session.GetGame().Players[0]
+
+		// Calling RemoveSession on an active ongoing game should trigger forfeit win-attribution for opponent
+		s.RemoveSession("forfeit-game")
+
+		// Verify game is now over
+		gameState := session.GetGameState()
+		assert.True(t, gameState.IsGameOver)
+		assert.NotNil(t, gameState.WinnerID)
+		// Opponent of P1 is P2 (seat ID 1)
+		assert.Equal(t, 1, *gameState.WinnerID)
+		assert.Equal(t, "resigned", string(session.GetWinCause()))
+	})
 }
 
 func TestStop(_ *testing.T) {
@@ -183,10 +234,43 @@ func TestGameServer_Completion(t *testing.T) {
 	s := NewGameServer()
 	defer s.Stop()
 
-	handler, _ := s.CreateGame("test-comp", models.HumanVsHuman, "P1", "P2")
+	// Create users in DB (which automatically inserts their UserStats rows!)
+	u1, err := db.CreateUser(context.Background(), "P1", "pass", "")
+	assert.NoError(t, err)
+	u2, err := db.CreateUser(context.Background(), "P2", "pass", "")
+	assert.NoError(t, err)
 
-	// Simulate game over directly calling handleGameOver for coverage
+	handler, err := s.CreateGame("test-comp", models.HumanVsHuman, "P1", "P2")
+	assert.NoError(t, err)
+
+	handler.Session.SetPlayer1Associate(u1.ID, "P1")
+	handler.Session.SetPlayer2Associate(u2.ID, "P2")
+
+	// Set setup phase complete so stats can update
+	handler.Session.SetSetupPhaseComplete()
+
+	// Declare Player 1 as winner
+	gameObj := handler.Session.GetGame()
+	handler.Session.SetWinner(gameObj.Players[0], game.WinCauseFlagCaptured)
+
+	// Simulate game over directly calling handleGameOver for coverage and logic assertion
 	s.handleGameOver(handler.Session, handler.Hub)
+
+	// Verify player 1 stats were updated (wins + 1, total_games + 1)
+	stats1, err := db.GetUserStats(context.Background(), u1.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, stats1)
+	assert.Equal(t, 1, stats1.Wins)
+	assert.Equal(t, 0, stats1.Losses)
+	assert.Equal(t, 1, stats1.TotalGames)
+
+	// Verify player 2 stats were updated (losses + 1, total_games + 1)
+	stats2, err := db.GetUserStats(context.Background(), u2.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, stats2)
+	assert.Equal(t, 0, stats2.Wins)
+	assert.Equal(t, 1, stats2.Losses)
+	assert.Equal(t, 1, stats2.TotalGames)
 }
 
 func TestGameServer_Limits(t *testing.T) {

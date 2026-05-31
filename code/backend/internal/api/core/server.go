@@ -312,13 +312,13 @@ func (s *GameServer) handleGameOver(session *game.Session, hub *ws.Hub) {
 	moveCount := len(g.HistoricalHistory)
 
 	if session.Player1UserID != nil {
-		won := state.WinnerID != nil && *state.WinnerID == *session.Player1UserID
+		won := state.WinnerID != nil && *state.WinnerID == 0
 		if err := db.UpdateUserStats(dbCtx, *session.Player1UserID, won, moveCount, durationSecs); err != nil {
 			logging.Error("Failed to update stats for Player 1", err)
 		}
 	}
 	if session.Player2UserID != nil {
-		won := state.WinnerID != nil && *state.WinnerID == *session.Player2UserID
+		won := state.WinnerID != nil && *state.WinnerID == 1
 		if err := db.UpdateUserStats(dbCtx, *session.Player2UserID, won, moveCount, durationSecs); err != nil {
 			logging.Error("Failed to update stats for Player 2", err)
 		}
