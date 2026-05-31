@@ -10,6 +10,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	labelType   = "game_type"
+	labelStatus = "status"
+	labelUser   = "username"
+)
+
 type dbMetrics struct {
 	usersTotal          float64
 	usersNew7d          float64
@@ -86,12 +92,12 @@ func NewDatabaseCollector(ttl time.Duration) *DatabaseCollector {
 		gamesByTypeDesc: prometheus.NewDesc(
 			"gostrategy_games_by_type",
 			"Total games by game type",
-			[]string{"game_type"}, nil,
+			[]string{labelType}, nil,
 		),
 		gamesByStatusDesc: prometheus.NewDesc(
 			"gostrategy_games_by_status",
 			"Games finished vs aborted/active",
-			[]string{"status"}, nil,
+			[]string{labelStatus}, nil,
 		),
 		movesTotalDesc: prometheus.NewDesc(
 			"gostrategy_moves_total",
@@ -101,27 +107,27 @@ func NewDatabaseCollector(ttl time.Duration) *DatabaseCollector {
 		userWinsDesc: prometheus.NewDesc(
 			"gostrategy_user_wins",
 			"Wins per player in top leaderboard",
-			[]string{"username"}, nil,
+			[]string{labelUser}, nil,
 		),
 		userLossesDesc: prometheus.NewDesc(
 			"gostrategy_user_losses",
 			"Losses per player in top leaderboard",
-			[]string{"username"}, nil,
+			[]string{labelUser}, nil,
 		),
 		userDrawsDesc: prometheus.NewDesc(
 			"gostrategy_user_draws",
 			"Draws per player in top leaderboard",
-			[]string{"username"}, nil,
+			[]string{labelUser}, nil,
 		),
 		userGamesDesc: prometheus.NewDesc(
 			"gostrategy_user_games",
 			"Total games per player in top leaderboard",
-			[]string{"username"}, nil,
+			[]string{labelUser}, nil,
 		),
 		userAvgDurationDesc: prometheus.NewDesc(
 			"gostrategy_user_avg_duration_minutes",
 			"Average game duration in minutes per player in top leaderboard",
-			[]string{"username"}, nil,
+			[]string{labelUser}, nil,
 		),
 	}
 }
