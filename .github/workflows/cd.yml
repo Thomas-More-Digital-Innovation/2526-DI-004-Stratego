@@ -26,9 +26,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Lowercase repo name
+      - name: Lowercase repo name and sanitize tag
         id: prep
-        run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+        run: |
+          echo "repo_lower=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF_NAME//\//-}" >> $GITHUB_OUTPUT
 
       - name: Build and push Backend
         uses: docker/build-push-action@v5
@@ -36,8 +38,7 @@ jobs:
           context: ./code/backend
           push: true
           tags: |
-            ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:${{ github.ref_name
-            }},
+            ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:${{ steps.prep.outputs.tag }},
             ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
 
       - name: Prepare Static Changelog
@@ -52,8 +53,7 @@ jobs:
           file: ./code/frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:${{ github.ref_name
-            }},
+            ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:${{ steps.prep.outputs.tag }},
             ghcr.io/${{ steps.prep.outputs.repo_lower }}/frontend:latest
           build-args: |
             VITE_API_BASE=${{ vars.VITE_API_BASE }}
