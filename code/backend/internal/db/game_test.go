@@ -4,6 +4,7 @@ import (
 	"context"
 	"digital-innovation/gostrategy/internal/models"
 	"testing"
+	"time"
 )
 
 func TestGameLogic(t *testing.T) {
@@ -21,7 +22,7 @@ func TestGameLogic(t *testing.T) {
 		gameID := "game-123"
 		initialState := map[string]interface{}{"board": "initial"}
 
-		err := SaveGame(ctx, gameID, &user1.ID, &user2.ID, "ranked", initialState, nil)
+		err := SaveGame(ctx, gameID, &user1.ID, &user2.ID, "ranked", initialState, nil, time.Now(), time.Now())
 		if err != nil {
 			t.Fatalf("SaveGame failed: %v", err)
 		}

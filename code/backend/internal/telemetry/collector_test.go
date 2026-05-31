@@ -54,6 +54,10 @@ func TestDatabaseCollector(t *testing.T) {
 
 	collector := NewDatabaseCollector(0)
 
+	// seed the atomic counter to match game2 (active, no finished_at)
+	TrackSession()
+	t.Cleanup(UntrackSession)
+
 	t.Run("describe descriptors", func(t *testing.T) {
 		descChan := make(chan *prometheus.Desc, 20)
 		collector.Describe(descChan)

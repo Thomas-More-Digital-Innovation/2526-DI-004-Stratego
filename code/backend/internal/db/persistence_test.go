@@ -5,6 +5,7 @@ import (
 	"digital-innovation/gostrategy/internal/models"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestGamePagination(t *testing.T) {
@@ -20,7 +21,7 @@ func TestGamePagination(t *testing.T) {
 	// Create 15 games
 	for i := range 15 {
 		gameID := fmt.Sprintf("paged-game-%d", i)
-		err := SaveGame(ctx, gameID, &user.ID, nil, "ranked", map[string]string{"test": "data"}, nil)
+		err := SaveGame(ctx, gameID, &user.ID, nil, "ranked", map[string]string{"test": "data"}, nil, time.Now(), time.Now())
 		if err != nil {
 			t.Fatalf("failed to save game %d: %v", i, err)
 		}
@@ -71,7 +72,7 @@ func TestComplexJSONSerialization(t *testing.T) {
 		err := SaveGame(ctx, gameID, nil, nil, "funky", map[string]any{
 			"metadata": "some \"quoted\" text and \n newlines",
 			"unicode":  "🚀 Stratego!",
-		}, nil)
+		}, nil, time.Now(), time.Now())
 		if err != nil {
 			t.Fatalf("SaveGame with complex JSON failed: %v", err)
 		}
@@ -103,7 +104,7 @@ func TestComplexJSONSerialization(t *testing.T) {
 
 	t.Run("Empty and Nil Data", func(t *testing.T) {
 		gameID2 := "json-nil-test"
-		_ = SaveGame(ctx, gameID2, nil, nil, "test", map[string]any{}, nil)
+		_ = SaveGame(ctx, gameID2, nil, nil, "test", map[string]any{}, nil, time.Now(), time.Now())
 
 		move := models.HistoricalMove{
 			MoveIndex: 1,

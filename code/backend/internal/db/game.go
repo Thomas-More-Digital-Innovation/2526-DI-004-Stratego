@@ -6,12 +6,13 @@ import (
 	"digital-innovation/gostrategy/internal/models"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 // SaveGame persists the game metadata and initial state
-func SaveGame(ctx context.Context, gameID string, p1ID, p2ID *int, gameType string, initialState interface{}, winnerID *int) error {
+func SaveGame(ctx context.Context, gameID string, p1ID, p2ID *int, gameType string, initialState any, winnerID *int, startTime time.Time, finishedAt time.Time) error {
 	stateJSON, err := json.Marshal(initialState)
 	if err != nil {
 		return fmt.Errorf("failed to marshal initial state: %w", err)
@@ -24,6 +25,8 @@ func SaveGame(ctx context.Context, gameID string, p1ID, p2ID *int, gameType stri
 		WinnerID:      winnerID,
 		GameType:      gameType,
 		InitialState:  string(stateJSON),
+		CreatedAt:     startTime,
+		FinishedAt:    &finishedAt,
 	}
 
 	err = DB.WithContext(ctx).Create(&game).Error

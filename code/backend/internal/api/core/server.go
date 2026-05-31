@@ -7,6 +7,7 @@ import (
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/logging"
 	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/internal/telemetry"
 	"digital-innovation/gostrategy/internal/utils"
 	AIhandler "digital-innovation/gostrategy/pkg/ai/handler"
 	"digital-innovation/gostrategy/pkg/game"
@@ -120,6 +121,7 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 	}
 
 	s.Sessions[gameID] = handler
+	telemetry.TrackSession()
 
 	go hub.Run()
 	go s.monitorGame(handler)
@@ -179,11 +181,28 @@ func (s *GameServer) RemoveSession(gameID string, reason ...string) {
 	handler, exists := s.Sessions[gameID]
 	if exists {
 		delete(s.Sessions, gameID)
+		telemetry.UntrackSession()
 	}
 	s.Mutex.Unlock()
 
 	if exists && handler != nil {
 		logging.Debug(logging.TagWeb, "Removed session %s from GameServer and stopping resources", gameID)
+
+		if handler.Session != nil && !handler.Session.IsSetupPhase() && !handler.Session.GetGameState().IsGameOver {
+			logging.Debug(logging.TagWeb, "Active game session %s terminated unexpectedly. Declaring opponent winner via forfeit.", gameID)
+			gameObj := handler.Session.GetGame()
+			if gameObj != nil && !gameObj.IsGameOver() {
+				var opponent *game.Player
+				if gameObj.CurrentPlayer == gameObj.Players[0] {
+					opponent = gameObj.Players[1]
+				} else {
+					opponent = gameObj.Players[0]
+				}
+				handler.Session.SetWinner(opponent, game.WinCause("resigned"))
+			}
+			s.handleGameOver(handler.Session, handler.Hub)
+		}
+
 		if handler.Hub != nil {
 			handler.Hub.Stop()
 		}
@@ -275,14 +294,13 @@ func (s *GameServer) handleGameOver(session *game.Session, hub *ws.Hub) {
 	state := session.GetGameState()
 	logging.Debug(logging.TagGame, "Game %s over. Winner: %v, Cause: %s", session.ID, state.WinnerID, session.GetWinCause())
 
-	// Save game to database
 	g := session.GetGame()
 
-	// Assuming a context for DB operations, we use a background context with timeout
 	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := db.SaveGame(dbCtx, session.ID, session.Player1UserID, session.Player2UserID, hub.GetGameType(), g.InitialState, state.WinnerID); err != nil {
+	now := time.Now()
+	if err := db.SaveGame(dbCtx, session.ID, session.Player1UserID, session.Player2UserID, hub.GetGameType(), g.InitialState, state.WinnerID, session.StartTime, now); err != nil {
 		logging.Error("Failed to save game to database", err)
 	}
 
@@ -290,11 +308,25 @@ func (s *GameServer) handleGameOver(session *game.Session, hub *ws.Hub) {
 		logging.Error("Failed to save game moves to database", err)
 	}
 
-	// Broadcast final state, full board, and move history
+	durationSecs := now.Sub(session.StartTime).Seconds()
+	moveCount := len(g.HistoricalHistory)
+
+	if session.Player1UserID != nil {
+		won := state.WinnerID != nil && *state.WinnerID == *session.Player1UserID
+		if err := db.UpdateUserStats(dbCtx, *session.Player1UserID, won, moveCount, durationSecs); err != nil {
+			logging.Error("Failed to update stats for Player 1", err)
+		}
+	}
+	if session.Player2UserID != nil {
+		won := state.WinnerID != nil && *state.WinnerID == *session.Player2UserID
+		if err := db.UpdateUserStats(dbCtx, *session.Player2UserID, won, moveCount, durationSecs); err != nil {
+			logging.Error("Failed to update stats for Player 2", err)
+		}
+	}
+
 	hub.BroadcastFullState()
 	hub.BroadcastMoveHistory()
 
-	// Start cleanup timer for the hub (e.g., 5 minutes to let players see the result)
 	hub.StartGameOverCleanup(5 * time.Minute)
 }
 
