@@ -41,7 +41,8 @@ jobs:
             ghcr.io/${{ steps.prep.outputs.repo_lower }}/backend:latest
 
       - name: Prepare Static Changelog
-        run: mkdir -p code/frontend/static && rm -f code/frontend/static/CHANGELOG.md &&
+        run:
+          mkdir -p code/frontend/static && rm -f code/frontend/static/CHANGELOG.md &&
           cp CHANGELOG.md code/frontend/static/CHANGELOG.md
 
       - name: Build and push Frontend
@@ -98,6 +99,7 @@ jobs:
             echo "DB_HOST=${{ vars.DB_HOST }}" >> .env
             echo "DB_PORT=${{ vars.DB_PORT }}" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "TELEMETRY_ALLOWED_IPS=${{ vars.TELEMETRY_ALLOWED_IPS }}" >> .env
             # Pull and restart
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d

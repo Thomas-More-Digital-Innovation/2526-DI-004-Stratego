@@ -18,10 +18,13 @@ import (
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"digital-innovation/gostrategy/internal/telemetry"
 )
 
 // SetupRoutes registers all API routes and middleware
 func (s *GameServer) SetupRoutes() {
+	telemetry.Init()
 	h := &handlers.Handler{GameServer: s.GameServer}
 
 	s.Router.Use(gin.Recovery())
@@ -62,7 +65,10 @@ func (s *GameServer) SetupRoutes() {
 	// Health & metrics
 	s.Router.GET("/health", h.HealthHandler)
 	s.Router.GET("/csrf-token", h.GetCSRFToken)
-	s.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	metricsGroup := s.Router.Group("/metrics")
+	metricsGroup.Use(telemetry.IPFilterMiddleware())
+	metricsGroup.GET("", gin.WrapH(promhttp.Handler()))
 
 	// Debug and Documentation (Dev only)
 	if !utils.IsProduction() {

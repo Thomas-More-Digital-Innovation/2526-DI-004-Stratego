@@ -13,6 +13,7 @@ services:
       - DB_NAME=${DB_NAME:-gostrategy}
       - DB_SSLMODE=disable
       - JWT_SECRET=${JWT_SECRET}
+      - TELEMETRY_ALLOWED_IPS=${TELEMETRY_ALLOWED_IPS}
     depends_on:
       gostrategy:
         condition: service_healthy
