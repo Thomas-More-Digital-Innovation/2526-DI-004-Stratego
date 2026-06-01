@@ -4,7 +4,6 @@ import (
 	"digital-innovation/gostrategy/internal/api/core"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/logging"
-	"digital-innovation/gostrategy/pkg/game"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -165,20 +164,10 @@ func (h *Handler) HandleDeleteGame(c *gin.Context) {
 		return
 	}
 
-	gameObj := handler.Session.GetGame()
-	if gameObj != nil && !gameObj.IsGameOver() {
-		var opponentIndex int
-		if p1 != nil && *p1 == user.ID {
-			opponentIndex = 1
-		} else {
-			opponentIndex = 0
-		}
-		if opponentIndex < len(gameObj.Players) {
-			handler.Session.SetWinner(gameObj.Players[opponentIndex], game.WinCause("resigned"))
-		}
+	if err := h.ResignGame(gameID, user.ID); err != nil {
+		core.SendError(c, err.Error(), http.StatusInternalServerError)
+		return
 	}
-
-	h.RemoveSession(gameID)
 
 	core.SendJSON(c, gin.H{"message": "Game session abandoned successfully"}, http.StatusOK)
 }

@@ -75,9 +75,12 @@ func (h *Handler) HandleCreateGame(c *gin.Context) {
 				core.SendError(c, fmt.Sprintf("You are already in an active game (%s). Please finish it before starting a new one.", existingHandler.Session.ID), http.StatusConflict)
 				return
 			}
-			// stale/waiting for cleanup: clean up directly and allow new game
 			logging.Debug(logging.TagWeb, "User %d starting new game, force cleaning up stale session %s", userID, existingHandler.Session.ID)
-			h.RemoveSession(existingHandler.Session.ID, "Replaced by new session")
+
+			err := h.ResignGame(existingHandler.Session.ID, userID)
+			if err != nil {
+				logging.Error("Failed to resign stale session for user", err)
+			}
 		}
 	}
 
