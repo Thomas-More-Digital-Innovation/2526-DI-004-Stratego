@@ -221,6 +221,27 @@ func TestHandleDeleteGame(t *testing.T) {
 		assert.False(t, exists)
 	})
 
+	t.Run("SuccessAsPlayer2", func(t *testing.T) {
+		user1 := &models.User{ID: 1, Username: "player1"}
+		user2 := &models.User{ID: 2, Username: "player2"}
+		handler, err := h.CreateGame("abandon-p2-game", models.HumanVsHuman, "player1", "player2")
+		assert.NoError(t, err)
+		handler.Session.SetPlayer1Associate(user1.ID, "player1")
+		handler.Session.SetPlayer2Associate(user2.ID, "player2")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request, _ = http.NewRequest("DELETE", "/games/abandon-p2-game", nil)
+		c.Params = []gin.Param{{Key: "id", Value: "abandon-p2-game"}}
+		c.Set("user", user2)
+
+		h.HandleDeleteGame(c)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		_, exists := h.GetSession("abandon-p2-game")
+		assert.False(t, exists)
+	})
+
 	t.Run("ForbiddenForNonParticipant", func(t *testing.T) {
 		user1 := &models.User{ID: 1, Username: "player1"}
 		user2 := &models.User{ID: 2, Username: "player2"}

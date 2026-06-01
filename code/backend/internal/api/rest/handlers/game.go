@@ -164,7 +164,10 @@ func (h *Handler) HandleDeleteGame(c *gin.Context) {
 		return
 	}
 
-	h.RemoveSession(gameID)
+	if err := h.ResignGame(gameID, user.ID); err != nil {
+		core.SendError(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	core.SendJSON(c, gin.H{"message": "Game session abandoned successfully"}, http.StatusOK)
 }

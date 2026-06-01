@@ -4,14 +4,13 @@ package core
 import (
 	"context"
 	"digital-innovation/gostrategy/internal/api/ws"
-	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/logging"
 	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/internal/telemetry"
 	"digital-innovation/gostrategy/internal/utils"
 	AIhandler "digital-innovation/gostrategy/pkg/ai/handler"
 	"digital-innovation/gostrategy/pkg/game"
 	"fmt"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -120,6 +119,7 @@ func (s *GameServer) CreateGame(gameID string, gameType string, name1, name2 str
 	}
 
 	s.Sessions[gameID] = handler
+	telemetry.TrackSession()
 
 	go hub.Run()
 	go s.monitorGame(handler)
@@ -179,11 +179,28 @@ func (s *GameServer) RemoveSession(gameID string, reason ...string) {
 	handler, exists := s.Sessions[gameID]
 	if exists {
 		delete(s.Sessions, gameID)
+		telemetry.UntrackSession()
 	}
 	s.Mutex.Unlock()
 
 	if exists && handler != nil {
 		logging.Debug(logging.TagWeb, "Removed session %s from GameServer and stopping resources", gameID)
+
+		if handler.Session != nil && !handler.Session.IsSetupPhase() && !handler.Session.GetGameState().IsGameOver {
+			logging.Debug(logging.TagWeb, "Active game session %s terminated unexpectedly. Declaring opponent winner via forfeit.", gameID)
+			gameObj := handler.Session.GetGame()
+			if gameObj != nil && !gameObj.IsGameOver() {
+				var opponent *game.Player
+				if gameObj.CurrentPlayer == gameObj.Players[0] {
+					opponent = gameObj.Players[1]
+				} else {
+					opponent = gameObj.Players[0]
+				}
+				handler.Session.SetWinner(opponent, game.WinCause("resigned"))
+				s.handleGameOver(handler.Session, handler.Hub)
+			}
+		}
+
 		if handler.Hub != nil {
 			handler.Hub.Stop()
 		}
@@ -195,107 +212,6 @@ func (s *GameServer) RemoveSession(gameID string, reason ...string) {
 			handler.Session.Stop(r)
 		}
 	}
-}
-
-// monitorGame watches for game events and broadcasts them
-func (s *GameServer) monitorGame(handler *SessionHandler) {
-	session := handler.Session
-	hub := handler.Hub
-
-	time.Sleep(100 * time.Millisecond)
-	hub.BroadcastFullState()
-
-	select {
-	case <-session.GetSetupCompleteChan():
-	case <-session.IsAbortedChan():
-		logging.Debug(logging.TagWeb, "Game aborted during setup: %s", session.ID)
-		s.RemoveSession(session.ID)
-		return
-	case <-s.Ctx.Done():
-		return
-	}
-
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-s.Ctx.Done():
-			return
-		case <-session.IsAbortedChan():
-			logging.Debug(logging.TagWeb, "Game aborted during gameplay: %s", session.ID)
-			s.RemoveSession(session.ID)
-			return
-		case <-session.GetMoveNotifyChan():
-			isHeadless := session.IsHeadless()
-			if !isHeadless {
-				logging.Debug(logging.TagGame, "Move executed in game %s", session.ID)
-			}
-
-			if isHeadless {
-				state := session.GetGameState()
-				if state.IsGameOver {
-					time.Sleep(100 * time.Millisecond)
-					s.handleGameOver(session, hub)
-					return
-				}
-				session.AckMoveProcessed()
-				continue
-			}
-
-			combat := session.GetLastCombat()
-			if combat != nil && combat.Occurred {
-				hub.BroadcastCombat(combat)
-				session.WaitForAnimationComplete(3 * time.Second)
-				session.ClearLastCombat()
-				hub.BroadcastFullState()
-			} else {
-				hub.BroadcastFullState()
-			}
-
-			session.AckMoveProcessed()
-
-			state := session.GetGameState()
-			if state.IsGameOver {
-				time.Sleep(500 * time.Millisecond)
-				s.handleGameOver(session, hub)
-				return
-			}
-		case <-ticker.C:
-			if !session.IsRunning() && session.GetGameState().IsGameOver {
-				s.handleGameOver(session, hub)
-				return
-			}
-		}
-	}
-}
-
-// handleGameOver handles the end of a game
-func (s *GameServer) handleGameOver(session *game.Session, hub *ws.Hub) {
-	state := session.GetGameState()
-	logging.Debug(logging.TagGame, "Game %s over. Winner: %v, Cause: %s", session.ID, state.WinnerID, session.GetWinCause())
-
-	// Save game to database
-	g := session.GetGame()
-
-	// Assuming a context for DB operations, we use a background context with timeout
-	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := db.SaveGame(dbCtx, session.ID, session.Player1UserID, session.Player2UserID, hub.GetGameType(), g.InitialState, state.WinnerID); err != nil {
-		logging.Error("Failed to save game to database", err)
-	}
-
-	if err := db.SaveMoves(dbCtx, session.ID, g.HistoricalHistory); err != nil {
-		logging.Error("Failed to save game moves to database", err)
-	}
-
-	// Broadcast final state, full board, and move history
-	hub.BroadcastFullState()
-	hub.BroadcastMoveHistory()
-
-	// Start cleanup timer for the hub (e.g., 5 minutes to let players see the result)
-	hub.StartGameOverCleanup(5 * time.Minute)
 }
 
 // PrintRoutes prints an overview of all registered routes

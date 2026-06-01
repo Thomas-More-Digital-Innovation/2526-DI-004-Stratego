@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestIntegration_TokenManagement(t *testing.T) {
@@ -196,7 +197,7 @@ func TestIntegration_GameHistory(t *testing.T) {
 	// Save some fake games directly to DB for testing history
 	ctx := context.Background()
 	gameID := "hist-1"
-	if err := db.SaveGame(ctx, gameID, &user.ID, nil, "ranked", map[string]string{"board": "state"}, nil); err != nil {
+	if err := db.SaveGame(ctx, gameID, &user.ID, nil, "ranked", map[string]string{"board": "state"}, nil, time.Now(), time.Now()); err != nil {
 		t.Fatalf("Failed to save game: %v", err)
 	}
 	if err := db.SaveMove(ctx, gameID, models.HistoricalMove{MoveIndex: 1, PlayerID: 0, Result: models.ResultMove}); err != nil {

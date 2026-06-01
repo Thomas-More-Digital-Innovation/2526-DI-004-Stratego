@@ -187,25 +187,23 @@ func (c *DatabaseCollector) refreshCache() {
 		return
 	}
 
-	c.refresh()
-	c.refreshUsersNew7d()
-	c.refreshGames()
-	c.refreshMovesTotal()
-	c.refreshLeaderboard()
-
-	c.lastUpdated = time.Now()
-}
-
-func (c *DatabaseCollector) refresh() {
 	var usersTotal int64
 	db.DB.Model(&models.User{}).Where("deleted_at IS NULL").Count(&usersTotal)
 	c.cache.usersTotal = float64(usersTotal)
-}
 
-func (c *DatabaseCollector) refreshUsersNew7d() {
 	var usersNew7d int64
 	db.DB.Model(&models.User{}).Where("deleted_at IS NULL AND created_at >= ?", time.Now().AddDate(0, 0, -7)).Count(&usersNew7d)
 	c.cache.usersNew7d = float64(usersNew7d)
+
+	c.refreshGames()
+
+	var movesTotal int64
+	db.DB.Model(&models.GameMove{}).Where("deleted_at IS NULL").Count(&movesTotal)
+	c.cache.movesTotal = float64(movesTotal)
+
+	c.refreshLeaderboard()
+
+	c.lastUpdated = time.Now()
 }
 
 func (c *DatabaseCollector) refreshGames() {
@@ -213,15 +211,14 @@ func (c *DatabaseCollector) refreshGames() {
 	db.DB.Model(&models.Game{}).Where("deleted_at IS NULL").Count(&gamesTotal)
 	c.cache.gamesTotal = float64(gamesTotal)
 
-	var gamesActive int64
-	db.DB.Model(&models.Game{}).Where("finished_at IS NULL AND deleted_at IS NULL").Count(&gamesActive)
-	c.cache.gamesActive = float64(gamesActive)
+	gamesActive := getActiveSessionCount()
+	c.cache.gamesActive = gamesActive
 
 	var finishedGamesCount int64
 	db.DB.Model(&models.Game{}).Where("finished_at IS NOT NULL AND deleted_at IS NULL").Count(&finishedGamesCount)
 
 	c.cache.gamesByStatus = map[string]float64{
-		"active":   float64(gamesActive),
+		"active":   gamesActive,
 		"finished": float64(finishedGamesCount),
 	}
 
@@ -257,12 +254,6 @@ func (c *DatabaseCollector) refreshGames() {
 	for _, split := range splits {
 		c.cache.gamesByType[split.GameType] = float64(split.Count)
 	}
-}
-
-func (c *DatabaseCollector) refreshMovesTotal() {
-	var movesTotal int64
-	db.DB.Model(&models.GameMove{}).Where("deleted_at IS NULL").Count(&movesTotal)
-	c.cache.movesTotal = float64(movesTotal)
 }
 
 func (c *DatabaseCollector) refreshLeaderboard() {
