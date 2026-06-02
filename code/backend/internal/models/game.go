@@ -33,7 +33,22 @@ type GameMove struct {
 	ToY          int                       `json:"to_y" gorm:"not null"`
 	AttackerData *string                   `json:"attacker_data,omitempty" gorm:"type:jsonb"`
 	DefenderData *string                   `json:"defender_data,omitempty" gorm:"type:jsonb"`
-	Result       gamemodels.MoveResultType `json:"result" gorm:"not null;size:20"`
+	Result       gamemodels.MoveResultType `json:"result" gorm:"not null;size:20" swaggertype:"string"`
 	CreatedAt    time.Time                 `json:"created_at"`
 	DeletedAt    gorm.DeletedAt            `json:"-" gorm:"index"`
 }
+
+// GameSummaryDTO represents a lightweight overview of a game
+type GameSummaryDTO struct {
+	GameID          string `json:"gameId"`
+	Round           int    `json:"round"`
+	IsRunning       bool   `json:"isRunning"`
+	IsGameOver      bool   `json:"isGameOver"`
+	IsSetupPhase    bool   `json:"isSetupPhase"`
+	GameType        string `json:"gameType"`
+	Player1Username string `json:"player1Username"`
+	Player2Username string `json:"player2Username"`
+}
+
+// GameSummary represents a lightweight overview of a game (alias for backwards compatibility)
+type GameSummary = GameSummaryDTO
