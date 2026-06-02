@@ -5,12 +5,14 @@ import (
 	"digital-innovation/gostrategy/internal/api/dto"
 	"digital-innovation/gostrategy/internal/auth"
 	"digital-innovation/gostrategy/internal/db"
+	"github.com/gin-gonic/gin"
 	"digital-innovation/gostrategy/internal/models"
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 )
+
+
 
 // SendError helper to be used when shifting from net/http to Gin
 func SendError(c *gin.Context, message string, statusCode int) {
