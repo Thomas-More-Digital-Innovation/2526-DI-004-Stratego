@@ -24,10 +24,9 @@ func IPFilterMiddleware() gin.HandlerFunc {
 	if allowedIPsStr == "" {
 		logging.Error("No allowed IPs configured. No one can access telemetry", nil)
 		return func(c *gin.Context) {
-			c.AbortWithStatusJSON(http.StatusForbidden, ginUnauthorizedIPaddress)  
+			c.AbortWithStatusJSON(http.StatusForbidden, ginUnauthorizedIPaddress)
 		}
 
-		
 	}
 
 	allowedIPs := strings.Split(allowedIPsStr, ",")
