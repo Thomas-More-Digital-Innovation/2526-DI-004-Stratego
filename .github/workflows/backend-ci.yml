@@ -11,7 +11,7 @@ concurrency:
 
 on:
   push:
-    branches: ["*"]
+    branches: ["main"]
     paths:
       - "code/backend/**"
       - ".github/workflows/backend-ci.yml"
@@ -36,20 +36,11 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Cache Go modules & build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            code/backend/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('code/backend/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.go-version }}-
-            ${{ runner.os }}-go-
+          cache: true
+          cache-dependency-path: code/backend/go.sum
 
       - name: Cache golangci-lint analysis results
         uses: actions/cache@v4
@@ -82,7 +73,7 @@ jobs:
 
       - name: Install golangci-lint
         if: steps.cache-golangci-lint.outputs.cache-hit != 'true'
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 
       - name: Run golangci-lint
         working-directory: code/backend
@@ -128,21 +119,11 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Cache Go modules & build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            code/backend/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{
-            hashFiles('code/backend/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.go-version }}-
-            ${{ runner.os }}-go-
+          cache: true
+          cache-dependency-path: code/backend/go.sum
 
       - name: Ensure dependencies
         working-directory: code/backend
@@ -253,7 +234,7 @@ jobs:
           message: |
             ### Test Coverage Report
 
-            ${{ fromJSON(steps.coverage.outputs.report) }}
+            ${{ steps.coverage.outputs.report && fromJSON(steps.coverage.outputs.report) || 'No coverage report available' }}
 
             <details>
             <summary>View Detailed Package Coverage</summary>
