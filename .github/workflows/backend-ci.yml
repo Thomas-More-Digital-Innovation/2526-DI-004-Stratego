@@ -1,8 +1,9 @@
 name: Backend CI
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
+  statuses: write
 
 concurrency:
   group: backend-ci-${{ github.ref }}
@@ -31,6 +32,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -62,14 +65,13 @@ jobs:
 
       - name: Check formatting (gofmt)
         working-directory: code/backend
-        run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "The following files are not gofmt'ed:";
-            echo "$unformatted";
-            echo "Run 'gofmt -w .' to fix formatting.";
-            exit 1
-          fi
+        run: gofmt -l -w -s .
+
+      - name: Commit Changes
+        id: auto_commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: fix gofmt errors"
 
       - name: Cache golangci-lint binary
         id: cache-golangci-lint
@@ -87,6 +89,15 @@ jobs:
         run: |
           # The binary is installed to GOPATH/bin
           $(go env GOPATH)/bin/golangci-lint run --config=../../.golangci.yaml
+
+      - name: Mark formatting commit as green
+        if: steps.auto_commit.outputs.changes_detected == 'true'
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.auto_commit.outputs.commit_hash }} \
+            -d '{"state":"success", "target_url":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}", "description":"gofmt auto-formatting applied", "context":"Static Code Analysis"}'
 
   test:
     name: Build & Test
@@ -113,6 +124,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
 
       - name: Set up Go
         uses: actions/setup-go@v4
