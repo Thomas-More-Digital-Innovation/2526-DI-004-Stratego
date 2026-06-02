@@ -51,7 +51,7 @@ If you prefer running services outside of Docker:
 **Backend:**
 ```bash
 cd code/backend
-go run main.go --server
+go run cmd/server/main.go
 ```
 
 **Frontend:**
@@ -68,16 +68,18 @@ pnpm dev
 ```
 
 ### Simulate AI vs AI Games
+From the `code/backend` directory:
 
 ```bash
-go run main.go --ai={ai1}:{ai2} --format md --logging=false --matches {n}
+cd code/backend
+go run cmd/simulation/main.go --ai={ai1}:{ai2} --format md --logging=false --matches {n}
 ```
 Herby you can replace {ai1} and {ai2} with any AI type available in the codebase.
 Replace n with the amount of matches you want to run.
 
 Example:
 ```bash
-go run main.go --ai=fafo:fato --format md --logging=false --matches 100
+go run cmd/simulation/main.go --ai=fafo:fato --format md --logging=false --matches 100
 ```
 
 ## Architecture & Performance
