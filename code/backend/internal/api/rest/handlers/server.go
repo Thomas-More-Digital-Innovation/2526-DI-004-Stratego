@@ -210,7 +210,7 @@ func (h *Handler) associatePlayer(c *gin.Context, currentUserID *int, associated
 // @Description Retrieve a list of all currently active game sessions
 // @Tags games
 // @Produce json
-// @Success 200 {array} models.GameSummary
+// @Success 200 {array} models.GameSummaryDTO
 // @Router /games [get]
 func (h *Handler) HandleListGames(c *gin.Context) {
 	h.Mutex.RLock()
@@ -222,7 +222,7 @@ func (h *Handler) HandleListGames(c *gin.Context) {
 
 	summaries := make([]models.GameSummary, 0, len(handlers))
 	for _, handler := range handlers {
-		summaries = append(summaries, handler.Session.GetGameSummary(handler.GameType))
+		summaries = append(summaries, models.GameSummary(handler.Session.GetGameSummary(handler.GameType)))
 	}
 
 	core.SendJSON(c, summaries, http.StatusOK)

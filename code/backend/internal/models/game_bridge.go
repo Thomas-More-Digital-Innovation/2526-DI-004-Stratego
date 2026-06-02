@@ -20,9 +20,6 @@ type GameHistory = gamemodels.GameHistory
 // GameState is an alias for the game engine GameState representation.
 type GameState = gamemodels.GameState
 
-// GameSummary is an alias for the game engine GameSummary representation.
-type GameSummary = gamemodels.GameSummary
-
 // AiTournamentData is an alias for the AI performance statistics.
 type AiTournamentData = gamemodels.AiTournamentData
 
