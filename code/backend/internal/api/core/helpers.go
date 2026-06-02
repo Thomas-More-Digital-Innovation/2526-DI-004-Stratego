@@ -6,10 +6,9 @@ import (
 	"digital-innovation/gostrategy/internal/auth"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
 )
 
 // SendError helper to be used when shifting from net/http to Gin

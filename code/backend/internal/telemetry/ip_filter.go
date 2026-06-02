@@ -26,6 +26,7 @@ func IPFilterMiddleware() gin.HandlerFunc {
 		return func(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusForbidden, ginUnauthorizedIPaddress)
 		}
+
 	}
 
 	allowedIPs := strings.Split(allowedIPsStr, ",")
