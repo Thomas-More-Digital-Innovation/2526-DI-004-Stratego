@@ -82,13 +82,13 @@ definitions:
       player_id:
         type: integer
       result:
-        $ref: '#/definitions/models.MoveResultType'
+        type: string
       to_x:
         type: integer
       to_y:
         type: integer
     type: object
-  models.GameSummary:
+  models.GameSummaryDTO:
     properties:
       gameId:
         type: string
@@ -114,32 +114,6 @@ definitions:
       username:
         type: string
     type: object
-  models.MoveResultType:
-    enum:
-    - move
-    - win
-    - loss
-    - tie
-    - capture
-    type: string
-    x-enum-comments:
-      ResultCapture: Flag captured (game over)
-      ResultLoss: Attacker lost combat
-      ResultMove: Normal move to empty cell
-      ResultTie: Both pieces died
-      ResultWin: Attacker won combat
-    x-enum-descriptions:
-    - Normal move to empty cell
-    - Attacker won combat
-    - Attacker lost combat
-    - Both pieces died
-    - Flag captured (game over)
-    x-enum-varnames:
-    - ResultMove
-    - ResultWin
-    - ResultLoss
-    - ResultTie
-    - ResultCapture
   models.User:
     properties:
       created_at:
@@ -269,7 +243,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.GameSummary'
+              $ref: '#/definitions/models.GameSummaryDTO'
             type: array
       summary: List active games
       tags:

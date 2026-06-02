@@ -143,7 +143,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.GameSummary"
+                                "$ref": "#/definitions/models.GameSummaryDTO"
                             }
                         }
                     }
@@ -1261,7 +1261,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "result": {
-                    "$ref": "#/definitions/models.MoveResultType"
+                    "type": "string"
                 },
                 "to_x": {
                     "type": "integer"
@@ -1271,7 +1271,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GameSummary": {
+        "models.GameSummaryDTO": {
             "type": "object",
             "properties": {
                 "gameId": {
@@ -1310,37 +1310,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "models.MoveResultType": {
-            "type": "string",
-            "enum": [
-                "move",
-                "win",
-                "loss",
-                "tie",
-                "capture"
-            ],
-            "x-enum-comments": {
-                "ResultCapture": "Flag captured (game over)",
-                "ResultLoss": "Attacker lost combat",
-                "ResultMove": "Normal move to empty cell",
-                "ResultTie": "Both pieces died",
-                "ResultWin": "Attacker won combat"
-            },
-            "x-enum-descriptions": [
-                "Normal move to empty cell",
-                "Attacker won combat",
-                "Attacker lost combat",
-                "Both pieces died",
-                "Flag captured (game over)"
-            ],
-            "x-enum-varnames": [
-                "ResultMove",
-                "ResultWin",
-                "ResultLoss",
-                "ResultTie",
-                "ResultCapture"
-            ]
         },
         "models.User": {
             "type": "object",
