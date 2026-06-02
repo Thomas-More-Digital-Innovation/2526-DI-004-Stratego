@@ -1,1 +1,0 @@
-cd code/backend && golangci-lint run --config=../../.golangci.yaml
