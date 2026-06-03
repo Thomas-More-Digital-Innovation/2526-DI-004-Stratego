@@ -16,6 +16,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	Player1Name = "Piet"
+	Player2Name = "Bob"
+)
+
 // SetupHandlerTest registers a cleanup hook to guarantee gameserver terminates
 func SetupHandlerTest(t *testing.T) (*gin.Engine, *handlers.Handler, *core.GameServer) {
 	gin.SetMode(gin.TestMode)
@@ -59,11 +64,11 @@ func SetupDBTest(t *testing.T) *gorm.DB {
 	return testDB
 }
 
-// SetupTestGame initializes the game with players piet and bob and human controllers
+// SetupTestGame initializes the game with players and human controllers
 func SetupTestGame() (*game.Game, *game.Player, *game.Player) {
-	player1 := game.NewPlayer(0, "piet", "red")
+	player1 := game.NewPlayer(0, Player1Name, "red")
 	controller1 := game.NewHumanPlayerController(&player1)
-	player2 := game.NewPlayer(1, "bob", "blue")
+	player2 := game.NewPlayer(1, Player2Name, "blue")
 	controller2 := game.NewHumanPlayerController(&player2)
 	g := game.NewGame(controller1, controller2)
 	return g, &player1, &player2

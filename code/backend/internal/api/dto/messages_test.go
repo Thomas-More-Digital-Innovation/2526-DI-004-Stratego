@@ -4,7 +4,11 @@ import (
 	"digital-innovation/gostrategy/internal/api/dto"
 	"digital-innovation/gostrategy/internal/models"
 	"digital-innovation/gostrategy/pkg/game"
+	gamemodels "digital-innovation/gostrategy/pkg/game/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPieceToDTO(t *testing.T) {
@@ -117,6 +121,42 @@ func TestPieceToDTOAllPieceTypes(t *testing.T) {
 		}
 		if d.Icon != pieceType.GetIcon() {
 			t.Errorf("Expected icon %s for %s, got: %s", pieceType.GetIcon(), pieceType.GetName(), d.Icon)
+		}
+	}
+}
+
+func TestBuildGameStateMessage(t *testing.T) {
+	state := gamemodels.GameState{
+		CurrentPlayerID: 1,
+		IsGameOver:      true,
+		WinnerID:        nil,
+	}
+	msg := dto.BuildGameStateMessage(state, "Alice", "Capture")
+	assert.Equal(t, state, msg.GameState)
+	assert.Equal(t, "Alice", msg.WinnerName)
+	assert.Equal(t, "Capture", msg.WinCause)
+}
+
+func TestMapBoardToDTO(t *testing.T) {
+	player := game.NewPlayer(0, "Piet", "red")
+	var field [10][10]*game.Piece
+	piece := game.NewPiece(models.Marshal, &player)
+	field[3][5] = piece
+
+	boardDTO := dto.MapBoardToDTO(field, 0, false)
+	require.Len(t, boardDTO, 10)
+	for y := 0; y < 10; y++ {
+		require.Len(t, boardDTO[y], 10)
+		for x := 0; x < 10; x++ {
+			if x == 5 && y == 3 {
+				assert.Equal(t, "Marshal", boardDTO[y][x].Type)
+				assert.Equal(t, 0, boardDTO[y][x].OwnerID)
+				assert.Equal(t, 5, boardDTO[y][x].Position.X)
+				assert.Equal(t, 3, boardDTO[y][x].Position.Y)
+			} else {
+				assert.Equal(t, "", boardDTO[y][x].Type)
+				assert.Equal(t, -1, boardDTO[y][x].OwnerID)
+			}
 		}
 	}
 }
