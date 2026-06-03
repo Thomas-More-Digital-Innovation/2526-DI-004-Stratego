@@ -4,79 +4,52 @@ import (
 	"context"
 	"digital-innovation/gostrategy/internal/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUserLogic(t *testing.T) {
-	testDB := SetupTestDB(t)
-	oldDB := DB
-	DB = testDB
-	defer func() { DB = oldDB }()
-
+	SetupDBTest(t)
 	ctx := context.Background()
 
 	t.Run("CreateUser and Stats", func(t *testing.T) {
 		user, err := CreateUser(ctx, "testuser", "StrongPass1!", "pic.png")
-		if err != nil {
-			t.Fatalf("CreateUser failed: %v", err)
-		}
-
-		if user.Username != "testuser" {
-			t.Errorf("expected username testuser, got %s", user.Username)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, "testuser", user.Username)
 
 		// Verify stats were created
 		var stats models.UserStats
 		err = DB.Where("user_id = ?", user.ID).First(&stats).Error
-		if err != nil {
-			t.Errorf("stats not created for user: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("UpdateUserPassword", func(t *testing.T) {
 		user, _ := CreateUser(ctx, "passuser", "OldPass1!", "")
 		err := UpdateUserPassword(ctx, user.ID, "NewPass1!")
-		if err != nil {
-			t.Fatalf("UpdateUserPassword failed: %v", err)
-		}
+		assert.NoError(t, err)
 
 		// Verify authentication works with new password
 		_, err = AuthenticateUser(ctx, "passuser", "NewPass1!")
-		if err != nil {
-			t.Errorf("failed to authenticate with new password: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 }
 
 func TestUserSoftDelete(t *testing.T) {
-	testDB := SetupTestDB(t)
-	oldDB := DB
-	DB = testDB
-	defer func() { DB = oldDB }()
-
+	SetupDBTest(t)
 	ctx := context.Background()
 	user, _ := CreateUser(ctx, "delete-me", "Pass1234!", "")
 
 	t.Run("Soft Deleted User cannot authenticate", func(t *testing.T) {
-		// Delete user
 		err := DB.Delete(user).Error
-		if err != nil {
-			t.Fatalf("failed to delete user: %v", err)
-		}
+		assert.NoError(t, err)
 
-		// Try to authenticate
 		_, err = AuthenticateUser(ctx, "delete-me", "Pass1234!")
-		if err == nil {
-			t.Error("expected authentication to fail for soft-deleted user, but it succeeded")
-		}
+		assert.Error(t, err)
 	})
 }
 
 func TestStatsConcurrency(t *testing.T) {
-	testDB := SetupTestDB(t)
-	oldDB := DB
-	DB = testDB
-	defer func() { DB = oldDB }()
-
+	SetupDBTest(t)
 	ctx := context.Background()
 	user, _ := CreateUser(ctx, "concuruser", "Pass1234!", "")
 
@@ -103,11 +76,7 @@ func TestStatsConcurrency(t *testing.T) {
 		DB.Where("user_id = ?", user.ID).First(&stats)
 
 		expectedGames := goroutines * updatesPerRoutine
-		if stats.TotalGames != expectedGames {
-			t.Errorf("expected %d games, got %d", expectedGames, stats.TotalGames)
-		}
-		if stats.Wins != expectedGames {
-			t.Errorf("expected %d wins, got %d", expectedGames, stats.Wins)
-		}
+		assert.Equal(t, expectedGames, stats.TotalGames)
+		assert.Equal(t, expectedGames, stats.Wins)
 	})
 }

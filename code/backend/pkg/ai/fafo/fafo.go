@@ -39,11 +39,7 @@ func (ai *AI) MakeMove(board *game.Board) game.Move {
 // FindRandomMove picks any valid move for a random piece
 func (ai *AI) FindRandomMove(board *game.Board) game.Move {
 	pieces := ai.GetPlayer().GetAlivePieces()
-	shuffled := make([]*game.Piece, len(pieces))
-	copy(shuffled, pieces)
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
+	shuffled := game.ShufflePieces(pieces)
 
 	for _, piece := range shuffled {
 		if !piece.CanMove() {

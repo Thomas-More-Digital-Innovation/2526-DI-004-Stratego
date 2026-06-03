@@ -10,6 +10,7 @@ import (
 	"digital-innovation/gostrategy/internal/api/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseID(t *testing.T) {
@@ -20,12 +21,8 @@ func TestParseID(t *testing.T) {
 		c.Params = gin.Params{{Key: "id", Value: "123"}}
 
 		id, err := core.ParseID(c, "id")
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-		if id != 123 {
-			t.Errorf("Expected 123, got %d", id)
-		}
+		assert.NoError(t, err, "Unexpected error: %v", err)
+		assert.Equal(t, id, 123, "Expected 123, got %d", id)
 	})
 
 	t.Run("Valid Query Param", func(t *testing.T) {

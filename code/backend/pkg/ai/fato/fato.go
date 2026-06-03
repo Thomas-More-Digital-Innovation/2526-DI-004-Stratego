@@ -81,11 +81,7 @@ func (ai *AI) findAttackMove(board *game.Board) (game.Move, bool) {
 	pieces := ai.GetPlayer().GetAlivePieces()
 
 	// Shuffle pieces to add variety
-	shuffled := make([]*game.Piece, len(pieces))
-	copy(shuffled, pieces)
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
+	shuffled := game.ShufflePieces(pieces)
 
 	var bestAttack *game.Move
 	bestScore := -1000.0
@@ -178,11 +174,7 @@ func (ai *AI) findExplorationMove(board *game.Board) (game.Move, bool) {
 	}
 
 	pieces := ai.GetPlayer().GetAlivePieces()
-	shuffled := make([]*game.Piece, len(pieces))
-	copy(shuffled, pieces)
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
+	shuffled := game.ShufflePieces(pieces)
 
 	for _, piece := range shuffled {
 		if !piece.CanMove() {

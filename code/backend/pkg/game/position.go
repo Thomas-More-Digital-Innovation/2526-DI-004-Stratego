@@ -8,6 +8,14 @@ type Position struct {
 	Y int
 }
 
+// StandardDirections represents standard orthogonal movement vectors
+var StandardDirections = []Position{
+	{X: 0, Y: -1}, // Up
+	{X: 0, Y: 1},  // Down
+	{X: -1, Y: 0}, // Left
+	{X: 1, Y: 0},  // Right
+}
+
 // NewPosition creates a new Position instance
 func NewPosition(x int, y int) Position {
 	return Position{

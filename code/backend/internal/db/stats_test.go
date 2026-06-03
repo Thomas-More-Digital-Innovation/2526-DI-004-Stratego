@@ -4,14 +4,12 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGlobalStats(t *testing.T) {
-	testDB := SetupTestDB(t)
-	oldDB := DB
-	DB = testDB
-	defer func() { DB = oldDB }()
-
+	SetupDBTest(t)
 	ctx := context.Background()
 
 	t.Run("Count Users", func(t *testing.T) {
@@ -24,12 +22,8 @@ func TestGlobalStats(t *testing.T) {
 		_, _ = CreateUser(ctx, "user2", "Pass1!", "")
 
 		count, err := GetTotalUserCount(ctx)
-		if err != nil {
-			t.Fatalf("GetTotalUserCount failed: %v", err)
-		}
-		if count != 2 {
-			t.Errorf("expected 2 users, got %d", count)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 2, count)
 	})
 
 	t.Run("Count Games Played", func(t *testing.T) {
@@ -40,17 +34,12 @@ func TestGlobalStats(t *testing.T) {
 
 		user, _ := CreateUser(ctx, "statuser", "Pass1!", "")
 
-		// Add some games via stats update
 		_ = UpdateUserStats(ctx, user.ID, true, 5, 60.0)
 		_ = UpdateUserStats(ctx, user.ID, false, 8, 90.0)
 
 		count, err := GetTotalGamesPlayedCount(ctx)
-		if err != nil {
-			t.Fatalf("GetTotalGamesPlayedCount failed: %v", err)
-		}
-		if count != 2 {
-			t.Errorf("expected 2 games played, got %d", count)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 2, count)
 	})
 
 	t.Run("Cache respects TTL", func(t *testing.T) {
@@ -62,9 +51,7 @@ func TestGlobalStats(t *testing.T) {
 
 		// This should return the cached value 999 because TTL (1 min) hasn't passed
 		count, _ := GetTotalUserCount(ctx)
-		if count != 999 {
-			t.Errorf("expected cached value 999, got %d", count)
-		}
+		assert.Equal(t, 999, count)
 
 		// Force expiry
 		cache.mu.Lock()
@@ -73,9 +60,7 @@ func TestGlobalStats(t *testing.T) {
 
 		// This should trigger a refresh
 		count, _ = GetTotalUserCount(ctx)
-		if count == 999 {
-			t.Error("expected fresh value after cache expiry, but got cached value")
-		}
+		assert.NotEqual(t, 999, count)
 	})
 
 	t.Run("Stress concurrency", func(_ *testing.T) {
@@ -87,14 +72,14 @@ func TestGlobalStats(t *testing.T) {
 		const goroutines = 50
 		done := make(chan bool)
 
-		for i := 0; i < goroutines; i++ {
+		for range goroutines {
 			go func() {
 				_, _ = GetTotalUserCount(ctx)
 				done <- true
 			}()
 		}
 
-		for i := 0; i < goroutines; i++ {
+		for range goroutines {
 			<-done
 		}
 		// If we reached here without deadlocking, it's a pass

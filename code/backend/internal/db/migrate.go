@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"digital-innovation/gostrategy/internal/logging"
-	"digital-innovation/gostrategy/internal/models"
 	"embed"
 	"fmt"
 	"sort"
@@ -27,14 +26,7 @@ func RunMigrations(ctx context.Context) error {
 	}
 
 	// 1. AutoMigrate GORM models
-	err := DB.WithContext(ctx).AutoMigrate(
-		&models.User{},
-		&models.UserStats{},
-		&models.BoardSetup{},
-		&models.RefreshToken{},
-		&models.Game{},
-		&models.GameMove{},
-	)
+	err := DB.WithContext(ctx).AutoMigrate(AllModels...)
 	if err != nil {
 		return fmt.Errorf("failed to auto-migrate models: %w", err)
 	}

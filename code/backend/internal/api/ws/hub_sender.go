@@ -23,27 +23,7 @@ func (h *Hub) sendGameState(client *Client) {
 		winCause = string(h.Session.GetWinCause())
 	}
 
-	stateMsg := dto.GameStateMessage{
-		Round:              state.Round,
-		CurrentPlayerID:    state.CurrentPlayerID,
-		CurrentPlayerName:  state.CurrentPlayerName,
-		IsGameOver:         state.IsGameOver,
-		WinnerID:           state.WinnerID,
-		WinnerName:         winnerName,
-		WinCause:           winCause,
-		Player1Score:       state.Player1Score,
-		Player2Score:       state.Player2Score,
-		WaitingForInput:    state.WaitingForInput,
-		Paused:             state.Paused,
-		MoveCount:          state.MoveCount,
-		Player1AlivePieces: state.Player1AlivePieces,
-		Player2AlivePieces: state.Player2AlivePieces,
-		IsSetupPhase:       state.IsSetupPhase,
-		Headless:           state.Headless,
-		SetupRemainingSecs: state.SetupRemainingSecs,
-		Player1Username:    state.Player1Username,
-		Player2Username:    state.Player2Username,
-	}
+	stateMsg := dto.BuildGameStateMessage(state, winnerName, winCause)
 
 	msg := dto.WSMessage{
 		Type: dto.MsgTypeGameState,
@@ -81,21 +61,8 @@ func (h *Hub) sendBoardState(client *Client) {
 	h.Session.RLock()
 	field := board.GetField()
 
-	boardDTO := make([][]dto.PieceDTO, 10)
-	for y := range 10 {
-		boardDTO[y] = make([]dto.PieceDTO, 10)
-		for x := range 10 {
-			boardDTO[y][x] = dto.PieceDTO{OwnerID: -1}
-			piece := field[y][x]
-			if piece != nil {
-				// Force reveal all pieces for AI vs AI spectators or when game is over
-				forceReveal := h.GameType == models.AiVsAi || isGameOver
-				dtoPiece := dto.PieceToDTO(piece, client.SeatIndex, forceReveal)
-				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dtoPiece
-			}
-		}
-	}
+	forceReveal := h.GameType == models.AiVsAi || isGameOver
+	boardDTO := dto.MapBoardToDTO(field, client.SeatIndex, forceReveal)
 
 	var filteredLastMove *models.HistoricalMove
 	if lastMove != nil {

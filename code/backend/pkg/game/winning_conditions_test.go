@@ -3,6 +3,8 @@ package game
 import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWinCondition_FlagCapture(t *testing.T) {
@@ -12,24 +14,16 @@ func TestWinCondition_FlagCapture(t *testing.T) {
 	attacker := NewPiece(models.Marshal, &p1)
 	flag := NewPiece(models.Flag, &p2)
 
-	// Before capture
-	if p1.HasWon() {
-		t.Error("P1 should not have won before capturing the flag")
-	}
+	assert.False(t, p1.HasWon())
 
 	// Capture the flag
 	attacker.Attack(flag)
 
-	if !p1.HasWon() {
-		t.Error("P1 should have won after capturing the flag")
-	}
-	if flag.IsAlive() {
-		t.Error("Flag should be eliminated after capture")
-	}
+	assert.True(t, p1.HasWon())
+	assert.False(t, flag.IsAlive())
 }
 
 func TestWinCondition_TotalImmobilization(t *testing.T) {
-	// This usually is detected in the game loop/session by checking available moves for the current player
 	p1 := NewPlayer(1, "Player 1", "red")
 	board := NewBoard()
 
@@ -37,7 +31,6 @@ func TestWinCondition_TotalImmobilization(t *testing.T) {
 	board.SetPieceAt(NewPosition(0, 0), NewPiece(models.Flag, &p1))
 	board.SetPieceAt(NewPosition(0, 1), NewPiece(models.Bomb, &p1))
 
-	// Check if p1 has any movable pieces
 	hasMovable := false
 	for _, piece := range p1.GetAlivePieces() {
 		if piece.CanMove() {
@@ -46,7 +39,5 @@ func TestWinCondition_TotalImmobilization(t *testing.T) {
 		}
 	}
 
-	if hasMovable {
-		t.Error("Player should have no movable pieces")
-	}
+	assert.False(t, hasMovable)
 }

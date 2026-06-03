@@ -156,14 +156,7 @@ func (b *Board) ListMoves(pos Position) ([]Move, error) {
 }
 
 func (b *Board) handleScoutMoves(pos Position, moves *[]Move) {
-	directions := []Position{
-		{X: 0, Y: -1}, // Up
-		{X: 0, Y: 1},  // Down
-		{X: -1, Y: 0}, // Left
-		{X: 1, Y: 0},  // Right
-	}
-
-	for _, dir := range directions {
+	for _, dir := range StandardDirections {
 		for step := 1; step < 10; step++ {
 			newPos := NewPosition(pos.X+dir.X*step, pos.Y+dir.Y*step)
 			move := NewMove(pos, newPos, nil)
@@ -182,14 +175,7 @@ func (b *Board) handleScoutMoves(pos Position, moves *[]Move) {
 }
 
 func (b *Board) handleStandardMoves(pos Position, moves *[]Move) {
-	directions := []Position{
-		{X: 0, Y: -1}, // Up
-		{X: 0, Y: 1},  // Down
-		{X: -1, Y: 0}, // Left
-		{X: 1, Y: 0},  // Right
-	}
-
-	for _, dir := range directions {
+	for _, dir := range StandardDirections {
 		newPos := NewPosition(pos.X+dir.X, pos.Y+dir.Y)
 		move := NewMove(pos, newPos, nil)
 		if b.IsValidMove(&move) {

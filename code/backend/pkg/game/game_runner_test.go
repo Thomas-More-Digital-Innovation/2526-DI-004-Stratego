@@ -4,6 +4,7 @@ import (
 	AIhandler "digital-innovation/gostrategy/pkg/ai/handler"
 	"digital-innovation/gostrategy/pkg/game"
 	"digital-innovation/gostrategy/pkg/game/models"
+	"digital-innovation/gostrategy/pkg/testutils"
 	"testing"
 	"time"
 )
@@ -164,13 +165,7 @@ func TestRunnerIsWaitingForInput(t *testing.T) {
 }
 
 func TestRunnerGetGame(t *testing.T) {
-	player1 := game.NewPlayer(0, "P1", "red")
-	player2 := game.NewPlayer(1, "P2", "blue")
-
-	controller1 := game.NewHumanPlayerController(&player1)
-	controller2 := game.NewHumanPlayerController(&player2)
-
-	g := game.NewGame(controller1, controller2)
+	g, _, _ := testutils.SetupTestGame()
 	runner := game.NewRunner(g, 0, 1000)
 
 	retrieved := runner.GetGame()

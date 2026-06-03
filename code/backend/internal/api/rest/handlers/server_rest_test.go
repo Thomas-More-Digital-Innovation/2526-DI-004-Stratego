@@ -2,11 +2,9 @@ package handlers_test
 
 import (
 	"bytes"
-	"digital-innovation/gostrategy/internal/api/core"
-	"digital-innovation/gostrategy/internal/api/rest/handlers"
 	"digital-innovation/gostrategy/internal/api/ws"
-	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/pkg/testutils"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -18,11 +16,7 @@ import (
 )
 
 func TestHandleCreateGame(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, server := testutils.SetupHandlerTest(t)
 
 	t.Run("ValidCreation", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -79,10 +73,7 @@ func TestHandleCreateGame(t *testing.T) {
 }
 
 func TestHandleListGames(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, server := testutils.SetupHandlerTest(t)
 	_, err := server.CreateGame("game-1", models.HumanVsAi, "A", models.Fafo)
 	assert.NoError(t, err)
 
@@ -93,10 +84,7 @@ func TestHandleListGames(t *testing.T) {
 }
 
 func TestHandleWebSocketConnection_Errors(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	t.Run("GameNotFound", func(t *testing.T) {
 		w := httptest.NewRecorder()

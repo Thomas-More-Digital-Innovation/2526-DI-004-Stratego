@@ -1,12 +1,10 @@
 package handlers_test
 
 import (
-	"digital-innovation/gostrategy/internal/api/core"
-	"digital-innovation/gostrategy/internal/api/rest/handlers"
 	"digital-innovation/gostrategy/internal/api/ws"
-	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
 	"digital-innovation/gostrategy/pkg/game"
+	"digital-innovation/gostrategy/pkg/testutils"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -20,11 +18,7 @@ import (
 const testUserName = "test"
 
 func TestHandleGetGameHistory(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Test non-existent game
 	w := httptest.NewRecorder()
@@ -36,11 +30,7 @@ func TestHandleGetGameHistory(t *testing.T) {
 }
 
 func TestHandleListUserGames(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -51,11 +41,7 @@ func TestHandleListUserGames(t *testing.T) {
 }
 
 func TestHandleListMyGames(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Unauthenticated
 	w1 := httptest.NewRecorder()
@@ -74,11 +60,7 @@ func TestHandleListMyGames(t *testing.T) {
 }
 
 func TestHandleGetReconnectableGame(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	t.Run("Unauthenticated", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -174,11 +156,7 @@ func TestHandleGetReconnectableGame(t *testing.T) {
 }
 
 func TestHandleDeleteGame(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	t.Run("Unauthenticated", func(t *testing.T) {
 		w := httptest.NewRecorder()

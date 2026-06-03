@@ -2,6 +2,7 @@ package game
 
 import (
 	"digital-innovation/gostrategy/pkg/game/models"
+	"math/rand/v2"
 )
 
 // Piece represents a single game piece on the board
@@ -155,4 +156,14 @@ func (p *Piece) resolveStandardAttack(target *Piece) {
 		p.Eliminate()
 		target.Eliminate()
 	}
+}
+
+// ShufflePieces returns a randomized copy of the given slice of pieces.
+func ShufflePieces(pieces []*Piece) []*Piece {
+	shuffled := make([]*Piece, len(pieces))
+	copy(shuffled, pieces)
+	rand.Shuffle(len(shuffled), func(i, j int) {
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	})
+	return shuffled
 }

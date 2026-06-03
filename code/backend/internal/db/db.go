@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"digital-innovation/gostrategy/internal/logging"
+	"digital-innovation/gostrategy/internal/models"
 	"digital-innovation/gostrategy/internal/utils"
 	"fmt"
 	"time"
@@ -15,6 +16,16 @@ import (
 
 // DB is the global database connection instance
 var DB *gorm.DB
+
+// AllModels lists all GORM models to auto-migrate
+var AllModels = []any{
+	&models.User{},
+	&models.UserStats{},
+	&models.BoardSetup{},
+	&models.RefreshToken{},
+	&models.Game{},
+	&models.GameMove{},
+}
 
 type contextKey string
 
