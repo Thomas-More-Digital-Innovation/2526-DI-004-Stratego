@@ -25,6 +25,7 @@ var AllModels = []any{
 	&models.RefreshToken{},
 	&models.Game{},
 	&models.GameMove{},
+	&models.AIParameter{},
 }
 
 type contextKey string

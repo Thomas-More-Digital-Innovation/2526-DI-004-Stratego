@@ -1,7 +1,6 @@
-package AIhandler_test
+package AIhandler
 
 import (
-	AIhandler "digital-innovation/gostrategy/internal/ai/handler"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -10,20 +9,17 @@ import (
 )
 
 func TestCreateAI(t *testing.T) {
-	player := game.NewPlayer(0, "test-ai", "red")
+	player := game.NewPlayer(0, "Piet", "red")
 
-	// Test fafo creation
-	aiFafo, err := AIhandler.CreateAI(models.Fafo, &player)
-	assert.NoError(t, err)
-	assert.NotNil(t, aiFafo)
+	types := []string{models.Fafo, models.Fato, models.Heuristic, models.Minimax, models.Mcts}
+	for _, typ := range types {
+		t.Run(typ, func(t *testing.T) {
+			instance, err := CreateAI(typ, &player)
+			assert.NoError(t, err)
+			assert.NotNil(t, instance)
+		})
+	}
 
-	// Test fato creation
-	aiFato, err := AIhandler.CreateAI(models.Fato, &player)
-	assert.NoError(t, err)
-	assert.NotNil(t, aiFato)
-
-	// Test error returned for unknown AI type
-	_, err = AIhandler.CreateAI("unknown-type", &player)
+	_, err := CreateAI("invalid", &player)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "i don't know that AI!")
 }

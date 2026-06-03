@@ -1,6 +1,8 @@
 package aivsai
 
 import (
+	"digital-innovation/gostrategy/internal/ai"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,10 +42,18 @@ func TestRunAIvsAIExported(t *testing.T) {
 
 	t.Run("default format", func(_ *testing.T) {
 		RunAIvsAI("fato", "fato", 1, "default", false)
-
 	})
 
 	t.Run("markdown format", func(_ *testing.T) {
 		RunAIvsAI("fato", "fato", 1, "md", false)
 	})
+}
+
+func TestTrainAI(t *testing.T) {
+	tempFile := "temp_train_ai_parameters.json"
+	ai.SetFallbackFile(tempFile)
+	defer func() { _ = os.Remove(tempFile) }()
+
+	err := TrainAI("heuristic", "fato", 1, 1, false)
+	assert.NoError(t, err)
 }
