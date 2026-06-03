@@ -1,8 +1,8 @@
 package ws
 
 import (
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
 	"encoding/json"
 	"testing"
 	"time"

@@ -42,6 +42,13 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
+	t.Cleanup(func() {
+		sqlDB, err := db.DB()
+		if err == nil {
+			_ = sqlDB.Close()
+		}
+	})
+
 	return db
 }
 

@@ -2,9 +2,9 @@ package dto_test
 
 import (
 	"digital-innovation/gostrategy/internal/api/dto"
+	"digital-innovation/gostrategy/internal/game"
+	gamemodels "digital-innovation/gostrategy/internal/game/models"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
-	gamemodels "digital-innovation/gostrategy/pkg/game/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

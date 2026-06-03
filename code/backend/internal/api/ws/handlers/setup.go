@@ -3,7 +3,7 @@ package handlers
 import (
 	"digital-innovation/gostrategy/internal/api/dto"
 	"digital-innovation/gostrategy/internal/api/ws"
-	"digital-innovation/gostrategy/pkg/game"
+	"digital-innovation/gostrategy/internal/game"
 	"encoding/json"
 	"fmt"
 )

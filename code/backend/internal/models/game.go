@@ -3,7 +3,8 @@ package models
 import (
 	"time"
 
-	gamemodels "digital-innovation/gostrategy/pkg/game/models"
+	gamemodels "digital-innovation/gostrategy/internal/game/models"
+
 	"gorm.io/gorm"
 )
 

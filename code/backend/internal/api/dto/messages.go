@@ -2,9 +2,9 @@
 package dto
 
 import (
+	"digital-innovation/gostrategy/internal/game"
+	gamemodels "digital-innovation/gostrategy/internal/game/models"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
-	gamemodels "digital-innovation/gostrategy/pkg/game/models"
 )
 
 // WebSocket message types

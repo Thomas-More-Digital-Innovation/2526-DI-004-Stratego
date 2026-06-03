@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"digital-innovation/gostrategy/internal/api/ws"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/testutils"
+	"digital-innovation/gostrategy/internal/testutils"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

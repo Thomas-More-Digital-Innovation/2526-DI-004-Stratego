@@ -3,7 +3,7 @@ package handlers_test
 import (
 	"context"
 	"digital-innovation/gostrategy/internal/db"
-	"digital-innovation/gostrategy/pkg/testutils"
+	"digital-innovation/gostrategy/internal/testutils"
 	"fmt"
 	"net/http"
 	"net/http/httptest"

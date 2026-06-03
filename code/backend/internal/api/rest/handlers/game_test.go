@@ -2,9 +2,9 @@ package handlers_test
 
 import (
 	"digital-innovation/gostrategy/internal/api/ws"
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
-	"digital-innovation/gostrategy/pkg/testutils"
+	"digital-innovation/gostrategy/internal/testutils"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

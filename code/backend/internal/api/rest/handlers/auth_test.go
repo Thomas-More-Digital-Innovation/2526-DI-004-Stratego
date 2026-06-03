@@ -6,7 +6,7 @@ import (
 	"digital-innovation/gostrategy/internal/api/rest/handlers"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/testutils"
+	"digital-innovation/gostrategy/internal/testutils"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"

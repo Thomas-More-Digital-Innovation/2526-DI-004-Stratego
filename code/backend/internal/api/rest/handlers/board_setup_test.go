@@ -5,7 +5,7 @@ import (
 	"context"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/testutils"
+	"digital-innovation/gostrategy/internal/testutils"
 	"encoding/json"
 	"fmt"
 	"net/http"

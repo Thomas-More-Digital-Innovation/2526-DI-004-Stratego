@@ -2,9 +2,9 @@
 package ws
 
 import (
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/logging"
 	"digital-innovation/gostrategy/internal/utils"
-	"digital-innovation/gostrategy/pkg/game"
 	"net/http"
 	"strings"
 
