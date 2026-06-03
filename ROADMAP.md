@@ -13,6 +13,9 @@ This document outlines the planned improvements and future directions for the Go
 - [ ] **Move History**: Implement a dedicated history view for AI moves in the playground.
 - [ ] **Heuristics**: Create and train a basic heuristic-based evaluation engine.
 
+## v0.4.1 - Replays
+*Focus: Storing and viewing past games.*
+
 ### Replay System
 - [ ] **Game Theater**: View replays of previous games with full playback controls.
 - [ ] **External Loading**: Support for uploading and viewing replay files.
