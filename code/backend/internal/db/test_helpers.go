@@ -1,7 +1,6 @@
 package db
 
 import (
-	"digital-innovation/gostrategy/internal/models"
 	"fmt"
 	"regexp"
 	"testing"
@@ -38,17 +37,28 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	DB = db
 
 	// AutoMigrate all models
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.UserStats{},
-		&models.BoardSetup{},
-		&models.RefreshToken{},
-		&models.Game{},
-		&models.GameMove{},
-	)
+	err = db.AutoMigrate(AllModels...)
 	if err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
+	t.Cleanup(func() {
+		sqlDB, err := db.DB()
+		if err == nil {
+			_ = sqlDB.Close()
+		}
+	})
+
 	return db
+}
+
+// SetupDBTest swaps the global DB pointer and restores it on test cleanup
+func SetupDBTest(t *testing.T) *gorm.DB {
+	testDB := SetupTestDB(t)
+	oldDB := DB
+	DB = testDB
+	t.Cleanup(func() {
+		DB = oldDB
+	})
+	return testDB
 }

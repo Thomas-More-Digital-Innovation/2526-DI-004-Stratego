@@ -3,10 +3,9 @@ package handlers_test
 import (
 	"bytes"
 	"context"
-	"digital-innovation/gostrategy/internal/api/core"
-	"digital-innovation/gostrategy/internal/api/rest/handlers"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/internal/testutils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -25,11 +24,7 @@ const (
 )
 
 func TestUserHandlers(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	user, _ := db.CreateUser(context.Background(), "alice", oldPassword, "")
 

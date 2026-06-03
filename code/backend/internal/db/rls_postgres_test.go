@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -17,16 +19,15 @@ func setupPostgresDB(t *testing.T) *gorm.DB {
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
+	require.NoError(t, err)
 
 	oldDB := DB
 	DB = db
-	if err := RunMigrations(context.Background()); err != nil {
+	err = RunMigrations(context.Background())
+	if err != nil {
 		DB = oldDB
-		t.Fatalf("failed to run migrations: %v", err)
 	}
+	require.NoError(t, err)
 	DB = oldDB
 
 	return db
@@ -57,9 +58,7 @@ func TestRowLevelSecurity(t *testing.T) {
 		setupA = &setup
 		return nil
 	})
-	if err != nil {
-		t.Fatalf("failed to create setup for A: %v", err)
-	}
+	require.NoError(t, err)
 
 	t.Run("User B cannot see User A's setup via RLS", func(t *testing.T) {
 		var retrieved models.BoardSetup
@@ -67,11 +66,7 @@ func TestRowLevelSecurity(t *testing.T) {
 			return tx.First(&retrieved, setupA.ID).Error
 		})
 
-		if err == nil {
-			t.Errorf("Security Breach: User B successfully retrieved User A's setup!")
-		} else if err != gorm.ErrRecordNotFound {
-			t.Errorf("Expected ErrRecordNotFound due to RLS, got: %v", err)
-		}
+		assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 	})
 
 	t.Run("User A can see their own setup", func(t *testing.T) {
@@ -80,12 +75,8 @@ func TestRowLevelSecurity(t *testing.T) {
 			return tx.First(&retrieved, setupA.ID).Error
 		})
 
-		if err != nil {
-			t.Errorf("User A failed to retrieve their own setup: %v", err)
-		}
-		if retrieved.ID != setupA.ID {
-			t.Errorf("expected ID %d, got %d", setupA.ID, retrieved.ID)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, setupA.ID, retrieved.ID)
 	})
 
 	t.Run("User B cannot delete User A's setup", func(t *testing.T) {
@@ -96,9 +87,7 @@ func TestRowLevelSecurity(t *testing.T) {
 			return result.Error
 		})
 
-		if rowsAffected > 0 {
-			t.Errorf("Security Breach: User B successfully deleted User A's setup!")
-		}
+		assert.Zero(t, rowsAffected)
 	})
 
 	// Cleanup

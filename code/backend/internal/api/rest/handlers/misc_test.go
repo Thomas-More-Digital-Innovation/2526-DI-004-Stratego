@@ -2,9 +2,8 @@ package handlers_test
 
 import (
 	"context"
-	"digital-innovation/gostrategy/internal/api/core"
-	"digital-innovation/gostrategy/internal/api/rest/handlers"
 	"digital-innovation/gostrategy/internal/db"
+	"digital-innovation/gostrategy/internal/testutils"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,14 +11,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHealthHandler(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -29,10 +25,7 @@ func TestHealthHandler(t *testing.T) {
 }
 
 func TestGetCSRFToken(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -41,16 +34,10 @@ func TestGetCSRFToken(t *testing.T) {
 }
 
 func TestStatsHandlers(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	user, err := db.CreateUser(context.Background(), "alice", "StrongPassword1", "")
-	if err != nil {
-		t.Fatalf("Failed to create user: %v", err)
-	}
+	require.NoError(t, err)
 
 	// GetUserStatsHandler
 	w1 := httptest.NewRecorder()
@@ -70,10 +57,7 @@ func TestStatsHandlers(t *testing.T) {
 }
 
 func TestDebugStats(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -82,11 +66,7 @@ func TestDebugStats(t *testing.T) {
 }
 
 func TestMonitoringHandlers(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// UserCountHandler
 	w1 := httptest.NewRecorder()

@@ -3,10 +3,10 @@ package handlers_test
 import (
 	"bytes"
 	"context"
-	"digital-innovation/gostrategy/internal/api/core"
 	"digital-innovation/gostrategy/internal/api/rest/handlers"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
+	"digital-innovation/gostrategy/internal/testutils"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -28,12 +28,7 @@ func TestIsStrongPassword(t *testing.T) {
 }
 
 func TestRegisterUserHandler(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Test valid registration
 	w := httptest.NewRecorder()
@@ -61,11 +56,7 @@ func TestRegisterUserHandler(t *testing.T) {
 }
 
 func TestLoginHandler(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Register a user first
 	reqBody := models.CreateUserRequest{
@@ -105,11 +96,7 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestLogoutHandler(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -120,11 +107,7 @@ func TestLogoutHandler(t *testing.T) {
 }
 
 func TestRefreshTokenHandler(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Create a user and a refresh token
 	user, _ := db.CreateUser(context.Background(), "alice", strongPassword, "")
@@ -144,11 +127,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 }
 
 func TestRefreshTokenHandler_Errors(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Case 1: Missing refresh token cookie
 	w1 := httptest.NewRecorder()
@@ -167,11 +146,7 @@ func TestRefreshTokenHandler_Errors(t *testing.T) {
 }
 
 func TestRegisterUserHandler_Errors(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Case 1: Invalid request body JSON
 	w1 := httptest.NewRecorder()
@@ -202,11 +177,7 @@ func TestRegisterUserHandler_Errors(t *testing.T) {
 }
 
 func TestLoginHandler_Errors(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db.SetupTestDB(t)
-	server := core.NewGameServer()
-	defer server.Stop()
-	h := handlers.NewHandler(server)
+	_, h, _ := testutils.SetupHandlerTest(t)
 
 	// Case 1: Invalid JSON body
 	w1 := httptest.NewRecorder()

@@ -1,6 +1,6 @@
 package models
 
-import gamemodels "digital-innovation/gostrategy/pkg/game/models"
+import gamemodels "digital-innovation/gostrategy/internal/game/models"
 
 // PieceType is an alias for the game engine PieceType definition.
 type PieceType = gamemodels.PieceType

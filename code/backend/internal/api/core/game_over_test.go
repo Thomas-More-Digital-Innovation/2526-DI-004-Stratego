@@ -3,8 +3,8 @@ package core
 import (
 	"context"
 	"digital-innovation/gostrategy/internal/db"
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

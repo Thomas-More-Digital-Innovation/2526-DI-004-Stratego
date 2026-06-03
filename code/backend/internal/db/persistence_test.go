@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGamePagination(t *testing.T) {
-	testDB := SetupTestDB(t)
-	oldDB := DB
-	DB = testDB
-	defer func() { DB = oldDB }()
-
+	SetupDBTest(t)
 	ctx := context.Background()
 	user, _ := CreateUser(ctx, "paginator", "Pass1234!", "")
 	ctx = WithUserID(ctx, user.ID)
@@ -22,48 +20,30 @@ func TestGamePagination(t *testing.T) {
 	for i := range 15 {
 		gameID := fmt.Sprintf("paged-game-%d", i)
 		err := SaveGame(ctx, gameID, &user.ID, nil, "ranked", map[string]string{"test": "data"}, nil, time.Now(), time.Now())
-		if err != nil {
-			t.Fatalf("failed to save game %d: %v", i, err)
-		}
+		assert.NoError(t, err)
 	}
 
 	t.Run("Count Games", func(t *testing.T) {
 		count, err := GetGamesCountForUser(ctx, user.ID)
-		if err != nil {
-			t.Errorf("GetGamesCountForUser failed: %v", err)
-		}
-		if count != 15 {
-			t.Errorf("expected 15 games, got %d", count)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(15), count)
 	})
 
 	t.Run("Paged Retrieval Page 1", func(t *testing.T) {
 		games, err := GetGamesForUserPaged(ctx, user.ID, 10, 0)
-		if err != nil {
-			t.Errorf("GetGamesForUserPaged failed: %v", err)
-		}
-		if len(games) != 10 {
-			t.Errorf("expected 10 games, got %d", len(games))
-		}
+		assert.NoError(t, err)
+		assert.Len(t, games, 10)
 	})
 
 	t.Run("Paged Retrieval Page 2", func(t *testing.T) {
 		games, err := GetGamesForUserPaged(ctx, user.ID, 10, 10)
-		if err != nil {
-			t.Errorf("GetGamesForUserPaged failed: %v", err)
-		}
-		if len(games) != 5 {
-			t.Errorf("expected 5 games, got %d", len(games))
-		}
+		assert.NoError(t, err)
+		assert.Len(t, games, 5)
 	})
 }
 
 func TestComplexJSONSerialization(t *testing.T) {
-	testDB := SetupTestDB(t)
-	oldDB := DB
-	DB = testDB
-	defer func() { DB = oldDB }()
-
+	SetupDBTest(t)
 	ctx := context.Background()
 	ctx = WithUserID(ctx, 1) // Dummy ID for RLS
 	gameID := "json-complex-test"
@@ -73,9 +53,7 @@ func TestComplexJSONSerialization(t *testing.T) {
 			"metadata": "some \"quoted\" text and \n newlines",
 			"unicode":  "🚀 Stratego!",
 		}, nil, time.Now(), time.Now())
-		if err != nil {
-			t.Fatalf("SaveGame with complex JSON failed: %v", err)
-		}
+		assert.NoError(t, err)
 
 		move := models.HistoricalMove{
 			MoveIndex: 1,
@@ -88,18 +66,12 @@ func TestComplexJSONSerialization(t *testing.T) {
 			Result: models.ResultMove,
 		}
 
-		if err := SaveMove(ctx, gameID, move); err != nil {
-			t.Errorf("SaveMove with complex JSON failed: %v", err)
-		}
+		err = SaveMove(ctx, gameID, move)
+		assert.NoError(t, err)
 
 		history, err := GetGameHistory(ctx, gameID)
-		if err != nil {
-			t.Fatalf("GetGameHistory failed: %v", err)
-		}
-
-		if history.Moves[0].Attacker.Type != "Special \"Char\" Unit" {
-			t.Errorf("expected special char type, got %s", history.Moves[0].Attacker.Type)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, "Special \"Char\" Unit", history.Moves[0].Attacker.Type)
 	})
 
 	t.Run("Empty and Nil Data", func(t *testing.T) {
@@ -113,17 +85,11 @@ func TestComplexJSONSerialization(t *testing.T) {
 			Defender:  nil,
 		}
 
-		if err := SaveMove(ctx, gameID2, move); err != nil {
-			t.Errorf("SaveMove with nil data failed: %v", err)
-		}
+		err := SaveMove(ctx, gameID2, move)
+		assert.NoError(t, err)
 
 		history, err := GetGameHistory(ctx, gameID2)
-		if err != nil {
-			t.Fatalf("GetGameHistory failed: %v", err)
-		}
-
-		if history.Moves[0].Attacker != nil {
-			t.Errorf("expected nil attacker, got %+v", history.Moves[0].Attacker)
-		}
+		assert.NoError(t, err)
+		assert.Nil(t, history.Moves[0].Attacker)
 	})
 }

@@ -54,27 +54,7 @@ func (h *Hub) BroadcastGameState() {
 		winCause = string(h.Session.GetWinCause())
 	}
 
-	h.BroadcastMessage(dto.MsgTypeGameState, dto.GameStateMessage{
-		Round:              state.Round,
-		CurrentPlayerID:    state.CurrentPlayerID,
-		CurrentPlayerName:  state.CurrentPlayerName,
-		IsGameOver:         state.IsGameOver,
-		WinnerID:           state.WinnerID,
-		WinnerName:         winnerName,
-		WinCause:           winCause,
-		Player1Score:       state.Player1Score,
-		Player2Score:       state.Player2Score,
-		WaitingForInput:    state.WaitingForInput,
-		Paused:             state.Paused,
-		MoveCount:          state.MoveCount,
-		Player1AlivePieces: state.Player1AlivePieces,
-		Player2AlivePieces: state.Player2AlivePieces,
-		IsSetupPhase:       state.IsSetupPhase,
-		Headless:           state.Headless,
-		SetupRemainingSecs: state.SetupRemainingSecs,
-		Player1Username:    state.Player1Username,
-		Player2Username:    state.Player2Username,
-	})
+	h.BroadcastMessage(dto.MsgTypeGameState, dto.BuildGameStateMessage(state, winnerName, winCause))
 }
 
 // BroadcastGameTransition broadcasts complete state after setup phase ends
@@ -131,20 +111,8 @@ func (h *Hub) buildBoardStateJSON(seatIndex int, isGameOver bool) []byte {
 	h.Session.RLock()
 	field := board.GetField()
 
-	boardDTO := make([][]dto.PieceDTO, 10)
-	for y := range 10 {
-		boardDTO[y] = make([]dto.PieceDTO, 10)
-		for x := range 10 {
-			boardDTO[y][x] = dto.PieceDTO{OwnerID: -1}
-			piece := field[y][x]
-			if piece != nil {
-				forceReveal := h.GameType == models.AiVsAi || isGameOver
-				dtoPiece := dto.PieceToDTO(piece, seatIndex, forceReveal)
-				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dtoPiece
-			}
-		}
-	}
+	forceReveal := h.GameType == models.AiVsAi || isGameOver
+	boardDTO := dto.MapBoardToDTO(field, seatIndex, forceReveal)
 
 	var filteredLastMove *models.HistoricalMove
 	if lastMove != nil {
@@ -177,18 +145,7 @@ func (h *Hub) broadcastBoardStateRevealed() {
 	h.Session.RLock()
 	field := board.GetField()
 
-	boardDTO := make([][]dto.PieceDTO, 10)
-	for y := range 10 {
-		boardDTO[y] = make([]dto.PieceDTO, 10)
-		for x := range 10 {
-			piece := field[y][x]
-			if piece != nil && piece.IsAlive() {
-				dtoPiece := dto.PieceToDTO(piece, piece.GetOwner().GetID(), true)
-				dtoPiece.Position = dto.PositionDTO{X: x, Y: y}
-				boardDTO[y][x] = dtoPiece
-			}
-		}
-	}
+	boardDTO := dto.MapBoardToDTO(field, 0, true)
 
 	h.Session.RUnlock()
 

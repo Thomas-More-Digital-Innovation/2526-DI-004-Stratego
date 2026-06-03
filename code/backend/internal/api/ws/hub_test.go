@@ -2,8 +2,8 @@ package ws_test
 
 import (
 	"digital-innovation/gostrategy/internal/api/ws"
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
 	"testing"
 	"time"
 )

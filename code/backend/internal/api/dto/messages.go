@@ -2,8 +2,9 @@
 package dto
 
 import (
+	"digital-innovation/gostrategy/internal/game"
+	gamemodels "digital-innovation/gostrategy/internal/game/models"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
 )
 
 // WebSocket message types
@@ -82,25 +83,18 @@ type SetSpeedMessage struct {
 
 // GameStateMessage contains the current state of the game
 type GameStateMessage struct {
-	Round              int    `json:"round"`
-	CurrentPlayerID    int    `json:"currentPlayerId"`
-	CurrentPlayerName  string `json:"currentPlayerName"`
-	IsGameOver         bool   `json:"isGameOver"`
-	WinnerID           *int   `json:"winnerId,omitempty"`
-	WinnerName         string `json:"winnerName,omitempty"`
-	WinCause           string `json:"winCause,omitempty"`
-	Player1Score       int    `json:"player1Score"`
-	Player2Score       int    `json:"player2Score"`
-	WaitingForInput    bool   `json:"waitingForInput"`
-	Paused             bool   `json:"paused"`
-	MoveCount          int    `json:"moveCount"`
-	Player1AlivePieces int    `json:"player1AlivePieces"`
-	Player2AlivePieces int    `json:"player2AlivePieces"`
-	IsSetupPhase       bool   `json:"isSetupPhase"`
-	Headless           bool   `json:"headless"`
-	SetupRemainingSecs int    `json:"setupRemainingSecs,omitempty"`
-	Player1Username    string `json:"player1Username"`
-	Player2Username    string `json:"player2Username"`
+	gamemodels.GameState
+	WinnerName string `json:"winnerName,omitempty"`
+	WinCause   string `json:"winCause,omitempty"`
+}
+
+// BuildGameStateMessage creates a GameStateMessage from gamemodels.GameState and other info
+func BuildGameStateMessage(state gamemodels.GameState, winnerName string, winCause string) GameStateMessage {
+	return GameStateMessage{
+		GameState:  state,
+		WinnerName: winnerName,
+		WinCause:   winCause,
+	}
 }
 
 // MoveResultMessage is sent by the server to report move success/failure
@@ -221,4 +215,22 @@ func PieceToDTO(piece *game.Piece, viewerID int, forceReveal bool) PieceDTO {
 	}
 
 	return dto
+}
+
+// MapBoardToDTO maps a 10x10 board piece matrix to a 2D slice of PieceDTOs for a given observer's seat.
+func MapBoardToDTO(field [10][10]*game.Piece, seatIndex int, forceReveal bool) [][]PieceDTO {
+	boardDTO := make([][]PieceDTO, 10)
+	for y := range 10 {
+		boardDTO[y] = make([]PieceDTO, 10)
+		for x := range 10 {
+			boardDTO[y][x] = PieceDTO{OwnerID: -1}
+			piece := field[y][x]
+			if piece != nil {
+				dtoPiece := PieceToDTO(piece, seatIndex, forceReveal)
+				dtoPiece.Position = PositionDTO{X: x, Y: y}
+				boardDTO[y][x] = dtoPiece
+			}
+		}
+	}
+	return boardDTO
 }

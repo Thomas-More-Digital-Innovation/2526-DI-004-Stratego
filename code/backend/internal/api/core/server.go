@@ -3,13 +3,13 @@ package core
 
 import (
 	"context"
+	AIhandler "digital-innovation/gostrategy/internal/ai/handler"
 	"digital-innovation/gostrategy/internal/api/ws"
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/logging"
 	"digital-innovation/gostrategy/internal/models"
 	"digital-innovation/gostrategy/internal/telemetry"
 	"digital-innovation/gostrategy/internal/utils"
-	AIhandler "digital-innovation/gostrategy/pkg/ai/handler"
-	"digital-innovation/gostrategy/pkg/game"
 	"fmt"
 
 	"github.com/gin-gonic/gin"

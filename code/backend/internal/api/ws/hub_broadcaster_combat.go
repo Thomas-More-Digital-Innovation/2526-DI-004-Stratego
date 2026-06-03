@@ -2,8 +2,8 @@ package ws
 
 import (
 	"digital-innovation/gostrategy/internal/api/dto"
+	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/models"
-	"digital-innovation/gostrategy/pkg/game"
 )
 
 // BroadcastCombat sends combat information to all clients

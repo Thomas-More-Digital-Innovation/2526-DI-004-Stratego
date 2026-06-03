@@ -1,4 +1,4 @@
-// Package api_test provides integration tests for the API.
+// Package api provides integration tests for the API.
 package api
 
 import (
@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const accessTokenCookie = "access_token"
@@ -39,18 +41,13 @@ func TestIntegration_UserRegistration(t *testing.T) {
 			Password: db.TestPassword,
 		})
 		resp, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
-		if err != nil {
-			t.Fatalf("Failed to make request: %v", err)
-		}
+		require.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 
 		var user models.User
-		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-			t.Fatalf("Failed to decode user: %v", err)
-		}
-		if user.Username != "testuser" {
-			t.Errorf("Expected username testuser, got %s", user.Username)
-		}
+		err = json.NewDecoder(resp.Body).Decode(&user)
+		require.NoError(t, err)
+		assert.Equal(t, "testuser", user.Username)
 
 		// Check cookies
 		cookies := resp.Cookies()
@@ -64,9 +61,8 @@ func TestIntegration_UserRegistration(t *testing.T) {
 				hasRefresh = true
 			}
 		}
-		if !hasSession || !hasRefresh {
-			t.Errorf("Missing cookies: access_token=%v, refresh_token=%v", hasSession, hasRefresh)
-		}
+		assert.True(t, hasSession)
+		assert.True(t, hasRefresh)
 	})
 
 	t.Run("Duplicate Username", func(t *testing.T) {
@@ -82,10 +78,10 @@ func TestIntegration_UserRegistration(t *testing.T) {
 		}
 
 		// Duplicate
-		resp, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
-		if resp.StatusCode != http.StatusConflict {
-			t.Errorf("Expected status 409 for duplicate, got %d", resp.StatusCode)
-		}
+		resp, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusConflict, resp.StatusCode)
 	})
 
 	t.Run("Weak Password", func(t *testing.T) {
@@ -94,10 +90,10 @@ func TestIntegration_UserRegistration(t *testing.T) {
 			Username: "weakuser",
 			Password: "123",
 		})
-		resp, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
-		if resp.StatusCode != http.StatusBadRequest {
-			t.Errorf("Expected status 400 for weak password, got %d", resp.StatusCode)
-		}
+		resp, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(reqBody))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }
 
@@ -122,15 +118,13 @@ func TestIntegration_LoginLogout(t *testing.T) {
 			Username: db.TestUserLogin,
 			Password: db.TestPassword,
 		})
-		resp, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Expected status 200, got %d", resp.StatusCode)
-		}
+		resp, err := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		cookies := resp.Cookies()
-		if len(cookies) < 2 {
-			t.Errorf("Expected at least 2 cookies, got %d", len(cookies))
-		}
+		assert.True(t, len(cookies) >= 2)
 	})
 
 	t.Run("Invalid Credentials", func(t *testing.T) {
@@ -139,10 +133,10 @@ func TestIntegration_LoginLogout(t *testing.T) {
 			Username: db.TestUserLogin,
 			Password: "WrongPassword1",
 		})
-		resp, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
-		if resp.StatusCode != http.StatusUnauthorized {
-			t.Errorf("Expected status 401, got %d", resp.StatusCode)
-		}
+		resp, err := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
 	t.Run("Logout", func(t *testing.T) {
@@ -152,8 +146,10 @@ func TestIntegration_LoginLogout(t *testing.T) {
 			Username: db.TestUserLogin,
 			Password: db.TestPassword,
 		})
-		resp, _ := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
+		resp, err := http.Post(ts.URL+"/users/login", contentTypeJSON, bytes.NewBuffer(loginBody))
+		require.NoError(t, err)
 		cookies := resp.Cookies()
+		_ = resp.Body.Close()
 
 		req, _ := http.NewRequest("POST", ts.URL+"/users/logout", nil)
 		for _, c := range cookies {
@@ -161,10 +157,10 @@ func TestIntegration_LoginLogout(t *testing.T) {
 		}
 
 		client := &http.Client{}
-		respLogout, _ := client.Do(req)
-		if respLogout.StatusCode != http.StatusOK {
-			t.Errorf("Expected status 200 for logout, got %d", respLogout.StatusCode)
-		}
+		respLogout, err := client.Do(req)
+		require.NoError(t, err)
+		defer func() { _ = respLogout.Body.Close() }()
+		assert.Equal(t, http.StatusOK, respLogout.StatusCode)
 
 		// Check if cookies are cleared (MaxAge < 0)
 		logoutCookies := respLogout.Cookies()
@@ -174,9 +170,7 @@ func TestIntegration_LoginLogout(t *testing.T) {
 				foundCleared = true
 			}
 		}
-		if !foundCleared {
-			t.Errorf("Access token cookie not cleared")
-		}
+		assert.True(t, foundCleared)
 	})
 }
 
@@ -190,7 +184,8 @@ func TestIntegration_BoardSetups(t *testing.T) {
 		Username: "boarduser",
 		Password: db.TestPassword,
 	})
-	respReg, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
+	respReg, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
+	require.NoError(t, err)
 	cookies := respReg.Cookies()
 	_ = respReg.Body.Close()
 
@@ -207,10 +202,9 @@ func TestIntegration_BoardSetups(t *testing.T) {
 		}
 
 		client := &http.Client{}
-		resp, _ := client.Do(req)
-		if resp.StatusCode != http.StatusCreated {
-			t.Fatalf("Expected status 201, got %d", resp.StatusCode)
-		}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode)
 		_ = resp.Body.Close()
 
 		// List setups
@@ -218,22 +212,17 @@ func TestIntegration_BoardSetups(t *testing.T) {
 		for _, c := range cookies {
 			reqList.AddCookie(c)
 		}
-		respList, _ := client.Do(reqList)
-		if respList.StatusCode != http.StatusOK {
-			t.Fatalf("Expected status 200 for list, got %d", respList.StatusCode)
-		}
+		respList, err := client.Do(reqList)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, respList.StatusCode)
 
 		var setups []models.BoardSetup
-		if err := json.NewDecoder(respList.Body).Decode(&setups); err != nil {
-			t.Fatalf("Failed to decode setups: %v", err)
-		}
+		err = json.NewDecoder(respList.Body).Decode(&setups)
+		require.NoError(t, err)
 		_ = respList.Body.Close()
-		if len(setups) != 1 {
-			t.Errorf("Expected 1 setup, got %d", len(setups))
-		}
-		if setups[0].Name != "My Setup" {
-			t.Errorf("Expected name 'My Setup', got '%s'", setups[0].Name)
-		}
+
+		require.Len(t, setups, 1)
+		assert.Equal(t, "My Setup", setups[0].Name)
 	})
 
 	t.Run("Board Setup Ownership", func(t *testing.T) {
@@ -243,7 +232,8 @@ func TestIntegration_BoardSetups(t *testing.T) {
 			Username: "otheruser",
 			Password: db.TestPassword,
 		})
-		respOther, _ := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
+		respOther, err := http.Post(ts.URL+"/users/register", contentTypeJSON, bytes.NewBuffer(regBody))
+		require.NoError(t, err)
 		otherCookies := respOther.Cookies()
 		_ = respOther.Body.Close()
 
@@ -253,14 +243,13 @@ func TestIntegration_BoardSetups(t *testing.T) {
 			reqList.AddCookie(c)
 		}
 		client := &http.Client{}
-		respList, _ := client.Do(reqList)
+		respList, err := client.Do(reqList)
+		require.NoError(t, err)
+		defer func() { _ = respList.Body.Close() }()
+
 		var setups []models.BoardSetup
-		if err := json.NewDecoder(respList.Body).Decode(&setups); err != nil {
-			t.Fatalf("Failed to decode setups: %v", err)
-		}
-		_ = respList.Body.Close()
-		if len(setups) != 0 {
-			t.Errorf("Expected 0 setups for otheruser, got %d", len(setups))
-		}
+		err = json.NewDecoder(respList.Body).Decode(&setups)
+		require.NoError(t, err)
+		assert.Empty(t, setups)
 	})
 }

@@ -4,7 +4,7 @@ package core
 import (
 	"context"
 	"digital-innovation/gostrategy/internal/api/ws"
-	"digital-innovation/gostrategy/pkg/game"
+	"digital-innovation/gostrategy/internal/game"
 	"sync"
 
 	"github.com/gin-gonic/gin"

@@ -13,6 +13,7 @@
         "stretchr",
         "swaggo",
         "testuser",
+        "testutils",
         "Upgrader"
     ]
 }
