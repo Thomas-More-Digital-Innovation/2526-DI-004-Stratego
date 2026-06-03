@@ -6,6 +6,9 @@ import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStepWhilePaused(t *testing.T) {
@@ -13,13 +16,10 @@ func TestStepWhilePaused(t *testing.T) {
 	player2 := game.NewPlayer(1, "AI2", "blue")
 
 	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	g := game.QuickStart(controller1, controller2)
 
@@ -28,26 +28,15 @@ func TestStepWhilePaused(t *testing.T) {
 
 	// Pause the runner
 	runner.Pause()
-
-	if !runner.IsPaused() {
-		t.Fatal("Runner should be paused")
-	}
+	assert.True(t, runner.IsPaused(), "Runner should be paused")
 
 	initialMoveHistory := len(g.MoveHistory)
 
 	// Attempt to step while paused
 	success := runner.Step()
-
-	if !success {
-		t.Error("Step should have succeeded even when paused")
-	}
-
-	if len(g.MoveHistory) != initialMoveHistory+1 {
-		t.Errorf("Expected move history length to increase by 1, got %d -> %d", initialMoveHistory, len(g.MoveHistory))
-	}
+	assert.True(t, success, "Step should have succeeded even when paused")
+	assert.Len(t, g.MoveHistory, initialMoveHistory+1)
 
 	// Verify that the game is still paused
-	if !runner.IsPaused() {
-		t.Error("Runner should still be paused after step")
-	}
+	assert.True(t, runner.IsPaused(), "Runner should still be paused after step")
 }

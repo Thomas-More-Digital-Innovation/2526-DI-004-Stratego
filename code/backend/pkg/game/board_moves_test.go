@@ -3,6 +3,9 @@ package game
 import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMovePiece(t *testing.T) {
@@ -17,13 +20,8 @@ func TestMovePiece(t *testing.T) {
 
 	board.MovePiece(&move, piece)
 
-	if board.GetPieceAt(toPos) != piece {
-		t.Errorf("Expected piece to be at %v after move, but got %v", toPos, board.GetPieceAt(toPos))
-	}
-
-	if board.GetPieceAt(fromPos) != nil {
-		t.Errorf("Expected original position %v to be empty after move, but got %v", fromPos, board.GetPieceAt(fromPos))
-	}
+	assert.Equal(t, piece, board.GetPieceAt(toPos))
+	assert.Nil(t, board.GetPieceAt(fromPos))
 }
 
 func TestListMovesStandardPiece(t *testing.T) {
@@ -35,14 +33,9 @@ func TestListMovesStandardPiece(t *testing.T) {
 	board.SetPieceAt(position, piece)
 
 	moves, err := board.ListMoves(position)
-	if err != nil {
-		t.Errorf("Expected to list moves successfully, but got error: %v", err)
-	}
+	require.NoError(t, err)
 
-	expectedMoveCount := 4 // Up, Down, Left, Right
-	if len(moves) != expectedMoveCount {
-		t.Errorf("Expected %d moves for standard piece, but got %d", expectedMoveCount, len(moves))
-	}
+	assert.Len(t, moves, 4) // Up, Down, Left, Right
 }
 
 func TestListMovesStandardPieceNoMovesAvailable(t *testing.T) {
@@ -65,13 +58,8 @@ func TestListMovesStandardPieceNoMovesAvailable(t *testing.T) {
 	board.SetPieceAt(position, piece)
 
 	moves, err := board.ListMoves(position)
-	if err != nil {
-		t.Errorf("Expected to list moves successfully, but got error: %v", err)
-	}
-
-	if len(moves) != 0 {
-		t.Errorf("Expected no moves for standard piece, but got %d", len(moves))
-	}
+	require.NoError(t, err)
+	assert.Empty(t, moves)
 }
 
 func TestListMovesScout(t *testing.T) {
@@ -83,14 +71,8 @@ func TestListMovesScout(t *testing.T) {
 	board.SetPieceAt(position, piece)
 
 	moves, err := board.ListMoves(position)
-	if err != nil {
-		t.Errorf("Expected to list moves successfully, but got error: %v", err)
-	}
-
-	expectedMoveCount := 18 // 9 Down, 9 Right
-	if len(moves) != expectedMoveCount {
-		t.Errorf("Expected %d moves for scout piece, but got %d", expectedMoveCount, len(moves))
-	}
+	require.NoError(t, err)
+	assert.Len(t, moves, 18) // 9 Down, 9 Right
 }
 
 func TestListMovesNoPiece(t *testing.T) {
@@ -98,13 +80,8 @@ func TestListMovesNoPiece(t *testing.T) {
 	position := NewPosition(0, 0)
 
 	moves, err := board.ListMoves(position)
-	if err == nil {
-		t.Errorf("Expected error when listing moves for empty position, but got none")
-	}
-
-	if len(moves) != 0 {
-		t.Errorf("Expected no moves for empty position, but got %d", len(moves))
-	}
+	assert.Error(t, err)
+	assert.Empty(t, moves)
 }
 
 func TestClone(t *testing.T) {
@@ -116,15 +93,9 @@ func TestClone(t *testing.T) {
 
 	cloned := board.Clone()
 	clonedPiece := cloned.GetPieceAt(pos)
-	if clonedPiece == nil {
-		t.Fatal("Cloned board should have a piece at the same position")
-	}
-	if clonedPiece == piece {
-		t.Error("Cloned board should have a NEW piece pointer (deep copy)")
-	}
-	if clonedPiece.GetType().GetRank() != piece.GetType().GetRank() {
-		t.Error("Cloned piece should have the same rank")
-	}
+	require.NotNil(t, clonedPiece)
+	assert.NotSame(t, piece, clonedPiece)
+	assert.Equal(t, piece.GetType().GetRank(), clonedPiece.GetType().GetRank())
 }
 
 func TestBoardString(t *testing.T) {
@@ -133,28 +104,11 @@ func TestBoardString(t *testing.T) {
 	piece := NewPiece(models.Marshal, &player)
 	board.SetPieceAt(NewPosition(0, 0), piece)
 	s := board.String()
-	if s == "" {
-		t.Error("Board.String() returned empty string")
-	}
-	// Check if it contains pieces, lakes and empty squares
-	if !contains(s, piece.GetType().GetIcon()) {
-		t.Error("Board string should contain piece icon")
-	}
-	if !contains(s, "~~") {
-		t.Error("Board string should contain lake icon")
-	}
-	if !contains(s, "..") {
-		t.Error("Board string should contain empty square icon")
-	}
-}
+	assert.NotEmpty(t, s)
 
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	assert.Contains(t, s, piece.GetType().GetIcon())
+	assert.Contains(t, s, "~~")
+	assert.Contains(t, s, "..")
 }
 
 func TestIsValidMoveBoundaries(t *testing.T) {
@@ -177,16 +131,12 @@ func TestIsValidMoveBoundaries(t *testing.T) {
 
 	for _, tt := range tests {
 		move := NewMove(from, NewPosition(tt.x, tt.y), &player)
-		if board.IsValidMove(&move) != tt.want {
-			t.Errorf("IsValidMove for (%d, %d) should be %v", tt.x, tt.y, tt.want)
-		}
+		assert.Equal(t, tt.want, board.IsValidMove(&move))
 	}
 
 	// No piece at from
 	moveNoPiece := NewMove(NewPosition(5, 5), NewPosition(5, 6), &player)
-	if board.IsValidMove(&moveNoPiece) {
-		t.Error("IsValidMove should be false if no piece at from")
-	}
+	assert.False(t, board.IsValidMove(&moveNoPiece))
 }
 
 func TestScoutMovesOutOfBounds(t *testing.T) {
@@ -198,9 +148,7 @@ func TestScoutMovesOutOfBounds(t *testing.T) {
 
 	// This will trigger handleScoutMoves and it will hit boundaries (IsValidMove will return false)
 	moves, _ := board.ListMoves(from)
-	if len(moves) == 0 {
-		t.Error("Scout should have moves")
-	}
+	assert.NotEmpty(t, moves)
 }
 
 func TestEncodeSetupEmptyCells(t *testing.T) {
@@ -212,18 +160,15 @@ func TestEncodeSetupEmptyCells(t *testing.T) {
 		"66677788. ",
 	}
 	data, err := EncodeSetup(rows, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	// Cell 38 and 39 should not be occupied
-	if data[38]&BitOccupied != 0 || data[39]&BitOccupied != 0 {
-		t.Error("Empty cells should not be occupied in binary format")
-	}
+	assert.Equal(t, uint8(0), data[38]&BitOccupied)
+	assert.Equal(t, uint8(0), data[39]&BitOccupied)
 
 	decoded, _, _ := DecodeSetup(data)
-	if decoded[3][8] != '.' || decoded[3][9] != '.' {
-		t.Error("Empty cells should decode back to '.'")
-	}
+	assert.Equal(t, byte('.'), decoded[3][8])
+	assert.Equal(t, byte('.'), decoded[3][9])
 }
 
 func TestIsValidMoveScoutLongDistance(t *testing.T) {
@@ -235,9 +180,7 @@ func TestIsValidMoveScoutLongDistance(t *testing.T) {
 	board.SetPieceAt(from, scout)
 
 	move := NewMove(from, to, &player)
-	if !board.IsValidMove(&move) {
-		t.Error("Scout should be able to move long distance according to IsValidMove")
-	}
+	assert.True(t, board.IsValidMove(&move))
 }
 
 func TestListMovesScoutBlocked(t *testing.T) {

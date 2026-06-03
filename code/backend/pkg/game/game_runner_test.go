@@ -7,15 +7,16 @@ import (
 	"digital-innovation/gostrategy/pkg/testutils"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRunToCompletion(t *testing.T) {
-	// test 100 games and see if there is predictable outcome
 	player1Wins := 0
 	player2Wins := 0
 	draws := 0
 
-	// Track win causes
 	flagCaptures := 0
 	noMovesWins := 0
 	maxTurnsWins := 0
@@ -32,15 +33,11 @@ func TestRunToCompletion(t *testing.T) {
 		player1 := game.NewPlayer(0, p1, "red")
 		player2 := game.NewPlayer(1, p2, "blue")
 
-		// TODO: decouple this
 		controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
+
 		controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		var g *game.Game
 		if i%2 == 0 {
@@ -50,7 +47,7 @@ func TestRunToCompletion(t *testing.T) {
 		}
 
 		runner := game.NewRunner(g, 0, 1000)
-		winner := runner.RunToCompletion() // we don't want cluttered logging in pipeline
+		winner := runner.RunToCompletion()
 		rounds := g.GetRound()
 
 		winCause := g.GetWinCause()
@@ -73,27 +70,13 @@ func TestRunToCompletion(t *testing.T) {
 		default:
 			player2Wins++
 		}
-
 	}
 
 	avgRounds := float64(totalRounds) / float64(numGames)
-	if avgRounds > 900 {
-		t.Errorf("Average rounds per game too high: %.2f", avgRounds)
-	}
-
-	if draws > numGames/2 {
-		t.Errorf("Too many draws: %d out of %d games", draws, numGames)
-
-	}
-
-	if player1Wins > 75 || player2Wins > 75 {
-		t.Errorf("One player is winning too often: Player1=%d, Player2=%d", player1Wins, player2Wins)
-	}
-
-	if avgRounds < 10 {
-		t.Errorf("Average rounds per game too low: %.2f", avgRounds)
-	}
-
+	assert.True(t, avgRounds <= 900, "Average rounds per game too high: %.2f", avgRounds)
+	assert.True(t, draws <= numGames/2, "Too many draws: %d out of %d games", draws, numGames)
+	assert.True(t, player1Wins <= 75 && player2Wins <= 75, "One player is winning too often: Player1=%d, Player2=%d", player1Wins, player2Wins)
+	assert.True(t, avgRounds >= 10, "Average rounds per game too low: %.2f", avgRounds)
 }
 
 func TestSubmitHumanMove(t *testing.T) {
@@ -102,9 +85,7 @@ func TestSubmitHumanMove(t *testing.T) {
 
 	controller1 := game.NewHumanPlayerController(&player1)
 	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	gameInstance := game.QuickStart(controller1, controller2)
 	runner := game.NewRunner(gameInstance, 0, 1000)
@@ -115,25 +96,15 @@ func TestSubmitHumanMove(t *testing.T) {
 	// Invalid move - bomb can't move
 	move := game.NewMove(game.NewPosition(2, 6), game.NewPosition(2, 5), &player1)
 	err = runner.SubmitHumanMove(move)
-	if err == nil {
-		t.Errorf("Expected error when submitting invalid move")
-	}
+	assert.Error(t, err)
 
 	// Valid move
 	move = game.NewMove(game.NewPosition(0, 6), game.NewPosition(0, 5), &player1)
 	err = runner.SubmitHumanMove(move)
-	if err != nil {
-		t.Errorf("Expected no error, got: %v", err)
-	}
+	assert.NoError(t, err)
 
-	if runner.IsWaitingForInput() {
-		t.Errorf("Expected not waiting for input")
-	}
-
-	if gameObj.CurrentPlayer != &player2 {
-		t.Errorf("Expected current player to be %s, got: %s",
-			player2.GetName(), gameObj.CurrentPlayer.GetName())
-	}
+	assert.False(t, runner.IsWaitingForInput())
+	assert.Equal(t, &player2, gameObj.CurrentPlayer)
 }
 
 func TestRunnerIsWaitingForInput(t *testing.T) {
@@ -142,26 +113,18 @@ func TestRunnerIsWaitingForInput(t *testing.T) {
 
 	controller1 := game.NewHumanPlayerController(&player1)
 	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	g := game.QuickStart(controller1, controller2)
 	runner := game.NewRunner(g, 0, 1000)
 
-	if runner.IsWaitingForInput() {
-		t.Error("Expected not waiting for input before game starts")
-	}
+	assert.False(t, runner.IsWaitingForInput(), "Expected not waiting for input before game starts")
 
 	runner.DebugSetWaitingForInput(true)
-	if !runner.IsWaitingForInput() {
-		t.Error("Expected waiting for input after DebugSetWaitingForInput(true)")
-	}
+	assert.True(t, runner.IsWaitingForInput(), "Expected waiting for input after DebugSetWaitingForInput(true)")
 
 	runner.DebugSetWaitingForInput(false)
-	if runner.IsWaitingForInput() {
-		t.Error("Expected not waiting for input after DebugSetWaitingForInput(false)")
-	}
+	assert.False(t, runner.IsWaitingForInput(), "Expected not waiting for input after DebugSetWaitingForInput(false)")
 }
 
 func TestRunnerGetGame(t *testing.T) {
@@ -169,9 +132,7 @@ func TestRunnerGetGame(t *testing.T) {
 	runner := game.NewRunner(g, 0, 1000)
 
 	retrieved := runner.GetGame()
-	if retrieved != g {
-		t.Error("Expected GetGame to return the same game instance")
-	}
+	assert.Equal(t, g, retrieved)
 }
 
 func TestSubmitHumanMoveWrongPlayer(t *testing.T) {
@@ -188,10 +149,7 @@ func TestSubmitHumanMoveWrongPlayer(t *testing.T) {
 	// Try to submit move for player2 when it's player1's turn
 	move := game.NewMove(game.NewPosition(0, 3), game.NewPosition(0, 4), &player2)
 	err := runner.SubmitHumanMove(move)
-
-	if err == nil {
-		t.Error("Expected error when submitting move for wrong player")
-	}
+	assert.Error(t, err)
 }
 
 func TestRunnerWithDelay(t *testing.T) {
@@ -199,13 +157,10 @@ func TestRunnerWithDelay(t *testing.T) {
 	player2 := game.NewPlayer(1, "AI2", "blue")
 
 	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	g := game.QuickStart(controller1, controller2)
 
@@ -216,24 +171,18 @@ func TestRunnerWithDelay(t *testing.T) {
 	runner.RunToCompletion()
 	elapsed := time.Since(start)
 
-	// With 5ms delay per turn and up to 10 turns, should take at least 50ms
-	// But we set max turns to 10, so it should be relatively quick
-	if elapsed < 10*time.Millisecond {
-		t.Errorf("Expected game to take at least 10ms with delays, took: %v", elapsed)
-	}
+	assert.True(t, elapsed >= 10*time.Millisecond, "Expected game to take at least 10ms with delays, took: %v", elapsed)
 }
+
 func TestRunner_Immobilization(t *testing.T) {
 	player1 := game.NewPlayer(0, "AI1", "red")
 	player2 := game.NewPlayer(1, "AI2", "blue")
 
 	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	g := game.QuickStart(controller1, controller2)
 	runner := game.NewRunner(g, 0, 1000)
@@ -250,32 +199,22 @@ func TestRunner_Immobilization(t *testing.T) {
 	}
 
 	// Try to execute turn for player 1 (who has no movable pieces)
-	// Fafo.MakeMove will return an empty move
 	runner.ExecuteTurn()
 
-	if !g.IsGameOver() {
-		t.Fatal("Expected game to be over due to immobilization")
-	}
-
-	if g.GetWinCause() != game.WinCauseNoMovablePieces {
-		t.Errorf("Expected win cause to be 'no_movable_pieces', got: %s", g.GetWinCause())
-	}
-
-	if g.GetWinner() != &player2 {
-		t.Errorf("Expected Player 2 to win, but winner is: %v", g.GetWinner())
-	}
+	require.True(t, g.IsGameOver())
+	assert.Equal(t, game.WinCauseNoMovablePieces, g.GetWinCause())
+	assert.Equal(t, &player2, g.GetWinner())
 }
+
 func TestRunnerAbort(t *testing.T) {
 	player1 := game.NewPlayer(0, "AI1", "red")
 	player2 := game.NewPlayer(1, "AI2", "blue")
 	controller1, err := AIhandler.CreateAI(models.Fafo, &player1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	controller2, err := AIhandler.CreateAI(models.Fafo, &player2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	g := game.QuickStart(controller1, controller2)
 
 	runner := game.NewRunner(g, 100*time.Millisecond, 1000)
@@ -286,7 +225,5 @@ func TestRunnerAbort(t *testing.T) {
 	}()
 
 	winner := runner.RunToCompletion()
-	if winner != nil {
-		t.Error("Winner should be nil when aborted")
-	}
+	assert.Nil(t, winner, "Winner should be nil when aborted")
 }

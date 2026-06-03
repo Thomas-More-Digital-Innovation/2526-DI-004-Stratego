@@ -2,6 +2,9 @@ package game
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEncodeDecodeBoardSetup(t *testing.T) {
@@ -13,41 +16,26 @@ func TestEncodeDecodeBoardSetup(t *testing.T) {
 	}
 
 	encoded, err := EncodeBoardSetup(setup)
-	if err != nil {
-		t.Fatalf("EncodeBoardSetup failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	decoded, err := DecodeBoardSetup(encoded)
-	if err != nil {
-		t.Fatalf("DecodeBoardSetup failed: %v", err)
-	}
-
-	for i := range setup {
-		if setup[i] != decoded[i] {
-			t.Errorf("Row %d: got %q, want %q", i, decoded[i], setup[i])
-		}
-	}
+	require.NoError(t, err)
+	assert.Equal(t, setup, decoded)
 }
 
 func TestEncodeBoardSetupSingleString(t *testing.T) {
 	setup := "9876543210BBBBBBBBBB1111111111MMMMMMMMMM"
 	encoded, err := EncodeBoardSetup([]string{setup})
-	if err != nil {
-		t.Fatalf("EncodeBoardSetup failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	decoded, err := DecodeBoardSetup(encoded)
-	if err != nil {
-		t.Fatalf("DecodeBoardSetup failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	conc := ""
 	for _, r := range decoded {
 		conc += r
 	}
-	if conc != setup {
-		t.Errorf("Got %q, want %q", conc, setup)
-	}
+	assert.Equal(t, setup, conc)
 }
 
 func TestEncodeBoardSetupErrors(t *testing.T) {
@@ -67,8 +55,10 @@ func TestEncodeBoardSetupErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := EncodeBoardSetup(tt.rows)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("EncodeBoardSetup() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -87,8 +77,10 @@ func TestDecodeBoardSetupErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := DecodeBoardSetup(tt.encoded)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DecodeBoardSetup() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -111,12 +103,11 @@ func TestParseBoardSetupSmart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ParseBoardSetupSmart(tt.raw)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseBoardSetupSmart() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && len(got) != tt.want {
-				t.Errorf("ParseBoardSetupSmart() got %d rows, want %d", len(got), tt.want)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Len(t, got, tt.want)
 			}
 		})
 	}

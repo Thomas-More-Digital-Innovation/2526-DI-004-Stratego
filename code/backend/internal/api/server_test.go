@@ -4,64 +4,36 @@ import (
 	"digital-innovation/gostrategy/internal/api"
 	"digital-innovation/gostrategy/internal/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewGameServer(t *testing.T) {
 	server := api.NewGameServer()
-
-	if server == nil {
-		t.Fatal("Expected NewGameServer to return a server, but got nil")
-	}
+	assert.NotNil(t, server)
 }
 
 func TestCreateGameHumanVsAI(t *testing.T) {
 	server := api.NewGameServer()
 	handler, err := server.CreateGame("test-game-1", models.HumanVsAi, "Human Player", models.Fafo)
+	require.NoError(t, err)
+	require.NotNil(t, handler)
+	require.NotNil(t, handler.Session)
+	require.NotNil(t, handler.Hub)
 
-	if err != nil {
-		t.Fatalf("Expected no error creating HumanVsAI game, got: %v", err)
-	}
-
-	if handler == nil {
-		t.Fatal("Expected handler to be created, but got nil")
-	}
-
-	if handler.Session == nil {
-		t.Fatal("Expected session to be created, but got nil")
-	}
-
-	if handler.Hub == nil {
-		t.Fatal("Expected hub to be created, but got nil")
-	}
-
-	if handler.GameType != models.HumanVsAi {
-		t.Errorf("Expected game type to be HumanVsAi, got: %s", handler.GameType)
-	}
-
-	if !handler.Session.IsSetupPhase() {
-		t.Error("Expected HumanVsAI game to start in setup phase")
-	}
+	assert.Equal(t, models.HumanVsAi, handler.GameType)
+	assert.True(t, handler.Session.IsSetupPhase())
 }
 
 func TestCreateGameAIVsAI(t *testing.T) {
 	server := api.NewGameServer()
 	handler, err := server.CreateGame("test-game-2", models.AiVsAi, models.Fafo, models.Fafo)
+	require.NoError(t, err)
+	require.NotNil(t, handler)
 
-	if err != nil {
-		t.Fatalf("Expected no error creating AiVsAi game, got: %v", err)
-	}
-
-	if handler == nil {
-		t.Fatal("Expected handler to be created, but got nil")
-	}
-
-	if !handler.Session.IsSetupPhase() {
-		t.Error("Expected AiVsAi game to start in setup phase")
-	}
-
-	if handler.Session.IsRunning() {
-		t.Error("Expected AiVsAi game not to start running immediately")
-	}
+	assert.True(t, handler.Session.IsSetupPhase())
+	assert.False(t, handler.Session.IsRunning())
 
 	// Clean up
 	handler.Session.Stop()
@@ -70,18 +42,11 @@ func TestCreateGameAIVsAI(t *testing.T) {
 func TestCreateGameHumanVsHuman(t *testing.T) {
 	server := api.NewGameServer()
 	handler, err := server.CreateGame("test-game-3", models.HumanVsHuman, "Player 1", "Player 2")
+	require.NoError(t, err)
+	require.NotNil(t, handler)
 
-	if err != nil {
-		t.Fatalf("Expected no error creating HumanVsHuman game, got: %v", err)
-	}
-
-	if handler.GameType != models.HumanVsHuman {
-		t.Errorf("Expected game type to be HumanVsHuman, got: %s", handler.GameType)
-	}
-
-	if !handler.Session.IsSetupPhase() {
-		t.Error("Expected HumanVsHuman game to start in setup phase")
-	}
+	assert.Equal(t, models.HumanVsHuman, handler.GameType)
+	assert.True(t, handler.Session.IsSetupPhase())
 }
 
 func TestCreateGameDuplicateID(t *testing.T) {
@@ -89,23 +54,16 @@ func TestCreateGameDuplicateID(t *testing.T) {
 	gameID := "duplicate-test"
 
 	_, err := server.CreateGame(gameID, models.HumanVsAi, "Human", models.Fafo)
-	if err != nil {
-		t.Fatalf("Expected no error on first create, got: %v", err)
-	}
+	require.NoError(t, err)
 
 	_, err = server.CreateGame(gameID, models.HumanVsAi, "Human", models.Fafo)
-	if err == nil {
-		t.Error("Expected error when creating game with duplicate ID, got nil")
-	}
+	assert.Error(t, err)
 }
 
 func TestCreateGameInvalidType(t *testing.T) {
 	server := api.NewGameServer()
 	_, err := server.CreateGame("invalid-type-game", "InvalidGameType", "P1", "P2")
-
-	if err == nil {
-		t.Error("Expected error for invalid game type, got nil")
-	}
+	assert.Error(t, err)
 }
 
 func TestGetSession(t *testing.T) {
@@ -113,25 +71,15 @@ func TestGetSession(t *testing.T) {
 	gameID := "get-session-test"
 
 	handler, err := server.CreateGame(gameID, models.HumanVsAi, "Human", models.Fafo)
-	if err != nil {
-		t.Fatalf("Failed to create game: %v", err)
-	}
+	require.NoError(t, err)
 
 	retrieved, exists := server.GetSession(gameID)
-	if !exists {
-		t.Error("Expected session to exist after creation")
-	}
-
-	if retrieved != handler {
-		t.Error("Expected retrieved handler to match created handler")
-	}
+	assert.True(t, exists)
+	assert.Equal(t, handler, retrieved)
 }
 
 func TestGetSessionNonExistent(t *testing.T) {
 	server := api.NewGameServer()
 	_, exists := server.GetSession("non-existent-game")
-
-	if exists {
-		t.Error("Expected session to not exist for non-existent game ID")
-	}
+	assert.False(t, exists)
 }

@@ -4,6 +4,9 @@ import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSessionComprehensive(t *testing.T) {
@@ -22,57 +25,42 @@ func TestSessionComprehensive(t *testing.T) {
 	session.SetPlayer1Associate(123, "Alice")
 	session.SetPlayer2Associate(456, "Bob")
 	p1, p2 := session.GetPlayerIDs()
-	if *p1 != 123 || *p2 != 456 {
-		t.Errorf("Player IDs mismatch: %d, %d", *p1, *p2)
-	}
+	require.NotNil(t, p1)
+	require.NotNil(t, p2)
+	assert.Equal(t, 123, *p1)
+	assert.Equal(t, 456, *p2)
 
 	// Test LoadSetup
 	setupData := []byte("0BBBBBB12222222233333444455556666777889M")
 	err := session.LoadSetup(0, setupData)
-	if err != nil {
-		t.Errorf("LoadSetup failed: %v", err)
-	}
+	assert.NoError(t, err)
+
 	err = session.LoadSetup(99, setupData)
-	if err == nil {
-		t.Error("LoadSetup should fail for invalid player ID")
-	}
+	assert.Error(t, err)
 
 	// Test NotifySetupUpdate
 	session.NotifySetupUpdate()
 
 	// Test GetSetupCompleteChan
 	ch := session.GetSetupCompleteChan()
-	if ch == nil {
-		t.Error("GetSetupCompleteChan returned nil")
-	}
+	assert.NotNil(t, ch)
 
 	// Test IsAbortedChan
 	abCh := session.IsAbortedChan()
-	if abCh == nil {
-		t.Error("IsAbortedChan returned nil")
-	}
+	assert.NotNil(t, abCh)
 
 	// Test StartGameFromSetup with headless=true
 	err = session.StartGameFromSetup(true)
-	if err != nil {
-		t.Errorf("StartGameFromSetup failed: %v", err)
-	}
-
-	if !session.IsHeadless() {
-		t.Error("Expected headless session")
-	}
+	assert.NoError(t, err)
+	assert.True(t, session.IsHeadless())
 
 	// Test Move notifications
 	session.NotifyMoveExecuted()
-	if !session.WaitForMoveNotification(100 * time.Millisecond) {
-		t.Error("WaitForMoveNotification timed out")
-	}
+	assert.True(t, session.WaitForMoveNotification(100*time.Millisecond))
 
 	// Test Move Ack
 	session.AckMoveProcessed()
-	if !session.WaitForMoveAck(100 * time.Millisecond) {
-		t.Error("WaitForMoveAck timed out")
-	}
+	assert.True(t, session.WaitForMoveAck(100*time.Millisecond))
 
 	// Additional Session methods
 	session.Pause()
@@ -94,40 +82,34 @@ func TestSessionComprehensive(t *testing.T) {
 
 	// Verify available moves for the piece we just placed
 	moves, err := session.GetAvailableMoves(0, NewPosition(0, 6))
-	if err != nil || len(moves) == 0 {
-		t.Errorf("Expected available moves for Marshal, got error: %v, count: %d", err, len(moves))
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, moves)
 
 	move := NewMove(NewPosition(0, 6), NewPosition(0, 5), &player1)
 
 	// Wrong player
 	err = session.SubmitMove(1, move)
-	if err == nil || err.Error() != "not your turn" {
-		t.Errorf("Expected 'not your turn' error, got %v", err)
-	}
+	assert.Error(t, err)
+	assert.Equal(t, "not your turn", err.Error())
 
 	// No piece at source
 	moveEmpty := NewMove(NewPosition(5, 5), NewPosition(5, 4), &player1)
 	err = session.SubmitMove(0, moveEmpty)
-	if err == nil || err.Error() != "no piece at source position" {
-		t.Errorf("Expected 'no piece at source position' error, got %v", err)
-	}
+	assert.Error(t, err)
+	assert.Equal(t, "no piece at source position", err.Error())
 
 	// Piece belongs to opponent
 	oppPiece := NewPiece(models.Scout, &player2)
 	session.GetBoard().SetPieceAt(NewPosition(5, 5), oppPiece)
 	moveOpp := NewMove(NewPosition(5, 5), NewPosition(5, 4), &player1)
 	err = session.SubmitMove(0, moveOpp)
-	if err == nil || err.Error() != "piece at source position does not belong to current player" {
-		t.Errorf("Expected ownership error, got %v", err)
-	}
+	assert.Error(t, err)
+	assert.Equal(t, "piece at source position does not belong to current player", err.Error())
 
 	// Illegal move
 	moveIllegal := NewMove(NewPosition(0, 6), NewPosition(9, 9), &player1)
 	err = session.SubmitMove(0, moveIllegal)
-	if err == nil {
-		t.Error("Expected error for illegal move")
-	}
+	assert.Error(t, err)
 
 	// Smoke tests for game end state methods
 	session.GetWinner()
@@ -142,9 +124,7 @@ func TestSessionComprehensive(t *testing.T) {
 
 	// Test GetLastHistoricalMove when empty
 	emptySession := NewSession("empty", c1, c2)
-	if emptySession.GetLastHistoricalMove() != nil {
-		t.Error("Expected nil historical move for new session")
-	}
+	assert.Nil(t, emptySession.GetLastHistoricalMove())
 
 	session.Stop()
 }
@@ -165,13 +145,9 @@ func TestRunnerComprehensive(t *testing.T) {
 
 	// Test Pause/Unpause
 	runner.Pause()
-	if !runner.IsPaused() {
-		t.Error("Runner should be paused")
-	}
+	assert.True(t, runner.IsPaused())
 	runner.Unpause()
-	if runner.IsPaused() {
-		t.Error("Runner should be unpaused")
-	}
+	assert.False(t, runner.IsPaused())
 
 	// Test Step
 	runner.Pause()
@@ -181,10 +157,6 @@ func TestRunnerComprehensive(t *testing.T) {
 	c1.SetPendingMove(NewMove(NewPosition(0, 6), NewPosition(0, 5), &player1))
 
 	runner.DebugSetWaitingForInput(true)
-	if !runner.Step() {
-		t.Error("Step should execute turn even if paused")
-	}
-	if !called {
-		t.Error("Move callback should have been called")
-	}
+	assert.True(t, runner.Step())
+	assert.True(t, called)
 }

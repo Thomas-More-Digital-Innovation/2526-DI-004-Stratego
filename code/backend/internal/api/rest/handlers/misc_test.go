@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHealthHandler(t *testing.T) {
@@ -36,9 +37,7 @@ func TestStatsHandlers(t *testing.T) {
 	_, h, _ := testutils.SetupHandlerTest(t)
 
 	user, err := db.CreateUser(context.Background(), "alice", "StrongPassword1", "")
-	if err != nil {
-		t.Fatalf("Failed to create user: %v", err)
-	}
+	require.NoError(t, err)
 
 	// GetUserStatsHandler
 	w1 := httptest.NewRecorder()

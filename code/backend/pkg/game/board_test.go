@@ -3,23 +3,19 @@ package game
 import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewBoard(t *testing.T) {
 	board := NewBoard()
+	require.NotNil(t, board, "Expected a board to be created, but got nil")
 
-	if board == nil {
-		t.Errorf("Expected a board to be created, but got nil")
-	}
-
-	if len(board.GetField()) != 10 {
-		t.Errorf("Expected board field to have 10 rows, but got %d", len(board.GetField()))
-	}
+	assert.Len(t, board.GetField(), 10, "Expected board field to have 10 rows")
 
 	for _, row := range board.GetField() {
-		if len(row) != 10 {
-			t.Errorf("Expected each row to have 10 columns, but got %d", len(row))
-		}
+		assert.Len(t, row, 10, "Expected each row to have 10 columns")
 	}
 
 	expectedLakes := []Position{
@@ -28,9 +24,7 @@ func TestNewBoard(t *testing.T) {
 	}
 
 	for _, lakePos := range expectedLakes {
-		if !board.IsLake(lakePos) {
-			t.Errorf("Expected position %v to be a lake, but it is not", lakePos)
-		}
+		assert.True(t, board.IsLake(lakePos), "Expected position %v to be a lake", lakePos)
 	}
 }
 
@@ -43,9 +37,7 @@ func TestSetAndGetPieceAt(t *testing.T) {
 	board.SetPieceAt(position, piece)
 	retrievedPiece := board.GetPieceAt(position)
 
-	if retrievedPiece != piece {
-		t.Errorf("Expected to retrieve the same piece that was set, but got a different piece")
-	}
+	assert.Equal(t, piece, retrievedPiece, "Expected to retrieve the same piece that was set")
 }
 
 func TestGetPieceAt(t *testing.T) {
@@ -57,9 +49,7 @@ func TestGetPieceAt(t *testing.T) {
 	board.SetPieceAt(position, piece)
 	retrievedPiece := board.GetPieceAt(position)
 
-	if retrievedPiece != piece {
-		t.Errorf("Expected to retrieve the same piece that was set, but got a different piece")
-	}
+	assert.Equal(t, piece, retrievedPiece, "Expected to retrieve the same piece that was set")
 }
 
 func TestIsLake(t *testing.T) {
@@ -67,10 +57,7 @@ func TestIsLake(t *testing.T) {
 	position := NewPosition(2, 4)
 
 	isLake := board.IsLake(position)
-
-	if !isLake {
-		t.Errorf("Expected position %v to be a lake, but it is not", position)
-	}
+	assert.True(t, isLake, "Expected position %v to be a lake", position)
 }
 
 func TestIsValidMove(t *testing.T) {
@@ -83,16 +70,12 @@ func TestIsValidMove(t *testing.T) {
 	board.SetPieceAt(fromPos, piece)
 	move := NewMove(fromPos, toPos, &player)
 
-	if !board.IsValidMove(&move) {
-		t.Errorf("Expected move from %v to %v to be valid, but it is not", fromPos, toPos)
-	}
+	assert.True(t, board.IsValidMove(&move), "Expected move from %v to %v to be valid", fromPos, toPos)
 
 	lakePos := NewPosition(2, 4)
 	moveToLake := NewMove(fromPos, lakePos, &player)
 
-	if board.IsValidMove(&moveToLake) {
-		t.Errorf("Expected move to lake position %v to be invalid, but it is valid", lakePos)
-	}
+	assert.False(t, board.IsValidMove(&moveToLake), "Expected move to lake position %v to be invalid", lakePos)
 }
 
 func TestIsInvalidMoveOutsideField(t *testing.T) {
@@ -105,9 +88,7 @@ func TestIsInvalidMoveOutsideField(t *testing.T) {
 	board.SetPieceAt(fromPos, piece)
 	move := NewMove(fromPos, toPos, &player)
 
-	if board.IsValidMove(&move) {
-		t.Errorf("Expected move from %v to %v to be invalid (outside field), but it is valid", fromPos, toPos)
-	}
+	assert.False(t, board.IsValidMove(&move), "Expected move from %v to %v to be invalid (outside field)", fromPos, toPos)
 }
 
 func TestIsInvalidMoveIntoLake(t *testing.T) {
@@ -120,9 +101,7 @@ func TestIsInvalidMoveIntoLake(t *testing.T) {
 	board.SetPieceAt(fromPos, piece)
 	move := NewMove(fromPos, toPos, &player)
 
-	if board.IsValidMove(&move) {
-		t.Errorf("Expected move from %v to lake position %v to be invalid, but it is valid", fromPos, toPos)
-	}
+	assert.False(t, board.IsValidMove(&move), "Expected move from %v to lake position %v to be invalid", fromPos, toPos)
 }
 
 func TestIsInvalidMoveToTeamPiece(t *testing.T) {
@@ -137,9 +116,7 @@ func TestIsInvalidMoveToTeamPiece(t *testing.T) {
 	board.SetPieceAt(toPos, piece2)
 	move := NewMove(fromPos, toPos, &player)
 
-	if board.IsValidMove(&move) {
-		t.Errorf("Expected move from %v to %v to be invalid (to own piece), but it is valid", fromPos, toPos)
-	}
+	assert.False(t, board.IsValidMove(&move), "Expected move from %v to %v to be invalid (to own piece)", fromPos, toPos)
 }
 
 func TestRandomizeSetup(_ *testing.T) {
@@ -158,17 +135,10 @@ func TestSwapPieces(t *testing.T) {
 	board.SetPieceAt(pos2, piece2)
 
 	err := board.SwapPieces(pos1, pos2)
-	if err != nil {
-		t.Errorf("Expected swap to succeed, but got error: %v", err)
-	}
+	assert.NoError(t, err)
 
-	if board.GetPieceAt(pos1) != piece2 {
-		t.Errorf("Expected piece at %v to be %v after swap, but got %v", pos1, piece2, board.GetPieceAt(pos1))
-	}
-
-	if board.GetPieceAt(pos2) != piece1 {
-		t.Errorf("Expected piece at %v to be %v after swap, but got %v", pos2, piece1, board.GetPieceAt(pos2))
-	}
+	assert.Equal(t, piece2, board.GetPieceAt(pos1))
+	assert.Equal(t, piece1, board.GetPieceAt(pos2))
 }
 
 func TestSwapPiecesInvalidPosition(t *testing.T) {
@@ -181,10 +151,7 @@ func TestSwapPiecesInvalidPosition(t *testing.T) {
 	board.SetPieceAt(pos1, piece1)
 
 	err := board.SwapPieces(pos1, pos2)
-
-	if err == nil {
-		t.Errorf("Expected swap to fail due to invalid position, but it succeeded")
-	}
+	assert.Error(t, err)
 }
 
 func TestRemovePieceAt(t *testing.T) {
@@ -196,14 +163,9 @@ func TestRemovePieceAt(t *testing.T) {
 	board.SetPieceAt(position, piece)
 	piece.Eliminate()
 	err := board.RemovePieceAt(position)
+	assert.NoError(t, err)
 
-	if err != nil {
-		t.Errorf("Expected removal to succeed, but got error: %v", err)
-	}
-
-	if board.GetPieceAt(position) != nil {
-		t.Errorf("Expected piece at %v to be nil after removal, but got %v", position, board.GetPieceAt(position))
-	}
+	assert.Nil(t, board.GetPieceAt(position))
 }
 
 func TestRemovePieceThatDoesntExist(t *testing.T) {
@@ -211,10 +173,7 @@ func TestRemovePieceThatDoesntExist(t *testing.T) {
 	position := NewPosition(0, 0)
 
 	err := board.RemovePieceAt(position)
-
-	if err == nil {
-		t.Errorf("Expected removal to fail for non-existent piece, but it succeeded")
-	}
+	assert.Error(t, err)
 }
 
 func TestRemoveAlivePiece(t *testing.T) {
@@ -226,8 +185,5 @@ func TestRemoveAlivePiece(t *testing.T) {
 	board.SetPieceAt(position, piece)
 	// piece is still alive
 	err := board.RemovePieceAt(position)
-
-	if err == nil {
-		t.Errorf("Expected removal to fail for alive piece, but it succeeded")
-	}
+	assert.Error(t, err)
 }

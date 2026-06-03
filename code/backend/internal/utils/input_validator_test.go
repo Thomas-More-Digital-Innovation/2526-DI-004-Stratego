@@ -3,6 +3,8 @@ package utils_test
 import (
 	"digital-innovation/gostrategy/internal/utils"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type validatorTest struct {
@@ -20,16 +22,14 @@ func TestValidateUsername(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		err := utils.ValidateUsername(tt.input)
-		if tt.expectError {
-			if err == nil {
-				t.Errorf("ValidateUsername(%q) expected an error but got none", tt.input)
+		t.Run(tt.input, func(t *testing.T) {
+			err := utils.ValidateUsername(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
-		} else {
-			if err != nil {
-				t.Errorf("ValidateUsername(%q) returned an unexpected error: %v", tt.input, err)
-			}
-		}
+		})
 	}
 }
 
@@ -46,16 +46,14 @@ func TestValidatePassword(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		err := utils.ValidatePassword(tt.input)
-		if tt.expectError {
-			if err == nil {
-				t.Errorf("ValidatePassword(%q) expected an error but got none", tt.input)
+		t.Run(tt.input, func(t *testing.T) {
+			err := utils.ValidatePassword(tt.input)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
-		} else {
-			if err != nil {
-				t.Errorf("ValidatePassword(%q) returned an unexpected error: %v", tt.input, err)
-			}
-		}
+		})
 	}
 }
 
@@ -70,16 +68,13 @@ func TestValidateGeneric(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		err := utils.ValidateGeneric(tt.input, "Description")
-		if tt.expectError {
-			if err == nil {
-				t.Errorf("ValidateGeneric(%q) expected an error but got none", tt.input)
+		t.Run(tt.input, func(t *testing.T) {
+			err := utils.ValidateGeneric(tt.input, "Description")
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
-		} else {
-			if err != nil {
-				t.Errorf("ValidateGeneric(%q) returned an unexpected error: %v", tt.input, err)
-			}
-		}
+		})
 	}
-
 }

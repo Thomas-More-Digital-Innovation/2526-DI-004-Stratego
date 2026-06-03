@@ -31,12 +31,8 @@ func TestParseID(t *testing.T) {
 		c.Request = req
 
 		id, err := core.ParseID(c, "user_id")
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-		if id != 456 {
-			t.Errorf("Expected 456, got %d", id)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 456, id)
 	})
 
 	t.Run("Invalid ID", func(t *testing.T) {
@@ -44,21 +40,15 @@ func TestParseID(t *testing.T) {
 		c.Params = gin.Params{{Key: "id", Value: "abc"}}
 
 		_, err := core.ParseID(c, "id")
-		if err == nil {
-			t.Error("Expected error for invalid ID, got nil")
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("Missing ID", func(t *testing.T) {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 
 		id, err := core.ParseID(c, "id")
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-		if id != 0 {
-			t.Errorf("Expected 0 for missing ID, got %d", id)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 0, id)
 	})
 }
 
@@ -81,8 +71,6 @@ func TestSecurityMiddleware(t *testing.T) {
 	}
 
 	for header, expectedValue := range expectedHeaders {
-		if got := w.Header().Get(header); got != expectedValue {
-			t.Errorf("Expected header %s to be %q, got %q", header, expectedValue, got)
-		}
+		assert.Equal(t, expectedValue, w.Header().Get(header))
 	}
 }

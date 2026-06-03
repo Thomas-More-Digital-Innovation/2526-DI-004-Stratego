@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateAndVerifyToken(t *testing.T) {
@@ -14,38 +16,22 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 
 	// Generate token
 	token, err := auth.GenerateToken(userID, username)
-	if err != nil {
-		t.Fatalf("Failed to generate token: %v", err)
-	}
-	if token == "" {
-		t.Fatal("Generated token is empty")
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, token)
 
 	// Verify token
 	user, err := auth.VerifyToken(token)
-	if err != nil {
-		t.Fatalf("Failed to verify token: %v", err)
-	}
-	if user == nil {
-		t.Fatal("Verified user is nil")
-	}
-	if user.ID != userID {
-		t.Errorf("Expected userID %d, got %d", userID, user.ID)
-	}
-	if user.Username != username {
-		t.Errorf("Expected username %s, got %s", username, user.Username)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	assert.Equal(t, userID, user.ID)
+	assert.Equal(t, username, user.Username)
 }
 
 func TestVerifyInvalidToken(t *testing.T) {
 	// Test with malformed token
 	user, err := auth.VerifyToken("invalid.token.string")
-	if err == nil {
-		t.Error("Expected error for invalid token, got nil")
-	}
-	if user != nil {
-		t.Error("Expected nil user for invalid token")
-	}
+	assert.Error(t, err)
+	assert.Nil(t, user)
 
 	// Test with expired token
 	claims := auth.CustomClaims{
@@ -59,31 +45,17 @@ func TestVerifyInvalidToken(t *testing.T) {
 	tokenString, _ := token.SignedString(auth.GetJWTSecret())
 
 	user, err = auth.VerifyToken(tokenString)
-	if err == nil {
-		t.Error("Expected error for expired token, got nil")
-	}
-	if user != nil {
-		t.Error("Expected nil user for expired token")
-	}
+	assert.Error(t, err)
+	assert.Nil(t, user)
 }
 
 func TestGenerateRefreshToken(t *testing.T) {
 	token1, err := auth.GenerateRefreshToken()
-	if err != nil {
-		t.Fatalf("Failed to generate refresh token 1: %v", err)
-	}
-	if token1 == "" {
-		t.Fatal("Refresh token 1 is empty")
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, token1)
 
 	token2, err := auth.GenerateRefreshToken()
-	if err != nil {
-		t.Fatalf("Failed to generate refresh token 2: %v", err)
-	}
-	if token2 == "" {
-		t.Fatal("Refresh token 2 is empty")
-	}
-	if token1 == token2 {
-		t.Fatal("Refresh tokens should be unique")
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, token2)
+	assert.NotEqual(t, token1, token2)
 }

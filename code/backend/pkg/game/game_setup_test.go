@@ -3,6 +3,9 @@ package game
 import (
 	"digital-innovation/gostrategy/pkg/game/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetupGame(t *testing.T) {
@@ -18,31 +21,19 @@ func TestSetupGame(t *testing.T) {
 	player2Pieces := GetPieceList(&player2)
 
 	err := SetupGame(g, player1Pieces, player2Pieces)
-	if err != nil {
-		t.Fatalf("SetupGame failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	// Verify piece counts
-	if len(player1.GetAlivePieces()) != 40 {
-		t.Errorf("Player 1 should have 40 pieces, got %d", len(player1.GetAlivePieces()))
-	}
+	assert.Len(t, player1.GetAlivePieces(), 40)
+	assert.Len(t, player2.GetAlivePieces(), 40)
 
-	if len(player2.GetAlivePieces()) != 40 {
-		t.Errorf("Player 2 should have 40 pieces, got %d", len(player2.GetAlivePieces()))
-	}
-
-	// Verify pieces are placed in correct rows
 	field := g.Board.GetField()
 
 	// Player 1 should be in rows 6-9
 	for y := 6; y <= 9; y++ {
 		for x := 0; x < 10; x++ {
 			piece := field[y][x]
-			if piece == nil {
-				t.Errorf("Expected piece at (%d, %d) for player 1", x, y)
-			} else if piece.GetOwner().GetID() != 0 {
-				t.Errorf("Expected player 1 piece at (%d, %d), got player %d", x, y, piece.GetOwner().GetID())
-			}
+			require.NotNil(t, piece, "Expected piece at (%d, %d) for player 1", x, y)
+			assert.Equal(t, 0, piece.GetOwner().GetID())
 		}
 	}
 
@@ -50,32 +41,20 @@ func TestSetupGame(t *testing.T) {
 	for y := 0; y <= 3; y++ {
 		for x := 0; x < 10; x++ {
 			piece := field[y][x]
-			if piece == nil {
-				t.Errorf("Expected piece at (%d, %d) for player 2", x, y)
-			} else if piece.GetOwner().GetID() != 1 {
-				t.Errorf("Expected player 2 piece at (%d, %d), got player %d", x, y, piece.GetOwner().GetID())
-			}
+			require.NotNil(t, piece, "Expected piece at (%d, %d) for player 2", x, y)
+			assert.Equal(t, 1, piece.GetOwner().GetID())
 		}
 	}
 
 	// Middle rows (4-5) should be empty (except lakes)
 	for y := 4; y <= 5; y++ {
 		for x := 0; x < 10; x++ {
-			piece := field[y][x]
-			if piece != nil {
-				t.Errorf("Expected no piece at (%d, %d), got piece", x, y)
-			}
+			assert.Nil(t, field[y][x], "Expected no piece at (%d, %d)", x, y)
 		}
 	}
 
-	// Verify piece scores are initialized
-	if player1.GetPieceScore() == 0 {
-		t.Error("Player 1 piece score should be initialized")
-	}
-
-	if player2.GetPieceScore() == 0 {
-		t.Error("Player 2 piece score should be initialized")
-	}
+	assert.NotZero(t, player1.GetPieceScore())
+	assert.NotZero(t, player2.GetPieceScore())
 }
 
 func TestSetupGame_InvalidPieceCount(t *testing.T) {
@@ -91,13 +70,8 @@ func TestSetupGame_InvalidPieceCount(t *testing.T) {
 	player2Pieces := GetPieceList(&player2)[:30] // Only 30 pieces
 
 	err := SetupGame(g, player1Pieces, player2Pieces)
-	if err == nil {
-		t.Fatal("Expected error for invalid piece count, got nil")
-	}
-
-	if err.Error() != "each player must have exactly 40 pieces" {
-		t.Errorf("Expected specific error message, got: %v", err)
-	}
+	assert.Error(t, err)
+	assert.Equal(t, "each player must have exactly 40 pieces", err.Error())
 }
 
 func TestRandomSetup(t *testing.T) {
@@ -106,12 +80,8 @@ func TestRandomSetup(t *testing.T) {
 	pieces1 := RandomSetup(&player)
 	pieces2 := RandomSetup(&player)
 
-	// Should have 40 pieces
-	if len(pieces1) != 40 {
-		t.Errorf("Expected 40 pieces, got %d", len(pieces1))
-	}
+	assert.Len(t, pieces1, 40)
 
-	// Two random setups should likely be different (not guaranteed but highly probable)
 	different := false
 	for i := 0; i < 40; i++ {
 		if pieces1[i].GetType().GetName() != pieces2[i].GetType().GetName() {
@@ -119,10 +89,7 @@ func TestRandomSetup(t *testing.T) {
 			break
 		}
 	}
-
-	if !different {
-		t.Log("Warning: Two random setups are identical (low probability but possible)")
-	}
+	assert.True(t, different, "Two random setups should likely be different")
 }
 
 func TestQuickStart(t *testing.T) {
@@ -133,34 +100,13 @@ func TestQuickStart(t *testing.T) {
 	controller2 := NewHumanPlayerController(&player2)
 
 	g := QuickStart(controller1, controller2)
+	require.NotNil(t, g)
 
-	if g == nil {
-		t.Fatal("QuickStart returned nil game")
-	}
-
-	// Verify game is properly initialized
-	if len(player1.GetAlivePieces()) != 40 {
-		t.Errorf("Player 1 should have 40 pieces, got %d", len(player1.GetAlivePieces()))
-	}
-
-	if len(player2.GetAlivePieces()) != 40 {
-		t.Errorf("Player 2 should have 40 pieces, got %d", len(player2.GetAlivePieces()))
-	}
-
-	// Verify current player is set
-	if g.CurrentPlayer == nil {
-		t.Error("Current player should be set")
-	}
-
-	// Verify round is initialized
-	if g.GetRound() != 1 {
-		t.Errorf("Expected round 1, got %d", g.GetRound())
-	}
-
-	// Verify no winner yet
-	if g.GetWinner() != nil {
-		t.Error("Game should not have a winner at start")
-	}
+	assert.Len(t, player1.GetAlivePieces(), 40)
+	assert.Len(t, player2.GetAlivePieces(), 40)
+	assert.NotNil(t, g.CurrentPlayer)
+	assert.Equal(t, 1, g.GetRound())
+	assert.Nil(t, g.GetWinner())
 }
 
 func TestPiecePositionTracking(t *testing.T) {
@@ -172,29 +118,16 @@ func TestPiecePositionTracking(t *testing.T) {
 
 	QuickStart(controller1, controller2)
 
-	// Verify all pieces have tracked positions
 	for _, piece := range player1.GetAlivePieces() {
 		pos, exists := player1.GetPiecePosition(piece)
-		if !exists {
-			t.Error("Piece position not tracked for player 1")
-		}
-
-		// Verify position is in valid range for player 1 (rows 6-9)
-		if pos.Y < 6 || pos.Y > 9 {
-			t.Errorf("Player 1 piece at invalid row %d", pos.Y)
-		}
+		assert.True(t, exists)
+		assert.True(t, pos.Y >= 6 && pos.Y <= 9)
 	}
 
 	for _, piece := range player2.GetAlivePieces() {
 		pos, exists := player2.GetPiecePosition(piece)
-		if !exists {
-			t.Error("Piece position not tracked for player 2")
-		}
-
-		// Verify position is in valid range for player 2 (rows 0-3)
-		if pos.Y < 0 || pos.Y > 3 {
-			t.Errorf("Player 2 piece at invalid row %d", pos.Y)
-		}
+		assert.True(t, exists)
+		assert.True(t, pos.Y >= 0 && pos.Y <= 3)
 	}
 }
 
@@ -203,17 +136,12 @@ func TestPieceListConsistency(t *testing.T) {
 
 	pieces := GetPieceList(&player)
 
-	// Verify piece list has correct composition
-	// 1 Flag, 6 Bombs, 1 Spy, 8 Scouts, 5 Miners, 4 Sergeants,
-	// 4 Lieutenants, 4 Captains, 3 Majors, 2 Colonels, 1 General, 1 Marshal
-
 	counts := make(map[string]int)
 	for _, piece := range pieces {
 		counts[piece.GetType().GetName()]++
 	}
 
 	expected := map[string]int{
-
 		"Flag":       1,
 		"Bomb":       6,
 		"Spy":        1,
@@ -229,23 +157,18 @@ func TestPieceListConsistency(t *testing.T) {
 	}
 
 	for name, expectedCount := range expected {
-		if counts[name] != expectedCount {
-			t.Errorf("Expected %d %s, got %d", expectedCount, name, counts[name])
-		}
+		assert.Equal(t, expectedCount, counts[name])
 	}
 }
+
 func TestParseSetup(t *testing.T) {
 	player := NewPlayer(1, "P1", "")
 
 	// Rank string format
 	rankStr := "0BBBBBB12222222233333444455556666777889M"
 	pieces, err := ParseSetup(&player, []byte(rankStr))
-	if err != nil {
-		t.Fatalf("ParseSetup rank string failed: %v", err)
-	}
-	if len(pieces) != 40 {
-		t.Errorf("Expected 40 pieces, got %d", len(pieces))
-	}
+	require.NoError(t, err)
+	assert.Len(t, pieces, 40)
 
 	// Bitpacked format
 	bitpacked := make([]byte, 40)
@@ -254,23 +177,17 @@ func TestParseSetup(t *testing.T) {
 	}
 	// This will fail validation because counts are wrong (40 scouts)
 	_, err = ParseSetup(&player, bitpacked)
-	if err == nil {
-		t.Error("Expected validation error for 40 scouts")
-	}
+	assert.Error(t, err)
 
 	// Error: empty cell
 	rankStrEmpty := "0BBBBBB12222222233333444455556666777889."
 	_, err = ParseSetup(&player, []byte(rankStrEmpty))
-	if err == nil {
-		t.Error("Expected error for empty cell in rank string")
-	}
+	assert.Error(t, err)
 
 	// Error: invalid rank
 	rankStrInvalid := "0BBBBBB12222222233333444455556666777889X"
 	_, err = ParseSetup(&player, []byte(rankStrInvalid))
-	if err == nil {
-		t.Error("Expected error for invalid rank char")
-	}
+	assert.Error(t, err)
 }
 
 func TestCustomSetup(t *testing.T) {
@@ -281,17 +198,11 @@ func TestCustomSetup(t *testing.T) {
 	}
 
 	pieces, err := CustomSetup(&player, pieceMap)
-	if err != nil {
-		t.Fatalf("CustomSetup failed: %v", err)
-	}
-	if len(pieces) != 40 {
-		t.Errorf("Expected 40 pieces, got %d", len(pieces))
-	}
+	require.NoError(t, err)
+	assert.Len(t, pieces, 40)
 
 	// Invalid count
 	delete(pieceMap, NewPosition(0, 0))
 	_, err = CustomSetup(&player, pieceMap)
-	if err == nil {
-		t.Error("Expected error for invalid custom setup count")
-	}
+	assert.Error(t, err)
 }
