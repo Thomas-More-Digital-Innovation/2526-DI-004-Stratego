@@ -4,6 +4,7 @@ package mcts
 import (
 	"digital-innovation/gostrategy/internal/ai"
 	"digital-innovation/gostrategy/internal/game"
+	"digital-innovation/gostrategy/internal/game/models"
 	"math/rand/v2"
 )
 
@@ -70,16 +71,19 @@ func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 }
 
 func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *game.Player) float64 {
-	tempBoard := board.Clone()
+	tempBoard := board.FastClone()
 	currentPlayer := ourPlayer
 	nextPlayer := opponent
 
+	ourFlagPos := aiObj.findFlagPosition(tempBoard, ourPlayer)
+	oppFlagPos := aiObj.findFlagPosition(tempBoard, opponent)
+
 	maxRolloutDepth := 10
 	for range maxRolloutDepth {
-		if aiObj.isFlagCaptured(tempBoard, opponent) {
+		if aiObj.isFlagCapturedAt(tempBoard, oppFlagPos, opponent) {
 			return 1.0
 		}
-		if aiObj.isFlagCaptured(tempBoard, ourPlayer) {
+		if aiObj.isFlagCapturedAt(tempBoard, ourFlagPos, ourPlayer) {
 			return 0.0
 		}
 
@@ -93,7 +97,7 @@ func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *ga
 
 		//nolint:gosec
 		move := moves[rand.IntN(len(moves))]
-		tempBoard = ai.SimulateMove(tempBoard, move)
+		aiObj.applySimulatedMoveInPlace(tempBoard, move)
 
 		currentPlayer, nextPlayer = nextPlayer, currentPlayer
 	}
@@ -107,17 +111,75 @@ func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *ga
 	return 0.5
 }
 
-func (aiObj *AI) isFlagCaptured(board *game.Board, player *game.Player) bool {
+func (aiObj *AI) findFlagPosition(board *game.Board, player *game.Player) game.Position {
 	if player == nil {
-		return false
+		return game.NewPosition(-1, -1)
 	}
 	for y := range 10 {
 		for x := range 10 {
-			piece := board.GetPieceAt(game.NewPosition(x, y))
+			pos := game.NewPosition(x, y)
+			piece := board.GetPieceAt(pos)
 			if piece != nil && piece.GetType().GetName() == "Flag" && piece.GetOwner().GetID() == player.GetID() {
-				return false
+				return pos
 			}
 		}
 	}
-	return true
+	return game.NewPosition(-1, -1)
+}
+
+func (aiObj *AI) isFlagCapturedAt(board *game.Board, flagPos game.Position, player *game.Player) bool {
+	if flagPos.X == -1 {
+		return true
+	}
+	piece := board.GetPieceAt(flagPos)
+	return piece == nil || piece.GetType().GetName() != "Flag" || piece.GetOwner().GetID() != player.GetID()
+}
+
+func (aiObj *AI) applySimulatedMoveInPlace(b *game.Board, move game.Move) {
+	attacker := b.GetPieceAt(move.GetFrom())
+	if attacker == nil {
+		return
+	}
+
+	target := b.GetPieceAt(move.GetTo())
+	if target != nil {
+		attackerRank := attacker.GetRank()
+		defenderRank := target.GetRank()
+
+		if defenderRank == models.Flag.GetRank() {
+			b.SetPieceAt(move.GetFrom(), nil)
+			b.SetPieceAt(move.GetTo(), attacker)
+			return
+		}
+
+		if attackerRank == models.Spy.GetRank() && defenderRank == models.Marshal.GetRank() {
+			b.SetPieceAt(move.GetFrom(), nil)
+			b.SetPieceAt(move.GetTo(), attacker)
+			return
+		}
+
+		if defenderRank == models.Bomb.GetRank() {
+			if attacker.GetType().GetName() == "Miner" {
+				b.SetPieceAt(move.GetFrom(), nil)
+				b.SetPieceAt(move.GetTo(), attacker)
+			} else {
+				b.SetPieceAt(move.GetFrom(), nil)
+			}
+			return
+		}
+
+		switch {
+		case attackerRank > defenderRank:
+			b.SetPieceAt(move.GetFrom(), nil)
+			b.SetPieceAt(move.GetTo(), attacker)
+		case attackerRank < defenderRank:
+			b.SetPieceAt(move.GetFrom(), nil)
+		default:
+			b.SetPieceAt(move.GetFrom(), nil)
+			b.SetPieceAt(move.GetTo(), nil)
+		}
+	} else {
+		b.SetPieceAt(move.GetFrom(), nil)
+		b.SetPieceAt(move.GetTo(), attacker)
+	}
 }

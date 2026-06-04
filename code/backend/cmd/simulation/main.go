@@ -27,11 +27,16 @@ func run() error {
 	fmt.Println("=== GoStrategy Autonomous Simulation Running ===")
 
 	var ai1, ai2 string
-	if aiTypes == nil {
+	switch {
+	case aiTypes == nil:
+		fmt.Print("No AIs specified, running default FATO vs FATO")
 		ai1, ai2 = models.Fato, models.Fato
-	} else {
+	case strings.Contains(*aiTypes, ":"):
 		aiTypeSplit := strings.Split(*aiTypes, ":")
 		ai1, ai2 = aiTypeSplit[0], aiTypeSplit[1]
+	default:
+		ai1, ai2 = *aiTypes, *aiTypes
+
 	}
 
 	start := time.Now()

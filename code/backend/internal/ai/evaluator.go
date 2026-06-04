@@ -8,7 +8,7 @@ import (
 
 // SimulateMove runs a copy-on-write move simulation on the board.
 func SimulateMove(board *game.Board, move game.Move) *game.Board {
-	nextBoard := board.Clone()
+	nextBoard := board.FastClone()
 	attacker := nextBoard.GetPieceAt(move.GetFrom())
 	if attacker == nil {
 		return nextBoard
