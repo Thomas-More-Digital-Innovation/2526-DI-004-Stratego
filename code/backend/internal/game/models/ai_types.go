@@ -8,4 +8,3 @@ const (
 	Minimax   = "minimax"
 	Mcts      = "mcts"
 )
-

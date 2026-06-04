@@ -129,8 +129,8 @@ func TrainAI(aiType string, opponentType string, generations int, matchesPerGen 
 		}
 
 		candidate := &ai.Parameters{
-			AIType:     params.AIType,
-			Name:       "candidate",
+			AIType: params.AIType,
+			Name:   "candidate",
 			//nolint:gosec
 			Aggression: params.Aggression + (rand.Float64()-0.5)*0.2,
 			Weights:    make(map[string]float64),
