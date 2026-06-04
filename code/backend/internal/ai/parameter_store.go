@@ -1,6 +1,7 @@
 package ai
 
 import (
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/db"
 	"digital-innovation/gostrategy/internal/models"
 	"encoding/json"
@@ -46,35 +47,35 @@ func GetDefault(aiType string, name string) *Parameters {
 		defaults.Aggression = 0.5
 	case "heuristic":
 		defaults.Aggression = 0.5
-		defaults.Weights["Flag"] = 10000.0
-		defaults.Weights["Bomb"] = 0.0
-		defaults.Weights["Spy"] = 90.0
-		defaults.Weights["Scout"] = 20.0
-		defaults.Weights["Miner"] = 50.0
-		defaults.Weights["Sergeant"] = 30.0
-		defaults.Weights["Lieutenant"] = 40.0
-		defaults.Weights["Captain"] = 50.0
-		defaults.Weights["Major"] = 60.0
-		defaults.Weights["Colonel"] = 70.0
-		defaults.Weights["General"] = 80.0
-		defaults.Weights["Marshal"] = 100.0
+		defaults.Weights[ai_const.Flag] = 10000.0
+		defaults.Weights[ai_const.Bomb] = 0.0
+		defaults.Weights[ai_const.Spy] = 90.0
+		defaults.Weights[ai_const.Scout] = 20.0
+		defaults.Weights[ai_const.Miner] = 50.0
+		defaults.Weights[ai_const.Sergeant] = 30.0
+		defaults.Weights[ai_const.Lieutenant] = 40.0
+		defaults.Weights[ai_const.Captain] = 50.0
+		defaults.Weights[ai_const.Major] = 60.0
+		defaults.Weights[ai_const.Colonel] = 70.0
+		defaults.Weights[ai_const.General] = 80.0
+		defaults.Weights[ai_const.Marshal] = 100.0
 		defaults.Weights["explorationWeight"] = 5.0
 		defaults.Weights["combatWeight"] = 10.0
 	case "minimax":
 		defaults.Aggression = 0.5
 		defaults.Config["depth"] = 2.0
-		defaults.Weights["Flag"] = 10000.0
-		defaults.Weights["Bomb"] = 0.0
-		defaults.Weights["Spy"] = 90.0
-		defaults.Weights["Scout"] = 20.0
-		defaults.Weights["Miner"] = 50.0
-		defaults.Weights["Sergeant"] = 30.0
-		defaults.Weights["Lieutenant"] = 40.0
-		defaults.Weights["Captain"] = 50.0
-		defaults.Weights["Major"] = 60.0
-		defaults.Weights["Colonel"] = 70.0
-		defaults.Weights["General"] = 80.0
-		defaults.Weights["Marshal"] = 100.0
+		defaults.Weights[ai_const.Flag] = 10000.0
+		defaults.Weights[ai_const.Bomb] = 0.0
+		defaults.Weights[ai_const.Spy] = 90.0
+		defaults.Weights[ai_const.Scout] = 20.0
+		defaults.Weights[ai_const.Miner] = 50.0
+		defaults.Weights[ai_const.Sergeant] = 30.0
+		defaults.Weights[ai_const.Lieutenant] = 40.0
+		defaults.Weights[ai_const.Captain] = 50.0
+		defaults.Weights[ai_const.Major] = 60.0
+		defaults.Weights[ai_const.Colonel] = 70.0
+		defaults.Weights[ai_const.General] = 80.0
+		defaults.Weights[ai_const.Marshal] = 100.0
 		defaults.Weights["explorationWeight"] = 5.0
 		defaults.Weights["combatWeight"] = 10.0
 	case "mcts":

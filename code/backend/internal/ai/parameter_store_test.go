@@ -1,6 +1,7 @@
 package ai
 
 import (
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/db"
 	"os"
 	"testing"
@@ -55,7 +56,7 @@ func TestParameterStore_FallbackFile(t *testing.T) {
 
 	params.Aggression = 0.8
 	params.Name = "custom_test"
-	params.Weights = map[string]float64{"Flag": 20000.0}
+	params.Weights = map[string]float64{ai_const.Flag: 20000.0}
 	params.Config = map[string]any{"depth": 3.0}
 	err = Save(params)
 	assert.NoError(t, err)
@@ -63,7 +64,7 @@ func TestParameterStore_FallbackFile(t *testing.T) {
 	loaded, err := Load("heuristic", "custom_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.8, loaded.Aggression)
-	assert.Equal(t, 20000.0, loaded.Weights["Flag"])
+	assert.Equal(t, 20000.0, loaded.Weights[ai_const.Flag])
 	assert.Equal(t, 3.0, loaded.Config["depth"])
 
 	params.Aggression = 0.95
@@ -94,7 +95,7 @@ func TestParameterStore_Database(t *testing.T) {
 		AIType:     "minimax",
 		Name:       "db_test",
 		Aggression: 0.77,
-		Weights:    map[string]float64{"Marshal": 120.0},
+		Weights:    map[string]float64{ai_const.Marshal: 120.0},
 		Config:     map[string]any{"depth": 4.0},
 	}
 
@@ -104,7 +105,7 @@ func TestParameterStore_Database(t *testing.T) {
 	loaded, err := Load("minimax", "db_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.77, loaded.Aggression)
-	assert.Equal(t, 120.0, loaded.Weights["Marshal"])
+	assert.Equal(t, 120.0, loaded.Weights[ai_const.Marshal])
 	assert.Equal(t, 4.0, loaded.Config["depth"])
 
 	params.Aggression = 0.99

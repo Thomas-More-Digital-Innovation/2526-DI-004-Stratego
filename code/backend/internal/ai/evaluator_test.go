@@ -1,6 +1,7 @@
 package ai
 
 import (
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -124,8 +125,8 @@ func TestEvaluateBoard(t *testing.T) {
 		board.SetPieceAt(game.NewPosition(0, 1), p2)
 
 		weights := map[string]float64{
-			"General": 100.0,
-			"Miner":   50.0,
+			ai_const.General: 100.0,
+			ai_const.Miner:   50.0,
 		}
 
 		score := EvaluateBoard(board, &player1, nil, weights, 1.0)
@@ -138,7 +139,7 @@ func TestEvaluateBoard(t *testing.T) {
 		board.SetPieceAt(game.NewPosition(0, 0), p1)
 
 		weights := map[string]float64{
-			"General":           100.0,
+			ai_const.General:    100.0,
 			"explorationWeight": 10.0,
 		}
 		score := EvaluateBoard(board, &player1, nil, weights, 0.5)
@@ -151,7 +152,7 @@ func TestEvaluateBoard(t *testing.T) {
 		board.SetPieceAt(game.NewPosition(0, 8), p1)
 
 		weights := map[string]float64{
-			"General":           100.0,
+			ai_const.General:    100.0,
 			"explorationWeight": 10.0,
 		}
 		score := EvaluateBoard(board, &player2, nil, weights, 0.5)
@@ -167,8 +168,8 @@ func TestEvaluateBoard(t *testing.T) {
 		board.SetPieceAt(pos2, p2)
 
 		weights := map[string]float64{
-			"General": 100.0,
-			"Miner":   50.0,
+			ai_const.General: 100.0,
+			ai_const.Miner:   50.0,
 		}
 
 		p2.Reveal()

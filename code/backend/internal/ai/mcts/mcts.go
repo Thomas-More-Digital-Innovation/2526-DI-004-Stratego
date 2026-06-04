@@ -3,6 +3,7 @@ package mcts
 
 import (
 	"digital-innovation/gostrategy/internal/ai"
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"math/rand/v2"
@@ -194,7 +195,7 @@ func (aiObj *AI) findFlagPosition(board *game.Board, player *game.Player) game.P
 		for x := range 10 {
 			pos := game.NewPosition(x, y)
 			piece := board.GetPieceAt(pos)
-			if piece != nil && piece.GetType().GetName() == "Flag" && piece.GetOwner().GetID() == player.GetID() {
+			if piece != nil && piece.GetType().GetName() == ai_const.Flag && piece.GetOwner().GetID() == player.GetID() {
 				return pos
 			}
 		}
@@ -207,7 +208,7 @@ func (aiObj *AI) isFlagCapturedAt(board *game.Board, flagPos game.Position, play
 		return true
 	}
 	piece := board.GetPieceAt(flagPos)
-	return piece == nil || piece.GetType().GetName() != "Flag" || piece.GetOwner().GetID() != player.GetID()
+	return piece == nil || piece.GetType().GetName() != ai_const.Flag || piece.GetOwner().GetID() != player.GetID()
 }
 
 // applySimulatedMoveInPlace applies a move directly to the board without cloning.
@@ -241,7 +242,7 @@ func (aiObj *AI) applySimulatedMoveInPlace(b *game.Board, move game.Move) bool {
 	}
 
 	if defenderRank == models.Bomb.GetRank() {
-		if attacker.GetType().GetName() == "Miner" {
+		if attacker.GetType().GetName() == ai_const.Miner {
 			b.SetPieceAt(move.GetFrom(), nil)
 			b.SetPieceAt(move.GetTo(), attacker)
 			return false

@@ -2,6 +2,7 @@ package heuristic
 
 import (
 	"digital-innovation/gostrategy/internal/ai"
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -19,7 +20,7 @@ func TestNewAI(t *testing.T) {
 func TestNewAIWithParams(t *testing.T) {
 	player := game.NewPlayer(0, "Alice", "red")
 	params := &ai.Parameters{
-		Weights:    map[string]float64{"Marshal": 100.0},
+		Weights:    map[string]float64{ai_const.Marshal: 100.0},
 		Aggression: 0.5,
 	}
 	aiObj := NewAIWithParams(&player, true, params)

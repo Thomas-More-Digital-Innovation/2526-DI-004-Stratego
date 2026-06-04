@@ -1,6 +1,7 @@
 package fato
 
 import (
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -53,7 +54,7 @@ func TestMakeMove_FullFidelity(t *testing.T) {
 		aiObj.AnalyzeMove(scoutMove, &p2, 1)
 		remembered := aiObj.GetMemory().Recall(scoutMove.GetTo())
 		assert.NotNil(t, remembered)
-		assert.Equal(t, "Scout", remembered.Piece.GetType().GetName())
+		assert.Equal(t, ai_const.Scout, remembered.Piece.GetType().GetName())
 	})
 
 	t.Run("findExplorationMove towards player 1 enemy territory", func(t *testing.T) {

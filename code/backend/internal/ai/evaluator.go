@@ -2,6 +2,7 @@
 package ai
 
 import (
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 )
@@ -32,7 +33,7 @@ func SimulateMove(board *game.Board, move game.Move) *game.Board {
 		}
 
 		if defenderRank == models.Bomb.GetRank() {
-			if attacker.GetType().GetName() == "Miner" {
+			if attacker.GetType().GetName() == ai_const.Miner {
 				nextBoard.SetPieceAt(move.GetFrom(), nil)
 				nextBoard.SetPieceAt(move.GetTo(), attacker)
 			} else {

@@ -4,6 +4,7 @@ package fato
 
 import (
 	ai "digital-innovation/gostrategy/internal/ai"
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/ai/fafo"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
@@ -150,7 +151,7 @@ func (ai *AI) evaluateAttack(attacker *game.Piece, target *game.Piece, targetPos
 			targetName = remembered.Piece.GetType().GetName()
 		}
 
-		if targetName == "Flag" {
+		if targetName == ai_const.Flag {
 			return 10000.0 * confidence
 		}
 
@@ -158,8 +159,8 @@ func (ai *AI) evaluateAttack(attacker *game.Piece, target *game.Piece, targetPos
 			return 500.0 * confidence
 		}
 
-		if targetName == "Bomb" {
-			if attackerName == "Miner" {
+		if targetName == ai_const.Bomb {
+			if attackerName == ai_const.Miner {
 				return 200.0 * confidence
 			}
 			return -1000.0

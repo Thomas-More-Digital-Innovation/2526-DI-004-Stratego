@@ -2,6 +2,7 @@ package mcts
 
 import (
 	"digital-innovation/gostrategy/internal/ai"
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -22,7 +23,7 @@ func TestMctsAI_ConstructorAndParams(t *testing.T) {
 	player1 := game.NewPlayer(0, "us", "red")
 	params := &ai.Parameters{
 		Weights: map[string]float64{
-			"Marshal": 100.0,
+			ai_const.Marshal: 100.0,
 		},
 		Aggression: 0.5,
 		Config: map[string]interface{}{
@@ -41,8 +42,8 @@ func TestMctsAI_RolloutAndDecisions(t *testing.T) {
 	player2 := game.NewPlayer(1, "them", "blue")
 	params := &ai.Parameters{
 		Weights: map[string]float64{
-			"Marshal": 100.0,
-			"Flag":    10000.0,
+			ai_const.Marshal: 100.0,
+			ai_const.Flag:    10000.0,
 		},
 		Aggression: 0.5,
 		Config: map[string]interface{}{

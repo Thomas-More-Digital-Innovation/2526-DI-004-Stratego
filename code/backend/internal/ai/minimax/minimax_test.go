@@ -2,6 +2,7 @@ package minimax
 
 import (
 	"digital-innovation/gostrategy/internal/ai"
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -22,7 +23,7 @@ func TestMinimaxAI_ConstructorAndParams(t *testing.T) {
 	player1 := game.NewPlayer(0, "us", "red")
 	params := &ai.Parameters{
 		Weights: map[string]float64{
-			"Marshal": 100.0,
+			ai_const.Marshal: 100.0,
 		},
 		Aggression: 0.5,
 		Config: map[string]interface{}{
@@ -41,8 +42,8 @@ func TestMinimaxAI_MinimaxBranches(t *testing.T) {
 	player2 := game.NewPlayer(1, "them", "blue")
 	params := &ai.Parameters{
 		Weights: map[string]float64{
-			"Marshal": 100.0,
-			"General": 80.0,
+			ai_const.Marshal: 100.0,
+			ai_const.General: 80.0,
 		},
 		Aggression: 0.0,
 		Config: map[string]interface{}{
