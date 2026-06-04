@@ -7,6 +7,9 @@ fmt:
 dev: 
     docker compose up --build
 
+simulation:
+    cd code/backend && go run cmd/simulation/main.go 
+
 update-swagger:
     ./scripts/update-swagger.sh
 
