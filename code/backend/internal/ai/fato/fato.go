@@ -105,13 +105,12 @@ func (ai *AI) findAttackMove(board *game.Board) (game.Move, bool) {
 			if target != nil && target.GetOwner() != ai.GetPlayer() {
 				score := ai.evaluateAttack(piece, target, move.GetTo(), memory)
 
-				// Aggression determines minimum acceptable score
-				// Passive (0.0): only take very favorable trades (> 0)
-				// Moderate (0.5): take slightly unfavorable trades (> -50)
-				// Aggressive (1.0): take any trade except terrible ones (> -100)
-				minScore := -100.0*ai.aggression + 0.0*(1.0-ai.aggression)
+				// Aggression determines minimum acceptable score:
+				// 0.0 (Passive): threshold is 0.0 -> only winning attacks (score > 0)
+				// 1.0 (Highly Aggressive): threshold is -20.0 -> accept trades for all ranks
+				minScore := -20.0 * ai.aggression
 
-				if score > bestScore && score > minScore {
+				if score > bestScore && score >= minScore {
 					bestScore = score
 					m := game.NewMove(move.GetFrom(), move.GetTo(), ai.GetPlayer())
 					bestAttack = &m
@@ -128,41 +127,65 @@ func (ai *AI) findAttackMove(board *game.Board) (game.Move, bool) {
 
 // evaluateAttack scores an attack opportunity
 func (ai *AI) evaluateAttack(attacker *game.Piece, target *game.Piece, targetPos game.Position, memory *ai.Memory) float64 {
-	score := 0.0
-
-	// Check memory for target
 	remembered := memory.Recall(targetPos)
+	var targetRank byte
+	var isKnown bool
+	confidence := 1.0
 
-	switch {
-	case target.IsRevealed():
-		rankDiff := float64(attacker.GetRank() - target.GetRank())
-		score = rankDiff * 10
-
-		if target.GetType().GetName() == "Flag" {
-			score += 10000
-		}
-		if target.GetType().GetName() == "Bomb" && attacker.GetType().GetName() != "Miner" {
-			score -= 1000
-		}
-	case remembered != nil && remembered.Confidence > 0.5:
-		rankDiff := float64(attacker.GetRank() - remembered.Piece.GetRank())
-		score = rankDiff * 10 * remembered.Confidence
-
-		if remembered.Confidence < 0.8 {
-			score *= 0.7
-		}
-	default:
-		switch {
-		case attacker.GetRank() >= 7:
-			score = 20.0
-		case attacker.GetRank() >= 5:
-			score = 10.0
-		case attacker.GetRank() >= 3:
-			score = 5.0
-		}
-		// #nosec G404 - weak random is sufficient for AI score variety
-		score += rand.Float64()*10 - 5
+	if target.IsRevealed() {
+		targetRank = target.GetRank()
+		isKnown = true
+	} else if remembered != nil && remembered.Confidence > 0.5 {
+		targetRank = remembered.Piece.GetRank()
+		isKnown = true
+		confidence = remembered.Confidence
 	}
+
+	if isKnown {
+		attackerName := attacker.GetType().GetName()
+		var targetName string
+		if target.IsRevealed() {
+			targetName = target.GetType().GetName()
+		} else {
+			targetName = remembered.Piece.GetType().GetName()
+		}
+
+		if targetName == "Flag" {
+			return 10000.0 * confidence
+		}
+
+		if attacker.GetRank() == models.Spy.GetRank() && targetRank == models.Marshal.GetRank() {
+			return 500.0 * confidence
+		}
+
+		if targetName == "Bomb" {
+			if attackerName == "Miner" {
+				return 200.0 * confidence
+			}
+			return -1000.0
+		}
+
+		switch {
+		case attacker.GetRank() > targetRank:
+			return float64(attacker.GetRank()-targetRank) * 10 * confidence
+		case attacker.GetRank() == targetRank:
+			return -float64(attacker.GetRank()) * 2.0
+		default:
+			return -1000.0
+		}
+	}
+
+	score := 0.0
+	switch {
+	case attacker.GetRank() >= 7:
+		score = 20.0
+	case attacker.GetRank() >= 5:
+		score = 10.0
+	case attacker.GetRank() >= 3:
+		score = 5.0
+	}
+	// #nosec G404 - weak random is sufficient for AI score variety
+	score += rand.Float64()*10 - 5
 	return score
 }
 

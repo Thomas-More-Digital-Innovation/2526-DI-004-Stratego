@@ -31,8 +31,7 @@ func BenchmarkMctsAI(b *testing.B) {
 	board.SetPieceAt(game.NewPosition(4, 4), p1)
 	player1.AddPiece(p1, game.NewPosition(4, 4))
 
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_ = aiObj.MakeMove(board)
 	}
 }

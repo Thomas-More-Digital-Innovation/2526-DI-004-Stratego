@@ -160,3 +160,34 @@ func GetMoves(board *game.Board, player *game.Player) []game.Move {
 	}
 	return allMoves
 }
+
+// GetMovesFromIndex gathers all valid moves using a pre-built position index instead of a full board scan.
+// The index must contain only the positions of mobile pieces belonging to player.
+func GetMovesFromIndex(board *game.Board, index []game.Position, player *game.Player) []game.Move {
+	var allMoves []game.Move
+	for _, pos := range index {
+		moves, err := board.ListMoves(pos)
+		if err != nil {
+			continue
+		}
+		for _, m := range moves {
+			allMoves = append(allMoves, game.NewMove(m.GetFrom(), m.GetTo(), player))
+		}
+	}
+	return allMoves
+}
+
+// BuildMobileIndex returns a slice of positions for all mobile pieces owned by player.
+func BuildMobileIndex(board *game.Board, player *game.Player) []game.Position {
+	index := make([]game.Position, 0, 33)
+	for y := range 10 {
+		for x := range 10 {
+			pos := game.NewPosition(x, y)
+			piece := board.GetPieceAt(pos)
+			if piece != nil && piece.GetOwner().GetID() == player.GetID() && piece.CanMove() {
+				index = append(index, pos)
+			}
+		}
+	}
+	return index
+}

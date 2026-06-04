@@ -38,8 +38,9 @@ func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 		depth = int(depthVal)
 	}
 
-	opponent := ai.GetOpponent(board, aiObj.GetPlayer().GetID())
-	moves := ai.GetMoves(board, aiObj.GetPlayer())
+	detBoard := ai.DeterminizeBoard(board, aiObj.GetPlayer(), aiObj.GetMemory())
+	opponent := ai.GetOpponent(detBoard, aiObj.GetPlayer().GetID())
+	moves := ai.GetMoves(detBoard, aiObj.GetPlayer())
 	if len(moves) == 0 {
 		return game.Move{}
 	}
@@ -52,7 +53,7 @@ func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 	bestScore := -1e9
 
 	for _, move := range moves {
-		simulated := ai.SimulateMove(board, move)
+		simulated := ai.SimulateMove(detBoard, move)
 		score := aiObj.minimax(simulated, depth-1, -1e9, 1e9, false, opponent)
 		if score > bestScore {
 			bestScore = score

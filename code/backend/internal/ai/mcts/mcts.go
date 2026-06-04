@@ -6,6 +6,8 @@ import (
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"math/rand/v2"
+	"runtime"
+	"sync"
 )
 
 // AI implements the Monte Carlo Tree Search strategy.
@@ -32,6 +34,7 @@ func NewAIWithParams(player *game.Player, hasMemory bool, params *ai.Parameters)
 }
 
 // MakeMove implements the player controller interface selecting the best move using MCTS rollouts.
+// Candidate moves are evaluated in parallel, bounded by GOMAXPROCS to avoid scheduler thrashing.
 func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 	opponent := ai.GetOpponent(board, aiObj.GetPlayer().GetID())
 	moves := ai.GetMoves(board, aiObj.GetPlayer())
@@ -45,38 +48,59 @@ func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 		iterations = int(iterationsVal)
 	}
 
+	//nolint:gosec
 	rand.Shuffle(len(moves), func(i, j int) {
 		moves[i], moves[j] = moves[j], moves[i]
 	})
 
-	var bestMove game.Move
-	bestWinRate := -1.0
+	scores := make([]float64, len(moves))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, runtime.GOMAXPROCS(0))
 
-	for _, move := range moves {
-		simulated := ai.SimulateMove(board, move)
-		totalScore := 0.0
-
-		for range iterations {
-			totalScore += aiObj.rollout(simulated, aiObj.GetPlayer(), opponent)
-		}
-
-		winRate := totalScore / float64(iterations)
-		if winRate > bestWinRate {
-			bestWinRate = winRate
-			bestMove = move
-		}
+	for i, move := range moves {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(idx int, m game.Move) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			simulated := ai.SimulateMove(board, m)
+			total := 0.0
+			for range iterations {
+				total += aiObj.rollout(simulated, aiObj.GetPlayer(), opponent)
+			}
+			scores[idx] = total / float64(iterations)
+		}(i, move)
 	}
 
+	wg.Wait()
+
+	bestMove := moves[0]
+	bestRate := scores[0]
+	for i := 1; i < len(scores); i++ {
+		if scores[i] > bestRate {
+			bestRate = scores[i]
+			bestMove = moves[i]
+		}
+	}
 	return bestMove
 }
 
 func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *game.Player) float64 {
-	tempBoard := board.FastClone()
+	tempBoard := ai.DeterminizeBoard(board, ourPlayer, aiObj.GetMemory())
 	currentPlayer := ourPlayer
 	nextPlayer := opponent
 
 	ourFlagPos := aiObj.findFlagPosition(tempBoard, ourPlayer)
 	oppFlagPos := aiObj.findFlagPosition(tempBoard, opponent)
+
+	// Build active piece index once per rollout — avoids 100-tile board scan on every depth step.
+	ourIndex := ai.BuildMobileIndex(tempBoard, ourPlayer)
+	var oppIndex []game.Position
+	if opponent != nil {
+		oppIndex = ai.BuildMobileIndex(tempBoard, opponent)
+	}
+
+	captureOccurred := false
 
 	maxRolloutDepth := 10
 	for range maxRolloutDepth {
@@ -87,7 +111,14 @@ func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *ga
 			return 0.0
 		}
 
-		moves := ai.GetMoves(tempBoard, currentPlayer)
+		var currentIndex *[]game.Position
+		if currentPlayer.GetID() == ourPlayer.GetID() {
+			currentIndex = &ourIndex
+		} else {
+			currentIndex = &oppIndex
+		}
+
+		moves := ai.GetMovesFromIndex(tempBoard, *currentIndex, currentPlayer)
 		if len(moves) == 0 {
 			if currentPlayer.GetID() == ourPlayer.GetID() {
 				return 0.0
@@ -95,11 +126,21 @@ func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *ga
 			return 1.0
 		}
 
-		//nolint:gosec
-		move := moves[rand.IntN(len(moves))]
-		aiObj.applySimulatedMoveInPlace(tempBoard, move)
+		move := pickRolloutMove(tempBoard, moves)
+		captured := aiObj.applySimulatedMoveInPlace(tempBoard, move)
+		if captured {
+			captureOccurred = true
+		}
+
+		// Update index: remove old position, add new if piece survived.
+		updateIndex(currentIndex, move.GetFrom(), move.GetTo(), captured)
 
 		currentPlayer, nextPlayer = nextPlayer, currentPlayer
+	}
+
+	// Skip EvaluateBoard for non-decisive rollouts — returns indeterminate 0.5 directly.
+	if !captureOccurred {
+		return 0.5
 	}
 
 	eval := ai.EvaluateBoard(tempBoard, ourPlayer, aiObj.GetMemory(), aiObj.params.Weights, aiObj.params.Aggression)
@@ -109,6 +150,40 @@ func (aiObj *AI) rollout(board *game.Board, ourPlayer *game.Player, opponent *ga
 		return 0.0
 	}
 	return 0.5
+}
+
+// pickRolloutMove biases rollout selection toward capture moves (80% preference when available).
+func pickRolloutMove(board *game.Board, moves []game.Move) game.Move {
+	var captures []game.Move
+	for _, m := range moves {
+		if board.GetPieceAt(m.GetTo()) != nil {
+			captures = append(captures, m)
+		}
+	}
+
+	//nolint:gosec
+	if len(captures) > 0 && rand.Float64() < 0.8 {
+		return captures[rand.IntN(len(captures))]
+	}
+	//nolint:gosec
+	return moves[rand.IntN(len(moves))]
+}
+
+// updateIndex mutates the position index in-place after a move is applied.
+func updateIndex(index *[]game.Position, from, to game.Position, captured bool) {
+	s := *index
+	for i, pos := range s {
+		if pos == from {
+			if captured {
+				// piece was lost — remove from index
+				s[i] = s[len(s)-1]
+				*index = s[:len(s)-1]
+			} else {
+				s[i] = to
+			}
+			return
+		}
+	}
 }
 
 func (aiObj *AI) findFlagPosition(board *game.Board, player *game.Player) game.Position {
@@ -135,51 +210,57 @@ func (aiObj *AI) isFlagCapturedAt(board *game.Board, flagPos game.Position, play
 	return piece == nil || piece.GetType().GetName() != "Flag" || piece.GetOwner().GetID() != player.GetID()
 }
 
-func (aiObj *AI) applySimulatedMoveInPlace(b *game.Board, move game.Move) {
+// applySimulatedMoveInPlace applies a move directly to the board without cloning.
+// Returns true if the attacker was captured (lost the fight) or if a piece was removed from that position.
+func (aiObj *AI) applySimulatedMoveInPlace(b *game.Board, move game.Move) bool {
 	attacker := b.GetPieceAt(move.GetFrom())
 	if attacker == nil {
-		return
+		return false
 	}
 
 	target := b.GetPieceAt(move.GetTo())
-	if target != nil {
-		attackerRank := attacker.GetRank()
-		defenderRank := target.GetRank()
-
-		if defenderRank == models.Flag.GetRank() {
-			b.SetPieceAt(move.GetFrom(), nil)
-			b.SetPieceAt(move.GetTo(), attacker)
-			return
-		}
-
-		if attackerRank == models.Spy.GetRank() && defenderRank == models.Marshal.GetRank() {
-			b.SetPieceAt(move.GetFrom(), nil)
-			b.SetPieceAt(move.GetTo(), attacker)
-			return
-		}
-
-		if defenderRank == models.Bomb.GetRank() {
-			if attacker.GetType().GetName() == "Miner" {
-				b.SetPieceAt(move.GetFrom(), nil)
-				b.SetPieceAt(move.GetTo(), attacker)
-			} else {
-				b.SetPieceAt(move.GetFrom(), nil)
-			}
-			return
-		}
-
-		switch {
-		case attackerRank > defenderRank:
-			b.SetPieceAt(move.GetFrom(), nil)
-			b.SetPieceAt(move.GetTo(), attacker)
-		case attackerRank < defenderRank:
-			b.SetPieceAt(move.GetFrom(), nil)
-		default:
-			b.SetPieceAt(move.GetFrom(), nil)
-			b.SetPieceAt(move.GetTo(), nil)
-		}
-	} else {
+	if target == nil {
 		b.SetPieceAt(move.GetFrom(), nil)
 		b.SetPieceAt(move.GetTo(), attacker)
+		return false
+	}
+
+	attackerRank := attacker.GetRank()
+	defenderRank := target.GetRank()
+
+	if defenderRank == models.Flag.GetRank() {
+		b.SetPieceAt(move.GetFrom(), nil)
+		b.SetPieceAt(move.GetTo(), attacker)
+		return false
+	}
+
+	if attackerRank == models.Spy.GetRank() && defenderRank == models.Marshal.GetRank() {
+		b.SetPieceAt(move.GetFrom(), nil)
+		b.SetPieceAt(move.GetTo(), attacker)
+		return false
+	}
+
+	if defenderRank == models.Bomb.GetRank() {
+		if attacker.GetType().GetName() == "Miner" {
+			b.SetPieceAt(move.GetFrom(), nil)
+			b.SetPieceAt(move.GetTo(), attacker)
+			return false
+		}
+		b.SetPieceAt(move.GetFrom(), nil)
+		return true // attacker destroyed
+	}
+
+	switch {
+	case attackerRank > defenderRank:
+		b.SetPieceAt(move.GetFrom(), nil)
+		b.SetPieceAt(move.GetTo(), attacker)
+		return false
+	case attackerRank < defenderRank:
+		b.SetPieceAt(move.GetFrom(), nil)
+		return true // attacker destroyed
+	default:
+		b.SetPieceAt(move.GetFrom(), nil)
+		b.SetPieceAt(move.GetTo(), nil)
+		return true // both destroyed — attacker gone from index
 	}
 }

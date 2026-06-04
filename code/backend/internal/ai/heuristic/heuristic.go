@@ -32,6 +32,7 @@ func NewAIWithParams(player *game.Player, hasMemory bool, params *ai.Parameters)
 
 // MakeMove implements the player controller interface choosing the highest heuristic move.
 func (aiObj *AI) MakeMove(board *game.Board) game.Move {
+	detBoard := ai.DeterminizeBoard(board, aiObj.GetPlayer(), aiObj.GetMemory())
 	pieces := aiObj.GetPlayer().GetAlivePieces()
 	var allMoves []game.Move
 
@@ -43,7 +44,7 @@ func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 		if !exists {
 			continue
 		}
-		moves, err := board.ListMoves(pos)
+		moves, err := detBoard.ListMoves(pos)
 		if err != nil {
 			continue
 		}
@@ -64,7 +65,7 @@ func (aiObj *AI) MakeMove(board *game.Board) game.Move {
 	bestScore := -1e9
 
 	for _, move := range allMoves {
-		simulated := ai.SimulateMove(board, move)
+		simulated := ai.SimulateMove(detBoard, move)
 		score := ai.EvaluateBoard(simulated, aiObj.GetPlayer(), aiObj.GetMemory(), aiObj.params.Weights, aiObj.params.Aggression)
 		if score > bestScore {
 			bestScore = score
