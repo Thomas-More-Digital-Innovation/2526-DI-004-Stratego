@@ -219,4 +219,3 @@ func (m *Model) renderFooter() string {
 		return ""
 	}
 }
-
