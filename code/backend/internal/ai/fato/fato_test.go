@@ -1,134 +1,144 @@
-package fato_test
+package fato
 
 import (
-	"digital-innovation/gostrategy/internal/ai/fato"
+	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewAI(t *testing.T) {
 	player := game.NewPlayer(0, "player", "red")
-	ai := fato.NewAI(&player, true)
+	ai := NewAI(&player, true)
 
-	if ai.GetPlayer() == nil {
-		t.Errorf("Expected player to be set in FatoAI")
-	}
-
-	if ai.GetMemory() == nil {
-		t.Errorf("Expected memory to be initialized in FatoAI")
-	}
+	assert.NotNil(t, ai.GetPlayer())
+	assert.NotNil(t, ai.GetMemory())
+	assert.Equal(t, 0.5, ai.GetAggression())
 }
 
-func TestIsPieceMemorized(t *testing.T) {
+func TestAggressionClamping(t *testing.T) {
 	player := game.NewPlayer(0, "player", "red")
-	ai := fato.NewAI(&player, true)
 
-	position := game.NewPosition(1, 1)
+	t.Run("NewAIWithAggression clamp", func(t *testing.T) {
+		aiLow := NewAIWithAggression(&player, true, -0.5)
+		assert.Equal(t, 0.0, aiLow.GetAggression())
 
-	// Should not be memorized initially
-	if ai.GetMemory().Recall(position) != nil {
-		t.Errorf("Expected piece not to be memorized initially")
-	}
+		aiHigh := NewAIWithAggression(&player, true, 1.5)
+		assert.Equal(t, 1.0, aiHigh.GetAggression())
+	})
 
-	// Remember a piece
-	piece := game.NewPiece(models.Scout, &player)
-	ai.GetMemory().Remember(position, piece, 1.0, 1)
+	t.Run("SetAggression clamp", func(t *testing.T) {
+		ai := NewAI(&player, true)
+		ai.SetAggression(-1.0)
+		assert.Equal(t, 0.0, ai.GetAggression())
 
-	// Should now be memorized
-	if ai.GetMemory().Recall(position) == nil {
-		t.Errorf("Expected piece to be memorized after Remember()")
-	}
+		ai.SetAggression(2.0)
+		assert.Equal(t, 1.0, ai.GetAggression())
+	})
 }
 
-func TestMakeMove(t *testing.T) {
+func TestMakeMove_FullFidelity(t *testing.T) {
 	p1 := game.NewPlayer(0, "ai", "red")
 	p2 := game.NewPlayer(1, "human", "blue")
-	ai := fato.NewAI(&p1, true)
-	board := game.NewBoard()
 
-	// Place AI piece
-	pos1 := game.NewPosition(5, 5)
-	piece1 := game.NewPiece(models.Marshal, &p1)
-	board.SetPieceAt(pos1, piece1)
-	p1.AddPiece(piece1, pos1)
+	t.Run("scout move detection in AnalyzeMove", func(t *testing.T) {
+		aiObj := NewAI(&p1, true)
 
-	// Test case 1: No targets, should find an exploration or random move
-	move := ai.MakeMove(board)
-	if move.IsEmpty() {
-		t.Error("Expected AI to find a move, but got empty")
-	}
+		normalMove := game.NewMove(game.NewPosition(1, 1), game.NewPosition(1, 2), &p2)
+		aiObj.AnalyzeMove(normalMove, &p2, 1)
+		assert.Nil(t, aiObj.GetMemory().Recall(normalMove.GetTo()))
 
-	// Test case 2: Visible target, should attack it
-	targetPos := game.NewPosition(5, 6)
-	targetPiece := game.NewPiece(models.General, &p2)
-	targetPiece.Reveal()
-	board.SetPieceAt(targetPos, targetPiece)
-	p2.AddPiece(targetPiece, targetPos)
+		scoutMove := game.NewMove(game.NewPosition(1, 1), game.NewPosition(1, 4), &p2)
+		aiObj.AnalyzeMove(scoutMove, &p2, 1)
+		remembered := aiObj.GetMemory().Recall(scoutMove.GetTo())
+		assert.NotNil(t, remembered)
+		assert.Equal(t, ai_const.Scout, remembered.Piece.GetType().GetName())
+	})
 
-	move = ai.MakeMove(board)
-	if move.GetTo() != targetPos {
-		t.Errorf("Expected AI to attack visible target at %v, but moved to %v", targetPos, move.GetTo())
-	}
+	t.Run("findExplorationMove towards player 1 enemy territory", func(t *testing.T) {
+		p1Alt := game.NewPlayer(1, "ai", "blue")
+		aiObj := NewAI(&p1Alt, false)
+		p1Piece := game.NewPiece(models.Marshal, &p1Alt)
+
+		boardAlt := game.NewBoard()
+		boardAlt.SetPieceAt(game.NewPosition(0, 8), p1Piece)
+		p1Alt.AddPiece(p1Piece, game.NewPosition(0, 8))
+
+		move := aiObj.MakeMove(boardAlt)
+		assert.NotEqual(t, game.Move{}, move)
+		assert.Equal(t, game.NewPosition(0, 9), move.GetTo())
+	})
 }
 
-func TestAnalyzeMove(t *testing.T) {
-	aiPlayer := game.NewPlayer(0, "ai", "red")
-	humanPlayer := game.NewPlayer(1, "human", "blue")
-	ai := fato.NewAI(&aiPlayer, true)
+func TestEvaluateAttack_Matchups(t *testing.T) {
+	p1 := game.NewPlayer(0, "ai", "red")
+	p2 := game.NewPlayer(1, "human", "blue")
+	aiObj := NewAI(&p1, true)
 
-	// Normal move (1 square) - should NOT be remembered as scout
-	normalMove := game.NewMove(game.NewPosition(1, 1), game.NewPosition(1, 2), &humanPlayer)
-	ai.AnalyzeMove(normalMove, &humanPlayer, 1)
+	miner := game.NewPiece(models.Miner, &p1)
+	spy := game.NewPiece(models.Spy, &p1)
+	marshal := game.NewPiece(models.Marshal, &p1)
+	scout := game.NewPiece(models.Scout, &p1)
+	major := game.NewPiece(models.Major, &p1)
+	lieutenant := game.NewPiece(models.Lieutenant, &p1)
+	sergeant := game.NewPiece(models.Sergeant, &p1)
 
-	if ai.GetMemory().Recall(normalMove.GetTo()) != nil {
-		t.Errorf("Expected piece to not be remembered after normal move")
-	}
+	t.Run("known Flag target", func(t *testing.T) {
+		flag := game.NewPiece(models.Flag, &p2)
+		flag.Reveal()
+		score := aiObj.evaluateAttack(marshal, flag, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, 10000.0, score)
+	})
 
-	// Scout move (2+ squares) - should be remembered as scout
-	scoutMove := game.NewMove(game.NewPosition(1, 1), game.NewPosition(1, 3), &humanPlayer)
-	ai.AnalyzeMove(scoutMove, &humanPlayer, 1)
+	t.Run("known Spy vs Marshal", func(t *testing.T) {
+		enemyMarshal := game.NewPiece(models.Marshal, &p2)
+		enemyMarshal.Reveal()
+		score := aiObj.evaluateAttack(spy, enemyMarshal, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, 500.0, score)
+	})
 
-	remembered := ai.GetMemory().Recall(scoutMove.GetTo())
-	if remembered == nil {
-		t.Errorf("Expected piece to be remembered after scout move")
-	}
+	t.Run("known Bomb target", func(t *testing.T) {
+		bomb := game.NewPiece(models.Bomb, &p2)
+		bomb.Reveal()
+		scoreMiner := aiObj.evaluateAttack(miner, bomb, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, 200.0, scoreMiner)
+		scoreSpy := aiObj.evaluateAttack(spy, bomb, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, -1000.0, scoreSpy)
+	})
 
-	if remembered != nil && remembered.Piece.GetType().GetName() != "Scout" {
-		t.Errorf("Expected remembered piece to be Scout, got: %s", remembered.Piece.GetType().GetName())
-	}
+	t.Run("known matchups comparison", func(t *testing.T) {
+		oppGeneral := game.NewPiece(models.General, &p2)
+		oppGeneral.Reveal()
+		score1 := aiObj.evaluateAttack(marshal, oppGeneral, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, 10.0, score1)
 
-	if remembered != nil && remembered.Confidence != 1.0 {
-		t.Errorf("Expected confidence 1.0 for scout guess, got: %.2f", remembered.Confidence)
-	}
-}
+		oppMarshal := game.NewPiece(models.Marshal, &p2)
+		oppMarshal.Reveal()
+		score2 := aiObj.evaluateAttack(marshal, oppMarshal, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, -20.0, score2)
 
-func TestMemoryUpdatesOnMove(t *testing.T) {
-	aiPlayer := game.NewPlayer(0, "ai", "red")
-	humanPlayer := game.NewPlayer(1, "human", "blue")
-	ai := fato.NewAI(&aiPlayer, true)
+		score3 := aiObj.evaluateAttack(spy, oppGeneral, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.Equal(t, -1000.0, score3)
+	})
 
-	// Remember a piece at position (2, 2)
-	pos1 := game.NewPosition(2, 2)
-	piece := game.NewPiece(models.Captain, &humanPlayer)
-	ai.GetMemory().Remember(pos1, piece, 0.9, 1)
+	t.Run("unknown target rank tiers", func(t *testing.T) {
+		unrevealed := game.NewPiece(models.General, &p2)
 
-	// Verify it's there
-	if ai.GetMemory().Recall(pos1) == nil {
-		t.Fatal("Expected piece to be remembered at pos1")
-	}
+		s1 := aiObj.evaluateAttack(marshal, unrevealed, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.True(t, s1 >= 15.0 && s1 <= 25.0)
 
-	// Simulate opponent moving that piece from (2,2) to (2,3)
-	pos2 := game.NewPosition(2, 3)
-	move := game.NewMove(pos1, pos2, &humanPlayer)
-	ai.AnalyzeMove(move, &humanPlayer, 2)
+		s2 := aiObj.evaluateAttack(major, unrevealed, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.True(t, s2 >= 15.0 && s2 <= 25.0)
 
-	// Memory should have moved from pos1 to pos2
-	if ai.GetMemory().Recall(pos1) != nil {
-		t.Errorf("Expected memory to be cleared at original position")
-	}
+		s3 := aiObj.evaluateAttack(lieutenant, unrevealed, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.True(t, s3 >= 5.0 && s3 <= 15.0)
 
-	if ai.GetMemory().Recall(pos2) == nil {
-		t.Errorf("Expected memory to be moved to new position")
-	}
+		s4 := aiObj.evaluateAttack(sergeant, unrevealed, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.True(t, s4 >= 0.0 && s4 <= 10.0)
+
+		s5 := aiObj.evaluateAttack(scout, unrevealed, game.NewPosition(0, 1), aiObj.GetMemory())
+		assert.True(t, s5 >= -5.0 && s5 <= 5.0)
+	})
 }

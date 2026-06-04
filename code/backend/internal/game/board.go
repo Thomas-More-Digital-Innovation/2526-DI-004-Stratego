@@ -36,6 +36,16 @@ func (b *Board) Clone() *Board {
 	return newBoard
 }
 
+// FastClone creates a shallow copy of the board's field and lakes, sharing Piece pointer values.
+// This is used by the AI engine to avoid expensive deep piece allocations during simulations.
+func (b *Board) FastClone() *Board {
+	newBoard := &Board{
+		lakes: b.lakes,
+	}
+	newBoard.field = b.field
+	return newBoard
+}
+
 // SetPieceAt sets the piece at the given position on the board.
 // The piece is updated in the board's internal field, which is a 10x10 2D slice of pointers to Piece.
 // The function does not check if the move is valid, it simply updates the board state.
@@ -60,15 +70,9 @@ func (b *Board) GetPieceAt(pos Position) *Piece {
 
 // IsLake returns a boolean indicating whether the given position is a lake on the board.
 // A lake is a specific position on the board that is not occupiable by any piece.
-// The function checks if the given position is equal to any of the positions in the board's lake list.
-// If the position is found in the list, the function returns true, otherwise it returns false.
+// This function checks the coordinates in O(1) time complexity.
 func (b *Board) IsLake(pos Position) bool {
-	for _, lakePos := range b.lakes {
-		if lakePos == pos {
-			return true
-		}
-	}
-	return false
+	return (pos.Y == 4 || pos.Y == 5) && ((pos.X >= 2 && pos.X <= 3) || (pos.X >= 6 && pos.X <= 7))
 }
 
 // IsValidMove returns a boolean indicating whether a move is valid on the board.

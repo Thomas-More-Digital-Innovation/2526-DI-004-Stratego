@@ -1,21 +1,27 @@
-// Package aivsai provides tools for running AI vs AI matches and gathering statistics
+// Package aivsai provides tools for running AI vs AI matches and gathering statistics.
 package aivsai
 
 import (
+	"digital-innovation/gostrategy/internal/ai"
 	AIhandler "digital-innovation/gostrategy/internal/ai/handler"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"fmt"
+	"math/rand/v2"
 )
 
 func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary {
+	return runAIvsAIWithOptions(ai1, ai2, matches, logging, nil, nil)
+}
+
+func runAIvsAIWithOptions(ai1, ai2 string, matches int, logging bool, opts1, opts2 map[string]any) models.AiGameSummary {
 	draws := 0
 
 	flagCaptures := 0
 	noMovesWins := 0
 	maxTurnsWins := 0
 	totalRounds := 0
-	leastRounds := 1000 // we start with our max rounds possible
+	leastRounds := 1000
 
 	player1Name := "Alice AI - " + ai1
 	player2Name := "Bob AI - " + ai2
@@ -24,21 +30,18 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 	player2Data := models.AiTournamentData{Name: player2Name}
 
 	for i := range matches {
-		// Create FRESH players and controllers for EACH game, use same ID & name
 		playerAlice := game.NewPlayer(0, player1Name, "red")
 		playerBob := game.NewPlayer(1, player2Name, "blue")
 
-		controllerAlice, err := AIhandler.CreateAI(ai1, &playerAlice)
+		controllerAlice, err := AIhandler.CreateAIWithOptions(ai1, &playerAlice, opts1)
 		if err != nil {
 			panic(err)
 		}
-		controllerBob, err := AIhandler.CreateAI(ai2, &playerBob)
+		controllerBob, err := AIhandler.CreateAIWithOptions(ai2, &playerBob, opts2)
 		if err != nil {
 			panic(err)
 		}
 
-		// Alternate who goes first
-		// Without this, player 1 wins more often than the other
 		var g *game.Game
 		if i%2 == 0 {
 			g = game.QuickStart(controllerAlice, controllerBob)
@@ -69,7 +72,6 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 				if logging {
 					fmt.Printf("%v wins - %s (%d rounds)\n", player1Name, winCause, rounds)
 				}
-
 			} else {
 				winnerData = &player2Data
 				if logging {
@@ -90,19 +92,17 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 			}
 
 			winnerData.Wins++
-
 		} else {
 			if logging {
 				fmt.Printf("Draw after %d rounds\n", rounds)
 			}
 			draws++
 		}
-
 	}
 
 	avgRounds := float64(totalRounds) / float64(matches)
 
-	gameSummary := models.AiGameSummary{
+	return models.AiGameSummary{
 		Player1data:          player1Data,
 		Player2data:          player2Data,
 		Draws:                draws,
@@ -114,6 +114,77 @@ func runAIvsAI(ai1, ai2 string, matches int, logging bool) models.AiGameSummary 
 		WinCauseNoMovesWins:  noMovesWins,
 		WinCauseMaxTurns:     maxTurnsWins,
 	}
+}
 
-	return gameSummary
+// TrainAI executes a hill-climbing optimization pipeline to train AI parameters.
+func TrainAI(aiType string, opponentType string, generations int, matchesPerGen int, logging bool) error {
+	params, err := ai.Load(aiType, "default")
+	if err != nil {
+		return err
+	}
+
+	for gen := range generations {
+		if logging {
+			fmt.Printf("--- Generation %d/%d ---\n", gen+1, generations)
+		}
+
+		candidate := &ai.Parameters{
+			AIType: params.AIType,
+			Name:   "candidate",
+			//nolint:gosec
+			Aggression: params.Aggression + (rand.Float64()-0.5)*0.2,
+			Weights:    make(map[string]float64),
+			Config:     make(map[string]any),
+		}
+
+		if candidate.Aggression < 0.0 {
+			candidate.Aggression = 0.0
+		} else if candidate.Aggression > 1.0 {
+			candidate.Aggression = 1.0
+		}
+
+		for k, v := range params.Weights {
+			//nolint:gosec
+			candidate.Weights[k] = v + (rand.Float64()-0.5)*20.0
+		}
+
+		for k, v := range params.Config {
+			candidate.Config[k] = v
+		}
+
+		err = ai.Save(candidate)
+		if err != nil {
+			return err
+		}
+
+		opts1 := map[string]any{"name": "candidate"}
+		opts2 := map[string]any{"name": "default"}
+
+		summary := runAIvsAIWithOptions(aiType, opponentType, matchesPerGen, false, opts1, opts2)
+
+		candidateWins := summary.Player1data.Wins
+		opponentWins := summary.Player2data.Wins
+
+		if logging {
+			fmt.Printf("Candidate Wins: %d, Opponent Wins: %d, Draws: %d\n", candidateWins, opponentWins, summary.Draws)
+		}
+
+		if candidateWins > opponentWins {
+			if logging {
+				fmt.Println("New parameters promoted to default!")
+			}
+			params.Aggression = candidate.Aggression
+			for k, v := range candidate.Weights {
+				params.Weights[k] = v
+			}
+			err = ai.Save(params)
+			if err != nil {
+				return err
+			}
+		} else if logging {
+			fmt.Println("Candidate rejected.")
+		}
+	}
+
+	return nil
 }

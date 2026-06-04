@@ -38,8 +38,11 @@ const (
 	ResultTie     = gamemodels.ResultTie
 	ResultCapture = gamemodels.ResultCapture
 
-	Fafo = gamemodels.Fafo
-	Fato = gamemodels.Fato
+	Fafo      = gamemodels.Fafo
+	Fato      = gamemodels.Fato
+	Heuristic = gamemodels.Heuristic
+	Minimax   = gamemodels.Minimax
+	Mcts      = gamemodels.Mcts
 )
 
 // Variable aliases

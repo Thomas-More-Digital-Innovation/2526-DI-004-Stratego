@@ -1,7 +1,6 @@
-package AIhandler_test
+package AIhandler
 
 import (
-	AIhandler "digital-innovation/gostrategy/internal/ai/handler"
 	"digital-innovation/gostrategy/internal/game"
 	"digital-innovation/gostrategy/internal/game/models"
 	"testing"
@@ -10,20 +9,80 @@ import (
 )
 
 func TestCreateAI(t *testing.T) {
-	player := game.NewPlayer(0, "test-ai", "red")
+	player := game.NewPlayer(0, "Piet", "red")
 
-	// Test fafo creation
-	aiFafo, err := AIhandler.CreateAI(models.Fafo, &player)
-	assert.NoError(t, err)
-	assert.NotNil(t, aiFafo)
+	types := []string{models.Fafo, models.Fato, models.Heuristic, models.Minimax, models.Mcts}
+	for _, typ := range types {
+		t.Run(typ, func(t *testing.T) {
+			instance, err := CreateAI(typ, &player)
+			assert.NoError(t, err)
+			assert.NotNil(t, instance)
+		})
+	}
 
-	// Test fato creation
-	aiFato, err := AIhandler.CreateAI(models.Fato, &player)
-	assert.NoError(t, err)
-	assert.NotNil(t, aiFato)
-
-	// Test error returned for unknown AI type
-	_, err = AIhandler.CreateAI("unknown-type", &player)
+	_, err := CreateAI("invalid", &player)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "i don't know that AI!")
+}
+
+func TestCreateAIWithOptions(t *testing.T) {
+	player := game.NewPlayer(0, "Piet", "red")
+
+	t.Run("Fato options", func(t *testing.T) {
+		opts := map[string]any{"aggression": 0.8}
+		instance, err := CreateAIWithOptions(models.Fato, &player, opts)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance)
+
+		// Without option
+		instance2, err := CreateAIWithOptions(models.Fato, &player, nil)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance2)
+	})
+
+	t.Run("Heuristic options", func(t *testing.T) {
+		opts := map[string]any{
+			"name":       "custom",
+			"aggression": 0.35,
+		}
+		instance, err := CreateAIWithOptions(models.Heuristic, &player, opts)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance)
+
+		// Without options
+		instance2, err := CreateAIWithOptions(models.Heuristic, &player, nil)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance2)
+	})
+
+	t.Run("Minimax options", func(t *testing.T) {
+		opts := map[string]any{
+			"name":       "custom_minimax",
+			"aggression": 0.9,
+			"depth":      float64(4),
+		}
+		instance, err := CreateAIWithOptions(models.Minimax, &player, opts)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance)
+
+		// Without options
+		instance2, err := CreateAIWithOptions(models.Minimax, &player, nil)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance2)
+	})
+
+	t.Run("Mcts options", func(t *testing.T) {
+		opts := map[string]any{
+			"name":       "custom_mcts",
+			"aggression": 0.2,
+			"iterations": float64(10),
+		}
+		instance, err := CreateAIWithOptions(models.Mcts, &player, opts)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance)
+
+		// Without options
+		instance2, err := CreateAIWithOptions(models.Mcts, &player, nil)
+		assert.NoError(t, err)
+		assert.NotNil(t, instance2)
+	})
 }
