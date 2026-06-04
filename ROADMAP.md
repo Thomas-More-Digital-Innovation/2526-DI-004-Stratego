@@ -7,11 +7,14 @@ This document outlines the planned improvements and future directions for the Go
 ## v0.4.0 - AI & Intelligence
 *Focus: Moving beyond random moves and providing tools for AI experimentation.*
 
-### AI Playground Improvements
-- [ ] **Dataset Generation**: Finalize automated AI vs AI testing environment for large-scale data collection.
+### AI Improvements
+- [x] **Heuristics**: Create a basic heuristic-based evaluation engine.
+- [x] **Minimax**: Create a minimax-based evaluation engine.
+- [x] **MCTS**: Create a Monte Carlo Tree Search-based evaluation engine.
+- [ ] **AI In Game**: Add the new AIs to the game as available opponents.
+- [ ] **AI Info**: Add an info page about each AIs algorithm, strengths and weaknesses, and how they work.
 - [ ] **Export Tools**: Add ability to export board setups as JSON for external AI training/testing.
-- [ ] **Move History**: Implement a dedicated history view for AI moves in the playground.
-- [ ] **Heuristics**: Create and train a basic heuristic-based evaluation engine.
+
 
 ## v0.4.1 - Replays
 *Focus: Storing and viewing past games.*
