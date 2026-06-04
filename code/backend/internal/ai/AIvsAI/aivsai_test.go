@@ -9,8 +9,8 @@ import (
 )
 
 func TestRunAiVsAi(t *testing.T) {
-	t.Run("successful tournament", func(t *testing.T) {
-		summary := runAIvsAI("fato", "fato", 2, false)
+	t.Run("successful tournament with logging", func(t *testing.T) {
+		summary := runAIvsAI("fato", "fato", 2, true)
 
 		assert.Equal(t, 2, summary.Matches)
 		assert.NotEmpty(t, summary.Player1data.Name)
@@ -41,11 +41,11 @@ func TestRunAIvsAIExported(t *testing.T) {
 	// TODO: actually check if formats are correct.
 
 	t.Run("default format", func(_ *testing.T) {
-		RunAIvsAI("fato", "fato", 1, "default", false)
+		RunAIvsAI("fato", "fato", 1, "default", true)
 	})
 
 	t.Run("markdown format", func(_ *testing.T) {
-		RunAIvsAI("fato", "fato", 1, "md", false)
+		RunAIvsAI("fato", "fato", 1, "md", true)
 	})
 }
 
@@ -54,6 +54,6 @@ func TestTrainAI(t *testing.T) {
 	ai.SetFallbackFile(tempFile)
 	defer func() { _ = os.Remove(tempFile) }()
 
-	err := TrainAI("heuristic", "fato", 1, 1, false)
+	err := TrainAI("heuristic", "fato", 1, 1, true)
 	assert.NoError(t, err)
 }
