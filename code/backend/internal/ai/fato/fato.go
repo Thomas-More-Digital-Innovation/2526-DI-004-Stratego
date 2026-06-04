@@ -126,6 +126,33 @@ func (ai *AI) findAttackMove(board *game.Board) (game.Move, bool) {
 	return game.Move{}, false
 }
 
+func getNumericalRank(rank byte) int {
+	switch rank {
+	case 'M':
+		return 10
+	case '9':
+		return 9
+	case '8':
+		return 8
+	case '7':
+		return 7
+	case '6':
+		return 6
+	case '5':
+		return 5
+	case '4':
+		return 4
+	case '3':
+		return 3
+	case '2':
+		return 2
+	case '1':
+		return 1
+	default:
+		return 0
+	}
+}
+
 // evaluateAttack scores an attack opportunity
 func (ai *AI) evaluateAttack(attacker *game.Piece, target *game.Piece, targetPos game.Position, memory *ai.Memory) float64 {
 	remembered := memory.Recall(targetPos)
@@ -166,23 +193,27 @@ func (ai *AI) evaluateAttack(attacker *game.Piece, target *game.Piece, targetPos
 			return -1000.0
 		}
 
+		attackerRankNum := getNumericalRank(attacker.GetRank())
+		targetRankNum := getNumericalRank(targetRank)
+
 		switch {
-		case attacker.GetRank() > targetRank:
-			return float64(attacker.GetRank()-targetRank) * 10 * confidence
-		case attacker.GetRank() == targetRank:
-			return -float64(attacker.GetRank()) * 2.0
+		case attackerRankNum > targetRankNum:
+			return float64(attackerRankNum-targetRankNum) * 10 * confidence
+		case attackerRankNum == targetRankNum:
+			return -float64(attackerRankNum) * 2.0
 		default:
 			return -1000.0
 		}
 	}
 
 	score := 0.0
+	attackerRankNum := getNumericalRank(attacker.GetRank())
 	switch {
-	case attacker.GetRank() >= 7:
+	case attackerRankNum >= 7:
 		score = 20.0
-	case attacker.GetRank() >= 5:
+	case attackerRankNum >= 5:
 		score = 10.0
-	case attacker.GetRank() >= 3:
+	case attackerRankNum >= 3:
 		score = 5.0
 	}
 	// #nosec G404 - weak random is sufficient for AI score variety
