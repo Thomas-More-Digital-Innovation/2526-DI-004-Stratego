@@ -3,6 +3,7 @@ package ai
 import (
 	ai_const "digital-innovation/gostrategy/internal/ai/const"
 	"digital-innovation/gostrategy/internal/db"
+	"digital-innovation/gostrategy/internal/game/models"
 	"os"
 	"testing"
 
@@ -17,10 +18,10 @@ func TestGetDefault(t *testing.T) {
 		hasWeights     bool
 		hasConfig      bool
 	}{
-		{"fato", "def", 0.5, false, false},
-		{"heuristic", "def", 0.5, true, false},
-		{"minimax", "def", 0.5, true, true},
-		{"mcts", "def", 0.5, false, true},
+		{models.Fato, "def", 0.5, false, false},
+		{models.Heuristic, "def", 0.5, true, false},
+		{models.Minimax, "def", 0.5, true, true},
+		{models.Mcts, "def", 0.5, false, true},
 		{"unknown", "def", 0.5, false, false},
 	}
 
@@ -49,9 +50,9 @@ func TestParameterStore_FallbackFile(t *testing.T) {
 	SetFallbackFile(tempFile)
 	defer func() { _ = os.Remove(tempFile) }()
 
-	params, err := Load("heuristic", "non-existent")
+	params, err := Load(models.Heuristic, "non-existent")
 	assert.NoError(t, err)
-	assert.Equal(t, "heuristic", params.AIType)
+	assert.Equal(t, models.Heuristic, params.AIType)
 	assert.Equal(t, 0.5, params.Aggression)
 
 	params.Aggression = 0.8
@@ -61,7 +62,7 @@ func TestParameterStore_FallbackFile(t *testing.T) {
 	err = Save(params)
 	assert.NoError(t, err)
 
-	loaded, err := Load("heuristic", "custom_test")
+	loaded, err := Load(models.Heuristic, "custom_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.8, loaded.Aggression)
 	assert.Equal(t, 20000.0, loaded.Weights[ai_const.Flag])
@@ -70,7 +71,7 @@ func TestParameterStore_FallbackFile(t *testing.T) {
 	params.Aggression = 0.95
 	err = Save(params)
 	assert.NoError(t, err)
-	loaded, err = Load("heuristic", "custom_test")
+	loaded, err = Load(models.Heuristic, "custom_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.95, loaded.Aggression)
 
@@ -79,7 +80,7 @@ func TestParameterStore_FallbackFile(t *testing.T) {
 
 	err = os.WriteFile(tempFile, []byte("invalid json"), 0600)
 	assert.NoError(t, err)
-	fallbackParams, err := Load("heuristic", "custom_test")
+	fallbackParams, err := Load(models.Heuristic, "custom_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.5, fallbackParams.Aggression)
 }
@@ -92,7 +93,7 @@ func TestParameterStore_Database(t *testing.T) {
 	defer func() { _ = os.Remove(tempFile) }()
 
 	params := &Parameters{
-		AIType:     "minimax",
+		AIType:     models.Minimax,
 		Name:       "db_test",
 		Aggression: 0.77,
 		Weights:    map[string]float64{ai_const.Marshal: 120.0},
@@ -102,7 +103,7 @@ func TestParameterStore_Database(t *testing.T) {
 	err := Save(params)
 	assert.NoError(t, err)
 
-	loaded, err := Load("minimax", "db_test")
+	loaded, err := Load(models.Minimax, "db_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.77, loaded.Aggression)
 	assert.Equal(t, 120.0, loaded.Weights[ai_const.Marshal])
@@ -112,7 +113,7 @@ func TestParameterStore_Database(t *testing.T) {
 	err = Save(params)
 	assert.NoError(t, err)
 
-	loaded2, err := Load("minimax", "db_test")
+	loaded2, err := Load(models.Minimax, "db_test")
 	assert.NoError(t, err)
 	assert.Equal(t, 0.99, loaded2.Aggression)
 }

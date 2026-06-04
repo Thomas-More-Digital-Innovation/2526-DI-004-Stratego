@@ -4,6 +4,7 @@ package minimax
 import (
 	"digital-innovation/gostrategy/internal/ai"
 	"digital-innovation/gostrategy/internal/game"
+	"digital-innovation/gostrategy/internal/game/models"
 	"slices"
 )
 
@@ -28,7 +29,7 @@ type AI struct {
 
 // NewAI creates a new Minimax AI instance.
 func NewAI(player *game.Player, hasMemory bool) *AI {
-	params, _ := ai.Load("minimax", "default")
+	params, _ := ai.Load(models.Minimax, "default")
 	return &AI{
 		BaseAI: *ai.NewBaseAI(player, hasMemory),
 		params: params,

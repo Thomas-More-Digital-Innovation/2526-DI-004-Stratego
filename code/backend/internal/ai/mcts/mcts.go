@@ -19,7 +19,7 @@ type AI struct {
 
 // NewAI creates a new MCTS AI instance.
 func NewAI(player *game.Player, hasMemory bool) *AI {
-	params, _ := ai.Load("mcts", "default")
+	params, _ := ai.Load(models.Mcts, "default")
 	return &AI{
 		BaseAI: *ai.NewBaseAI(player, hasMemory),
 		params: params,

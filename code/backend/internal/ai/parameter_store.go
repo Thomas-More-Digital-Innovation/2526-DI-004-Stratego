@@ -43,9 +43,9 @@ func GetDefault(aiType string, name string) *Parameters {
 	}
 
 	switch aiType {
-	case "fato":
+	case models.Fato:
 		defaults.Aggression = 0.5
-	case "heuristic":
+	case models.Heuristic:
 		defaults.Aggression = 0.5
 		defaults.Weights[ai_const.Flag] = 10000.0
 		defaults.Weights[ai_const.Bomb] = 0.0
@@ -61,7 +61,7 @@ func GetDefault(aiType string, name string) *Parameters {
 		defaults.Weights[ai_const.Marshal] = 100.0
 		defaults.Weights["explorationWeight"] = 5.0
 		defaults.Weights["combatWeight"] = 10.0
-	case "minimax":
+	case models.Minimax:
 		defaults.Aggression = 0.5
 		defaults.Config["depth"] = 2.0
 		defaults.Weights[ai_const.Flag] = 10000.0
@@ -78,7 +78,7 @@ func GetDefault(aiType string, name string) *Parameters {
 		defaults.Weights[ai_const.Marshal] = 100.0
 		defaults.Weights["explorationWeight"] = 5.0
 		defaults.Weights["combatWeight"] = 10.0
-	case "mcts":
+	case models.Mcts:
 		defaults.Aggression = 0.5
 		defaults.Config["iterations"] = 100.0
 		defaults.Config["exploration_constant"] = 1.414

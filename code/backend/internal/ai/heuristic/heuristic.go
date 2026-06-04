@@ -4,6 +4,7 @@ package heuristic
 import (
 	"digital-innovation/gostrategy/internal/ai"
 	"digital-innovation/gostrategy/internal/game"
+	"digital-innovation/gostrategy/internal/game/models"
 	"math/rand/v2"
 )
 
@@ -15,7 +16,7 @@ type AI struct {
 
 // NewAI creates a new Heuristic AI instance.
 func NewAI(player *game.Player, hasMemory bool) *AI {
-	params, _ := ai.Load("heuristic", "default")
+	params, _ := ai.Load(models.Heuristic, "default")
 	return &AI{
 		BaseAI: *ai.NewBaseAI(player, hasMemory),
 		params: params,
