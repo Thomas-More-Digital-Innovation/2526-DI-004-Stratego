@@ -13,10 +13,11 @@ func SecurityMiddleware() gin.HandlerFunc {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("Referrer-Policy", "no-referrer-when-downgrade")
 
 		if utils.IsProduction() {
 			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-			c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:;")
+			c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss:; img-src 'self' data:; frame-ancestors 'none'; form-action 'self';")
 		}
 
 		c.Next()
