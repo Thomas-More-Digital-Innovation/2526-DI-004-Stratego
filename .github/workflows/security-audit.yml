@@ -68,20 +68,47 @@ jobs:
     name: Notify on Failure
     runs-on: ubuntu-latest
     needs: [frontend-audit, backend-audit]
-    if: failure() && github.event_name == 'schedule'
+    if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     steps:
-      - name: Create GitHub Issue on Failure
+      - name: Create or Comment on GitHub Issue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh issue create \
-            --repo ${{ github.repository }} \
-            --title "Security Audit Failure: Vulnerability Detected" \
-            --body "The scheduled security audit workflow failed. A dependency vulnerability may have been discovered in the frontend or backend.
+          ISSUE_TITLE: "Security Audit Failure: Vulnerability Detected"
+          ISSUE_BODY: |
+            The scheduled security audit workflow failed. A dependency vulnerability may have been discovered in the frontend or backend.
 
             **Please review the run details:**
             - **Workflow Run Logs:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             - **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-            
-            Please investigate and update the vulnerable dependencies immediately." \
-            --label "security,bug"
+
+            Please investigate and update the vulnerable dependencies immediately.
+          COMMENT_BODY: |
+            The scheduled security audit failed again.
+
+            **Workflow Run Logs:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        run: |
+          set -eo pipefail
+
+          issue_number=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --label "security" \
+            --limit 100 \
+            --json number,title \
+            --jq '.[] | select(.title == env.ISSUE_TITLE) | .number' \
+            | head -n 1)
+
+          if [ -n "$issue_number" ]; then
+            echo "existing open issue found: #$issue_number. commenting instead of creating a new issue."
+            gh issue comment "$issue_number" \
+              --repo "${{ github.repository }}" \
+              --body "$COMMENT_BODY"
+          else
+            echo "no existing open issue found. creating a new issue."
+            gh issue create \
+              --repo "${{ github.repository }}" \
+              --title "$ISSUE_TITLE" \
+              --body "$ISSUE_BODY" \
+              --label "security"
+          fi
