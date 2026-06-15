@@ -70,6 +70,9 @@ jobs:
     needs: [frontend-audit, backend-audit]
     if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     steps:
+      - name: Set current date
+        id: date
+        run: echo "date=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
       - name: Create or Comment on GitHub Issue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,14 +82,14 @@ jobs:
 
             **Please review the run details:**
             - **Workflow Run Logs:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            - **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            - **Date:** ${{ steps.date.outputs.date }}
 
             Please investigate and update the vulnerable dependencies immediately.
           COMMENT_BODY: |
             The scheduled security audit failed again.
 
             **Workflow Run Logs:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            **Date:** ${{ steps.date.outputs.date }}
         run: |
           set -eo pipefail
 
