@@ -15,3 +15,6 @@ update-asyncapi:
 
 update-docs:
     ./scripts/update-swagger.sh && ./scripts/update-asyncapi.sh
+
+update-locks:
+    cd code/frontend && pnpm install && bun install
