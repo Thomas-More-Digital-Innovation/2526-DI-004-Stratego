@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Target tag/version to deploy (e.g., v0.3.2). Defaults to 'latest' if left blank on branch runs."
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -28,9 +33,18 @@ jobs:
 
       - name: Lowercase repo name and sanitize tag
         id: prep
+        env:
+          RAW_INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
           echo "repo_lower=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
-          echo "tag=${GITHUB_REF_NAME//\//-}" >> $GITHUB_OUTPUT
+          if [ -n "$RAW_INPUT_TAG" ]; then
+            TAG="${RAW_INPUT_TAG//\//-}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME//\//-}"
+          else
+            TAG="latest"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Build and push Backend
         uses: docker/build-push-action@v5
